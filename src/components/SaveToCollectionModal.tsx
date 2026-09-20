@@ -54,7 +54,7 @@ export const SaveToCollectionModal: React.FC<SaveToCollectionModalProps> = ({
   databaseRefs,
   onSavedSuccess,
 }) => {
-  const { user } = useAuth();
+  const { user, cloudEnabled } = useAuth();
   const [name, setName] = useState(defaultName || identifiedName);
   const [sampleType, setSampleType] = useState<'rock' | 'mineral' | 'custom'>(identifiedType);
   const [notes, setNotes] = useState('');
@@ -178,7 +178,9 @@ export const SaveToCollectionModal: React.FC<SaveToCollectionModalProps> = ({
                   <div>
                     <span className="font-semibold text-stone-200">Local Browser Storage</span>
                     <span className="text-[10px] text-stone-400 block">
-                      Saved locally. Sign in anytime to sync to Cloud.
+                      {cloudEnabled
+                        ? 'Saved in this browser. Sign in any time to sync to the cloud.'
+                        : 'Saved in this browser. Use Export to move specimens between devices.'}
                     </span>
                   </div>
                 </>

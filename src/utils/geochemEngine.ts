@@ -93,17 +93,37 @@ export function normalizeOxides(
   volatileFree: boolean = true
 ): { normalized: OxideComposition; rawTotal: number } {
   const rawTotal = analyticalTotal(oxides);
+  const iron = resolveIron(oxides);
+
   const cleaned: OxideComposition = {};
   let total = 0;
 
   for (const [key, val] of Object.entries(oxides)) {
     if (typeof val !== 'number' || !Number.isFinite(val) || val < 0) continue;
     if (volatileFree && VOLATILES.includes(key)) continue;
-    // Iron totals are carried through but excluded from the sum, so they
-    // cannot be double-counted against FeO/Fe2O3.
-    if (IRON_TOTALS.includes(key)) continue;
+    // Every iron field is skipped here and iron is added back exactly once
+    // below. Skipping them outright would drop the iron entirely for
+    // FeOT-only analyses (the GEOROC norm) and inflate every other oxide:
+    // a 50.3 wt% SiO2 MORB normalized to 56 wt% and classified as basaltic
+    // andesite.
+    if (key === 'FeO' || key === 'Fe2O3' || IRON_TOTALS.includes(key)) continue;
     cleaned[key] = val;
     total += val;
+  }
+
+  // Add iron back once, in whichever form was measured.
+  if (iron.basis === 'FeO+Fe2O3' || iron.basis === 'FeO' || iron.basis === 'Fe2O3') {
+    if (oxides.FeO !== undefined) {
+      cleaned.FeO = oxides.FeO;
+      total += oxides.FeO;
+    }
+    if (oxides.Fe2O3 !== undefined) {
+      cleaned.Fe2O3 = oxides.Fe2O3;
+      total += oxides.Fe2O3;
+    }
+  } else if (iron.basis === 'FeOT' || iron.basis === 'Fe2O3T') {
+    cleaned.FeOT = iron.FeOT;
+    total += iron.FeOT;
   }
 
   if (total <= 0) {
@@ -116,9 +136,10 @@ export function normalizeOxides(
     if (val !== undefined) normalized[key] = val * factor;
   }
 
-  // Re-attach total iron on the normalized basis for downstream consumers.
-  const iron = resolveIron(normalized);
-  if (iron.basis !== 'none') normalized.FeOT = iron.FeOT;
+  // Expose total iron on the normalized basis for downstream consumers,
+  // without adding it to the sum.
+  const normIron = resolveIron(normalized);
+  if (normIron.basis !== 'none') normalized.FeOT = normIron.FeOT;
 
   return { normalized, rawTotal };
 }

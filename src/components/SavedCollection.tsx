@@ -32,7 +32,7 @@ interface SavedCollectionProps {
 }
 
 export const SavedCollection: React.FC<SavedCollectionProps> = ({ onLoadSampleToAnalyzer }) => {
-  const { user, signIn } = useAuth();
+  const { user, signIn, cloudEnabled } = useAuth();
   const [collection, setCollection] = useState<SavedSample[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'rock' | 'mineral' | 'custom'>('all');
@@ -173,15 +173,23 @@ export const SavedCollection: React.FC<SavedCollectionProps> = ({ onLoadSampleTo
                 <Cloud className="w-3.5 h-3.5 text-emerald-400" />
                 <span>{isSyncing ? 'Syncing...' : 'Cloud Synced'}</span>
               </button>
-            ) : (
+            ) : cloudEnabled ? (
               <button
                 onClick={handleSync}
                 className="px-3 py-1.5 text-xs font-medium bg-amber-600 hover:bg-amber-500 text-white rounded-lg shadow-sm transition-colors flex items-center gap-1.5"
-                title="Sign in with Google to sync collection across devices"
+                title="Sign in with Google to sync your collection across devices"
               >
                 <LogIn className="w-3.5 h-3.5" />
                 <span>Sign In to Sync</span>
               </button>
+            ) : (
+              <span
+                className="px-3 py-1.5 text-xs font-medium bg-stone-900 text-stone-400 rounded-lg border border-stone-800 flex items-center gap-1.5 cursor-default"
+                title="Cloud sync is not configured for this deployment. Specimens are stored in this browser; use Export to move them between devices."
+              >
+                <Cloud className="w-3.5 h-3.5 text-stone-600" />
+                <span>Stored Locally</span>
+              </span>
             )}
           </div>
         </div>

@@ -567,7 +567,8 @@ SAMPLE_03,41.50,0.02,0.05,0.00,8.80,0.15,49.20,0.20,0.01,0.00,0.00,0.12,0.35,0.0
           <div className="bg-stone-900 border border-stone-800 rounded-xl p-3.5">
             <div className="text-xs text-stone-400 font-medium">Mean Similarity Score</div>
             <div className="text-xl font-bold font-mono text-emerald-400 mt-1">
-              {stats.avgConfidence}%
+              {stats.avgConfidence}
+              <span className="text-xs font-normal text-stone-500">/100</span>
             </div>
           </div>
 
@@ -1023,7 +1024,7 @@ SAMPLE_03,41.50,0.02,0.05,0.00,8.80,0.15,49.20,0.20,0.01,0.00,0.00,0.12,0.35,0.0
                                     : 'bg-stone-800 text-stone-400'
                                 }`}
                               >
-                                {row.primaryConfidence}%
+                                {row.primaryConfidence}<span className="text-stone-500">/100</span>
                               </span>
                             </div>
                           );
@@ -1033,7 +1034,7 @@ SAMPLE_03,41.50,0.02,0.05,0.00,8.80,0.15,49.20,0.20,0.01,0.00,0.00,0.12,0.35,0.0
                         {row.secondaryName}{' '}
                         {row.secondaryConfidence > 0 && (
                           <span className="text-[10px] font-mono text-stone-500">
-                            ({row.secondaryConfidence}%)
+                            (similarity {row.secondaryConfidence}/100)
                           </span>
                         )}
                       </td>

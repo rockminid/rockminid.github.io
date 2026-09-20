@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  identifyGeochemicalSample,
   calculateCIPWNorm,
   calculateStoichiometry,
   classifyTAS,
@@ -121,6 +122,47 @@ describe('normalizeOxides', () => {
   it('retains volatiles when volatile-free is disabled', () => {
     const { normalized } = normalizeOxides({ SiO2: 50, MgO: 40, LOI: 10 }, false);
     expect(normalized.LOI).toBeCloseTo(10, 6);
+  });
+
+  it('keeps FeOT-only iron in the normalization basis', () => {
+    // A GEOROC-style row with only total iron. Dropping FeOT from the basis
+    // inflates every other oxide: a 50.32 wt% SiO2 MORB normalized to ~56 and
+    // was classified as basaltic andesite.
+    const morb = {
+      SiO2: 50.32, TiO2: 1.52, Al2O3: 15.41, FeOT: 9.85, MnO: 0.18,
+      MgO: 7.82, CaO: 11.45, Na2O: 2.68, K2O: 0.15, P2O5: 0.14, LOI: 0.48,
+    };
+    const { normalized } = normalizeOxides(morb, true);
+    expect(normalized.SiO2 as number).toBeCloseTo(50.56, 1);
+    expect(normalized.FeOT as number).toBeGreaterThan(9);
+  });
+
+  it('normalizes FeOT-only and component-iron analyses to the same result', () => {
+    const asComponents = normalizeOxides(
+      { SiO2: 50, Al2O3: 15, FeO: 8, Fe2O3: 2, MgO: 8, CaO: 11 },
+      true
+    ).normalized;
+    const asTotal = normalizeOxides(
+      { SiO2: 50, Al2O3: 15, FeOT: 8 + 0.8998 * 2, MgO: 8, CaO: 11 },
+      true
+    ).normalized;
+    // Silica differs only because total iron weighs less than FeO + Fe2O3;
+    // what must hold is that neither basis loses the iron.
+    expect(asComponents.FeOT as number).toBeGreaterThan(9);
+    expect(asTotal.FeOT as number).toBeGreaterThan(9);
+    expect(asComponents.SiO2 as number).toBeGreaterThan(45);
+    expect(asTotal.SiO2 as number).toBeGreaterThan(45);
+  });
+
+  it('classifies an FeOT-only MORB analysis as basalt', () => {
+    const report = identifyGeochemicalSample(
+      {
+        SiO2: 50.32, TiO2: 1.52, Al2O3: 15.41, FeOT: 9.85, MnO: 0.18,
+        MgO: 7.82, CaO: 11.45, Na2O: 2.68, K2O: 0.15, P2O5: 0.14, LOI: 0.48,
+      },
+      'MORB-EPR-01'
+    );
+    expect(report.tasField).toBe('Basalt');
   });
 
   it('reports the raw total without iron double-counting', () => {

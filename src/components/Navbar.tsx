@@ -46,7 +46,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenPrivacy,
   onOpenMobileApp,
 }) => {
-  const { user, signIn, signOut, loading } = useAuth();
+  const { user, signIn, signOut, loading, cloudEnabled } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   const navItems = [
@@ -309,16 +309,27 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                 )}
               </div>
-            ) : (
+            ) : cloudEnabled ? (
               <button
                 onClick={() => signIn()}
                 disabled={loading}
                 className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-stone-800 hover:bg-stone-700 text-stone-200 hover:text-white border border-stone-700 transition-colors shadow-sm shrink-0"
-                title="Sign in with Google to enable Cloud Database Sync"
+                title="Sign in with Google to enable cloud sync of your specimen collection"
               >
                 <LogIn className="w-3.5 h-3.5 text-amber-400" />
                 <span>Sign In</span>
               </button>
+            ) : (
+              /* No Firebase project configured for this deployment. Offering a
+                 sign-in button that can only fail is worse than saying so:
+                 every specimen is still saved locally in the browser. */
+              <span
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-stone-900 text-stone-500 border border-stone-800 shrink-0 cursor-default"
+                title="Cloud sync is not configured for this deployment. Your specimen collection is saved locally in this browser and all analysis features work normally."
+              >
+                <LogIn className="w-3.5 h-3.5 text-stone-600" />
+                <span className="hidden sm:inline">Local Mode</span>
+              </span>
             )}
           </div>
         </div>
