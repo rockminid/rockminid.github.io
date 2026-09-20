@@ -47,6 +47,12 @@ Defects found in the original AI Studio build and corrected:
   "WebSocket" or "failed to connect", hiding real production errors.
 - `esbuild ^0.25` incompatible with Vite 8 — `npm install` could not complete.
 
+**Reference data**
+- Library was 39 rocks and 52 minerals, hand-written; now 201 references
+  including 110 GEOROC population distributions from 313,606 analyses.
+- GEOROC "ROOT, MODIFIER" variant names fragmented the library so badly that
+  dacite's own median composition failed to identify as dacite.
+
 **Scientific**
 - Iron double-counted between FeO/Fe₂O₃ and FeOT, inflating analytical totals.
 - FeOT-only analyses lost their iron in normalization, shifting a MORB two
@@ -77,45 +83,74 @@ Defects found in the original AI Studio build and corrected:
 
 ## Not done
 
-### Stage 02–04 — GEOROC reference database
+### Stage 02–04 — GEOROC reference database ✅ (static route)
 
-**Not started, and it needs an architecture decision first.**
+**Done, via the static aggregation route (Option A), which needs no server.**
 
-Stage 02 requires a server-side database with query endpoints. GitHub Pages
-serves static files only. Three options:
+`scripts/ingest-georoc.mjs` streams the staged extracts and reduces each named
+group to a population distribution — n plus p10/p25/p50/p75/p90 per oxide.
+The result is 110 groups from **313,606 accepted analyses** in 127 kB of JSON,
+fetched at runtime and precached for offline use. The library grew from 91
+hand-written entries to 201 references.
 
-| Option | Pages | AI | 460k GEOROC rows | Android |
+This deliberately does *not* build the server-side query API of the original
+Stage 02 plan. That plan assumed per-sample record retrieval; for a chemical
+classifier, a per-group distribution is both smaller and more useful, and it
+keeps the app fully static and offline-capable. If per-record provenance (a
+specific sample ID, locality or DOI behind each match) is wanted later, that
+does need the hosted API described below.
+
+| Option | Pages | AI | GEOROC | Android |
 | --- | --- | --- | --- | --- |
-| **A. Static + prebuilt index** | ✅ | rule engine only | aggregate to ~2–5k centroids, fetched as JSON | ✅ simplest |
-| **B. Pages + hosted API** *(recommended)* | ✅ frontend | ✅ | ✅ full, server-side | ✅ needs network for reference lookups |
+| **A. Static + prebuilt distributions** *(implemented)* | ✅ | rule engine, or a proxy | ✅ 314k analyses, aggregated | ✅ fully offline |
+| **B. Pages + hosted API** | ✅ frontend | ✅ | ✅ per-record retrieval | needs network |
 | **C. Full-stack host** | ❌ | ✅ | ✅ | ✅ |
 
-Option B keeps the free permanent Pages URL and offline deterministic
-calculation, while allowing the full archive behind an API.
+**Defect found in the staged CSVs:** every file declares a 45-column header
+but writes only 39 columns — the six volatile columns (H2O, CO2, F, Cl, SO3,
+S) are named and never emitted. A header-based parse silently reads
+`fe_basis` as H2O, `FeO_equiv` as CO2 and `major_oxide_total` as F. The
+ingest script remaps positionally and refuses to run on an unrecognised
+shape. Worth fixing in whatever produced those files.
 
-Regardless of choice: **the 210 MB of staged CSV must never be committed.**
-`.gitignore` excludes `data/` and `RockMin_GEOROC_*.csv`. Publish them as a
-GitHub Release asset or a Zenodo archive and have the ingestion script fetch
-from there.
+**The 210 MB of staged CSV is still excluded from git** (`/data/`,
+`RockMin_GEOROC_*Staged*.csv`). The derived library in `public/data/` is
+committed — it is the app's reference dataset and only a few hundred kB.
 
-Note also that many staged mineral rows have every oxide blank with
-`major_oxide_total_wt_pct = 0`. Ingestion must reject or flag these rather
-than importing zeros.
+Mineral rows with every oxide blank are rejected by the ≥4-oxide filter;
+44,772 of 108,852 mineral rows were dropped for that reason.
 
 ### Stage 05 — Diagrams and mineral calculations
 
-Diagram maths is corrected, but two items remain:
+**Diagrams verified against the source paper.** Irvine & Baragar (1971) give
+their criteria as equations in Appendix III (p. 547), written specifically for
+computer implementation. Those are now used verbatim:
 
-- **AFM boundary control points are unverified.** The classifier and the drawn
-  curve now agree with each other, but both depend on an inherited 9-point
-  array that has not been re-digitized from Irvine & Baragar (1971) fig. 2.
-  Check it before relying on the TH/CA label for publication. Flagged in
-  `ternaryCalculations.ts`.
-- **Mineral identification still uses oxide-space distance**, not site
-  occupancy / APFU normalization, which is how EPMA mineral identification is
-  properly done. `calculateStoichiometry` already computes APFU and marks it
-  inapplicable for whole rocks; wiring it into mineral matching is the next
-  step.
+- Fig. 3 (alkaline vs subalkaline) — the published sixth-order polynomial.
+- Fig. 2 (tholeiitic vs calc-alkaline) — the published eighth-order polynomial
+  in X_M, with the authors' `P < 40` precondition, falling back to their Fig. 6
+  criterion (`Al2O3 >= 12 + 0.08 P`) when it is not met.
+- Fig. 7 (subalkaline rock naming) from colour index and normative plagioclase.
+- Table 1 cation norm, `Ab' = Ab + 5/3 Ne`, `P = 100 An/(An + Ab')`,
+  `CI = Ol + Opx + Cpx + Mt + Il + Hm`.
+
+The previously flagged unverified AFM control points are gone. They were also
+being interpolated as a function of X_A rather than X_M, which is a different
+curve entirely.
+
+Known limitation, documented in `irvineBaragar.ts`: above ~8 wt% total alkalis
+the published Fig. 3 fit diverges from the curve the authors drew (dS/dA rises
+from ~2.8 to ~22). It is flagged at runtime rather than silently corrected.
+
+Still open:
+
+- **Mineral identification uses oxide-space distance**, not site occupancy /
+  APFU normalization, which is how EPMA mineral identification is properly
+  done. `calculateStoichiometry` already computes APFU and marks it
+  inapplicable for whole rocks; wiring it into mineral matching is next.
+- **Fig. 4** (the Ne'-Ol'-Q' normative projection, which the authors call the
+  most reliable alkaline/subalkaline discriminant) is not implemented. The
+  cation norm it needs now exists, so this is straightforward.
 
 ### Stage 06 — Batch and plot studio
 

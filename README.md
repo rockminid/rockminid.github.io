@@ -120,7 +120,9 @@ publishing, or Android App Links will silently fail.
 | --- | --- |
 | TAS volcanic classification | Le Bas, Le Maitre, Streckeisen & Zanettin (1986), *J. Petrol.* 27, 745–750 |
 | TAS plutonic equivalents | Middlemost (1994), *Earth-Sci. Rev.* 37, 215–224 |
-| Alkaline / subalkaline divide | Irvine & Baragar (1971), *Can. J. Earth Sci.* 8, 523–548 |
+| Alkaline / subalkaline divide | Irvine & Baragar (1971), *Can. J. Earth Sci.* 8, 523–548, Appendix III eq. for Fig. 3 |
+| Tholeiitic / calc-alkaline divide | Irvine & Baragar (1971), Appendix III eq. for Figs. 2 and 6 |
+| Cation norm, colour index, normative plagioclase | Irvine & Baragar (1971), Table 1 |
 | CIPW norm | Cross, Iddings, Pirsson & Washington (1902); Kelsey (1965); Le Maitre (2002) |
 | Fe³⁺/Fe²⁺ estimation | Middlemost (1989), *Chem. Geol.* 77, 19–26 |
 | AFM | Wager & Deer (1939); Irvine & Baragar (1971) |
@@ -135,16 +137,33 @@ It is not a confidence level, a probability, or a statistical significance. The
 interface shows the raw distance, the number of analytes used and the gap to the
 runner-up alongside it, and flags a match as ambiguous when that gap is small.
 
-### Reference dataset
+### Reference library
 
-The bundled reference set is deliberately small (tens of curated rock and mineral
-compositions), chosen to span the common igneous, metamorphic and sedimentary
-fields. It is **not** a mirror of GEOROC. Integrating the full GEOROC archive
-requires a server-side reference database — see `RockMin_Improvement steps/` in
-the parent directory for the staged plan.
+Matching runs against **201 reference compositions**:
 
-Bulk reference CSVs must never be committed to this repository or bundled into
-the client. `.gitignore` excludes them.
+- **91 curated entries** — hand-written rock and mineral compositions with
+  descriptions, type localities and external database cross-links.
+- **110 GEOROC population distributions** — derived from **313,606 real
+  analyses**, each reduced to a median and a 10th–90th percentile band per
+  oxide, so a match reports "within the observed range of N analyses" rather
+  than proximity to one hand-picked number.
+
+The GEOROC library is built offline by `npm run ingest:georoc`, ships as
+127 kB of JSON in `public/data/`, is fetched after first paint and is
+precached for offline use. If it fails to load the app says so and falls back
+to the curated set.
+
+```bash
+npm run ingest:georoc -- --src "../RockMin_Improvement steps/data"
+```
+
+Bulk GEOROC CSVs (~210 MB) must never be committed or bundled; `.gitignore`
+excludes them. Publish them as a GitHub Release asset or a Zenodo archive and
+point the ingest script at that.
+
+**Cite GEOROC** (DIGIS, Georg-August-Universität Göttingen) and the original
+publications for any analysis used. See `public/data/georoc-manifest.json` for
+the exact ingestion parameters and record counts.
 
 ---
 
@@ -154,11 +173,23 @@ the client. `.gitignore` excludes them.
 npm test
 ```
 
-The suite anchors the geochemistry on exact stoichiometric end-members: a CIPW
-norm of pure albite must return ~100% normative albite, pure anorthite must give
-ASI exactly 1.00, and so on. It also asserts mass balance and silica closure for
-every norm, checks published TAS field boundaries, and verifies that the AFM
-series label agrees with the boundary curve actually drawn on the diagram.
+159 tests. The geochemistry is anchored on exact stoichiometric end-members: a
+CIPW norm of pure albite must return ~100% normative albite, pure anorthite must
+give ASI exactly 1.00, and so on. The suite also asserts mass balance and silica
+closure for every norm, checks the published Le Bas TAS field boundaries, and
+verifies that the AFM series label agrees with the boundary curve drawn on the
+diagram.
+
+The Irvine & Baragar equations are cross-checked against an independent
+digitization of the authors' own figures, taken from the scanned paper. The two
+agree within 0.65 wt% SiO₂ over the range the fit covers. The digitizer was
+itself validated by recovering MacDonald's (1968) line from their Fig. 3A as
+`alk = 0.3738 SiO₂ − 14.859`, against the published `0.37 SiO₂ − 14.43`.
+
+The GEOROC library is guarded by geological sanity checks — median SiO₂ in the
+accepted range for every named rock type, the volcanic series ordered by silica,
+orthopyroxene poorer in CaO than clinopyroxene — plus a round trip that feeds
+each group's own median back through the engine.
 
 ---
 
