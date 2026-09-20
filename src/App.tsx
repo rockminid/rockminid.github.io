@@ -48,6 +48,7 @@ import { SAMPLE_BENCHMARK_CSVS, parseCSV, processBatchCSV } from './utils/csv';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { getSavedCollection } from './services/collectionService';
+import { loadGeorocLibrary, subscribeToLibrary } from './data/georocReference';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('single');
@@ -57,6 +58,23 @@ export default function App() {
   // batch (CIPW + rock/mineral scoring + stoichiometry for every row) inside
   // a render-phase useMemo blocked the main thread before anything appeared.
   const [batchResults, setBatchResults] = useState<BatchRowResult[]>([]);
+
+  // Bumped whenever the GEOROC reference library finishes loading, so every
+  // memoized classification recomputes against the larger library.
+  const [libraryVersion, setLibraryVersion] = useState(0);
+
+  useEffect(() => {
+    const unsub = subscribeToLibrary(() => setLibraryVersion((v) => v + 1));
+    // Fetched after first paint: the app is fully usable on the curated
+    // dataset while the larger library downloads.
+    const id = window.setTimeout(() => {
+      void loadGeorocLibrary();
+    }, 0);
+    return () => {
+      unsub();
+      window.clearTimeout(id);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,7 +92,7 @@ export default function App() {
       if (typeof window.cancelIdleCallback === 'function') window.cancelIdleCallback(id as number);
       else window.clearTimeout(id as number);
     };
-  }, []);
+  }, [libraryVersion]);
 
   // Update collection count
   const refreshCollectionCount = () => {
@@ -195,7 +213,7 @@ export default function App() {
           <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
             {activeTab === 'single' && (
               <SingleAnalyzer
-                key={activeSampleName}
+                key={`${activeSampleName}:${libraryVersion}`}
                 initialOxides={activeOxides}
                 sampleName={activeSampleName}
               />

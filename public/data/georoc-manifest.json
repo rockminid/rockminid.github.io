@@ -1,0 +1,34 @@
+{
+  "generated": "2026-09-20",
+  "source": "GEOROC (DIGIS, Georg-August-Universitaet Goettingen) staged extracts",
+  "license": "GEOROC data are provided under the terms of the DIGIS/GEOROC data policy. Users must cite GEOROC and the original publications for any analysis used.",
+  "method": "Per-name distributions (n, p10/p25/p50/p75/p90) of major oxides. Rows filtered to whole-rock or volcanic-glass material with a 97-103 wt% major-oxide total counting iron once, and at least 6 (rocks) or 4 (minerals) reported oxides.",
+  "minimumGroupSize": 25,
+  "knownSourceDefect": "Staged CSVs declare a 45-column header but emit 39 columns; the six volatile columns (H2O, CO2, F, Cl, SO3, S) are named and never written. Columns are remapped positionally by this script.",
+  "datasets": {
+    "rocks": {
+      "files": 10,
+      "rows": 463489,
+      "rejectedShape": 392,
+      "rejectedName": 558,
+      "rejectedMaterial": 56873,
+      "rejectedTotal": 82270,
+      "rejectedSparse": 57165,
+      "accepted": 266231,
+      "groups": 74,
+      "bytes": 93973
+    },
+    "minerals": {
+      "files": 5,
+      "rows": 108852,
+      "rejectedShape": 0,
+      "rejectedName": 559,
+      "rejectedMaterial": 0,
+      "rejectedTotal": 16146,
+      "rejectedSparse": 44772,
+      "accepted": 47375,
+      "groups": 36,
+      "bytes": 35725
+    }
+  }
+}

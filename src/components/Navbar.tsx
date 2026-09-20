@@ -19,6 +19,7 @@ import {
 import { ROCKS_DATASET } from '../data/rocksDataset';
 import { MINERALS_DATASET } from '../data/mineralsDataset';
 import { useAuth } from '../context/AuthContext';
+import { ReferenceLibraryBadge } from './ReferenceLibraryBadge';
 import { ThemeToggle } from './ThemeToggle';
 
 export type ActiveTab = 'single' | 'batch' | 'tas' | 'ternary' | 'dataset' | 'collection';
@@ -111,9 +112,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <h1 className="text-sm sm:text-base font-bold text-stone-100 tracking-tight whitespace-nowrap">
                   RockMin ID
                 </h1>
-                <span className="hidden md:inline-block px-1.5 py-0.5 text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase bg-amber-950/80 text-amber-300 rounded border border-amber-800/60">
-                  GEOROC / EPMA
-                </span>
+                <ReferenceLibraryBadge
+                  curatedRocks={ROCKS_DATASET.length}
+                  curatedMinerals={MINERALS_DATASET.length}
+                />
               </div>
               <p className="text-[11px] sm:text-xs text-stone-400 font-normal hidden sm:block truncate">
                 Mineral &amp; Rock Geochemical Classifier

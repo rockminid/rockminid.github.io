@@ -14,11 +14,13 @@ coverage/
 android/
 ios/
 
-# Reference data — never commit GEOROC bulk CSV to git.
-# Publish as a GitHub Release asset or Zenodo archive instead.
-data/
+# Bulk GEOROC source CSVs (~210 MB) must never be committed. Publish them as
+# a GitHub Release asset or a Zenodo archive and point the ingest script at
+# them instead. The DERIVED library in public/data/ IS committed: it is the
+# app's reference dataset and only a few hundred kB.
+/data/
 *.csv.gz
-RockMin_GEOROC_*.csv
+RockMin_GEOROC_*Staged*.csv
 
 # Local Firebase / secrets
 firebase-applet-config.json

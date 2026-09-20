@@ -1127,8 +1127,13 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
                     <div className="flex items-center justify-between pb-2 mb-3 border-b border-stone-800">
                       <h3 className="text-xs font-semibold text-stone-300 uppercase tracking-wider flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                        Top Rock Matches (GEOROC / USGS)
+                        Top Rock Matches
                       </h3>
+                      <span className="text-[10px] font-mono text-stone-500">
+                        {classificationReport.referenceLibrarySize
+                          ? `${classificationReport.referenceLibrarySize.rocks.toLocaleString()} refs`
+                          : ''}
+                      </span>
                     </div>
                     <div className="space-y-2">
                       {classificationReport.topRocks.slice(0, 3).map((match, idx) => {
@@ -1148,7 +1153,17 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
                                   {match.reference.name}
                                 </div>
                                 <div className="text-[10px] text-stone-500 font-mono truncate">
-                                  {(match.reference as any).category} &bull; TAS: {(match.reference as any).tasField || 'N/A'}
+                                  {(match.reference as any).category}
+                                  {(match.reference as any).georoc ? (
+                                    <>
+                                      {' '}&bull;{' '}
+                                      <span className="text-emerald-500/90">
+                                        GEOROC n={(match.reference as any).georoc.analyses.toLocaleString()}
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <> &bull; TAS: {(match.reference as any).tasField || 'N/A'}</>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -1172,8 +1187,13 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
                     <div className="flex items-center justify-between pb-2 mb-3 border-b border-stone-800">
                       <h3 className="text-xs font-semibold text-stone-300 uppercase tracking-wider flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-cyan-500"></span>
-                        Top Mineral Matches (EPMA Standards)
+                        Top Mineral Matches
                       </h3>
+                      <span className="text-[10px] font-mono text-stone-500">
+                        {classificationReport.referenceLibrarySize
+                          ? `${classificationReport.referenceLibrarySize.minerals.toLocaleString()} refs`
+                          : ''}
+                      </span>
                     </div>
                     <div className="space-y-2">
                       {classificationReport.topMinerals.slice(0, 3).map((match, idx) => {
@@ -1193,7 +1213,13 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
                                   {match.reference.name}
                                 </div>
                                 <div className="text-[10px] text-stone-500 font-mono truncate">
-                                  {(match.reference as any).formula} &bull; {(match.reference as any).group}
+                                  {(match.reference as any).georoc ? (
+                                    <span className="text-emerald-500/90">
+                                      GEOROC n={(match.reference as any).georoc.analyses.toLocaleString()} &bull; {(match.reference as any).group}
+                                    </span>
+                                  ) : (
+                                    <>{(match.reference as any).formula} &bull; {(match.reference as any).group}</>
+                                  )}
                                 </div>
                               </div>
                             </div>

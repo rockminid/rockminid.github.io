@@ -21,6 +21,7 @@ import {
 } from '../types/geochem';
 import { MINERALS_DATASET } from '../data/mineralsDataset';
 import { ROCKS_DATASET } from '../data/rocksDataset';
+import { getGeorocMinerals, getGeorocRocks } from '../data/georocReference';
 import { elementsToOxides, oxidesToElements } from '../data/stoichiometry';
 import { resolveIron, suggestedFe2O3FeORatio } from './iron';
 import { calculateCIPWNorm, differentiationIndex, normativeAn } from './cipw';
@@ -453,7 +454,11 @@ export function identifyGeochemicalSample(
     fe2o3FeoRatio: options.fe2o3FeoRatio,
   });
 
-  const rockScores: MatchScore[] = ROCKS_DATASET.map((ref) => {
+  // Curated references plus, once loaded, the GEOROC-derived library.
+  const rockLibrary = [...ROCKS_DATASET, ...getGeorocRocks()];
+  const mineralLibrary = [...MINERALS_DATASET, ...getGeorocMinerals()];
+
+  const rockScores: MatchScore[] = rockLibrary.map((ref) => {
     const s = scoreRock(normalized, ref);
     return {
       reference: ref,
@@ -469,7 +474,7 @@ export function identifyGeochemicalSample(
     };
   }).sort((a, b) => b.similarity - a.similarity);
 
-  const mineralScores: MatchScore[] = MINERALS_DATASET.map((ref) => {
+  const mineralScores: MatchScore[] = mineralLibrary.map((ref) => {
     const s = scoreMineral(normalized, ref);
     return {
       reference: ref,
@@ -540,6 +545,7 @@ export function identifyGeochemicalSample(
     normativeAn: normativeAn(cipwNorm),
     stoichiometry,
     qualityFlags,
+    referenceLibrarySize: { rocks: rockLibrary.length, minerals: mineralLibrary.length },
     dataQualityWarning: legacyWarning,
   };
 }

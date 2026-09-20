@@ -107,6 +107,15 @@ export type RockClass =
 export interface RockReference {
   id: string;
   name: string;
+  /** Where the reference composition came from. */
+  source?: 'curated' | 'GEOROC' | string;
+  /** Population statistics when the reference is a GEOROC distribution. */
+  georoc?: {
+    analyses: number;
+    variants?: Array<{ value: string; n: number }>;
+    stats: Record<string, { n: number; p10?: number; p25?: number; p50?: number; p75?: number; p90?: number }>;
+    tectonicSettings: Array<{ value: string; n: number }>;
+  };
   category: RockClass;
   subCategory?: string;
   meanOxides: OxideComposition;
@@ -145,6 +154,15 @@ export type MineralGroup =
 export interface MineralReference {
   id: string;
   name: string;
+  /** Where the reference composition came from. */
+  source?: 'curated' | 'GEOROC' | string;
+  /** Population statistics when the reference is a GEOROC distribution. */
+  georoc?: {
+    analyses: number;
+    variants?: Array<{ value: string; n: number }>;
+    stats: Record<string, { n: number; p10?: number; p25?: number; p50?: number; p75?: number; p90?: number }>;
+    tectonicSettings: Array<{ value: string; n: number }>;
+  };
   formula: string;
   group: MineralGroup;
   crystalSystem: string;
@@ -254,6 +272,8 @@ export interface ClassificationReport {
   differentiationIndex?: number;
   normativeAn?: number;
   qualityFlags?: DataQualityFlag[];
+  /** How many references the match was made against. */
+  referenceLibrarySize?: { rocks: number; minerals: number };
   dataQualityWarning?: string;
   stoichiometry?: SampleStoichiometry;
 }

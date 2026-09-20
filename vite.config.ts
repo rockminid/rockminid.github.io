@@ -65,7 +65,8 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+          // json included so the GEOROC reference library is available offline.
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,json}'],
           // Offline field use: every deterministic calculation is bundled, so
           // a cached shell is a fully working application.
           navigateFallback: `${resolvedBase}index.html`,

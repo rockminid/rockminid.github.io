@@ -31,6 +31,7 @@
     "start": "node dist-server/server.cjs",
     "clean": "rimraf dist dist-server",
     "build:apk": "bash ./build-apk.sh",
+    "ingest:georoc": "node scripts/ingest-georoc.mjs",
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
