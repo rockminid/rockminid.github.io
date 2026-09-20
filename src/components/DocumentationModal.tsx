@@ -85,10 +85,12 @@ export const DocumentationModal: React.FC<DocumentationModalProps> = ({
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleDownloadPdf = () => {
+  const handleDownloadPdf = async () => {
     setIsGeneratingPdf(true);
     try {
-      generateRockMinManualPDF();
+      // Awaited: the generator now loads jsPDF dynamically, so the spinner
+      // must stay up until the library has downloaded and the PDF is built.
+      await generateRockMinManualPDF();
     } catch (err) {
       console.error('Failed to generate PDF manual:', err);
     } finally {

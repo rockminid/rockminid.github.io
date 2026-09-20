@@ -61,6 +61,7 @@ export async function submitUserFeedback(
   // Attempt Firestore sync
   let cloudSynced = false;
   try {
+    if (!db) throw new Error('Cloud feedback is not configured for this deployment.');
     const feedbackDocRef = doc(db, 'feedback', id);
     await setDoc(feedbackDocRef, feedbackRecord);
     cloudSynced = true;
@@ -75,6 +76,6 @@ export async function submitUserFeedback(
     cloudSynced,
     message: cloudSynced
       ? 'Thank you! Your feedback has been submitted to the RockMin ID engineering & petrology team.'
-      : 'Thank you! Your feedback has been saved locally and will sync when online.',
+      : 'Thank you! Your feedback has been saved in this browser. It will be submitted when a connection and cloud configuration are available.',
   };
 }

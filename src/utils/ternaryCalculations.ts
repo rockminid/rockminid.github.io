@@ -209,6 +209,19 @@ export function cartesianToPyroxene(
  * the `projectOxides` classifier all derive from this array, so they cannot
  * drift apart.
  */
+/*
+ * CAVEAT ON THESE CONTROL POINTS
+ * ------------------------------
+ * These vertices were inherited from the original implementation and have not
+ * been re-digitized from Irvine & Baragar (1971) figure 2. The classifier and
+ * the drawn curve are now guaranteed to agree with each other, but both depend
+ * on this array being right. Before relying on the TH/CA label for published
+ * work, check these points against the published figure.
+ *
+ * Note also that AFM discriminates magmatic SUITES by their fractionation
+ * trend. A single primitive sample plotting near the M apex may fall on the
+ * calc-alkaline side even when it belongs to a tholeiitic suite.
+ */
 export const AFM_IGNEOUS_CURVE_POINTS: Array<[number, number, number]> = [
   [64, 12, 24],
   [57, 16, 27],
@@ -226,7 +239,7 @@ export const AFM_IGNEOUS_CONFIG: TernarySystemConfig = {
   name: 'AFM Igneous Diagram',
   subtitle: 'Alkalis (A) – Total Iron (F) – Magnesium (M)',
   description:
-    'The standard geochemical ternary plot for classifying subalkaline igneous rock suites. Delineates the iron-enriching Tholeiitic Series (typical of MORBs and rift flood basalts) from the iron-depleting Calc-Alkaline Series (typical of volcanic arc subduction zones).',
+    'The standard geochemical ternary plot for classifying subalkaline igneous rock SUITES. Delineates the iron-enriching Tholeiitic Series (typical of MORBs and rift flood basalts) from the iron-depleting Calc-Alkaline Series (typical of volcanic arc subduction zones). The discriminant describes the fractionation trend of a suite: a single primitive sample near the M apex can fall on the calc-alkaline side even when it belongs to a tholeiitic suite, so interpret a lone point with care.',
   referenceAuthor: 'Irvine & Baragar (1971); Wager & Deer (1939)',
   apices: {
     top: {

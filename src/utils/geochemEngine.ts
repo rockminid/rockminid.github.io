@@ -205,6 +205,25 @@ export function assessDataQuality(
   return flags;
 }
 
+
+/**
+ * Maps a weighted compositional distance to a bounded 0-100 similarity score.
+ *
+ * The previous curve (100 exp(-0.025 d^1.6)) was far too flat: every distance
+ * below about 1.5 mapped to 100, so five different reference rocks all
+ * reported "100%" and the ranking carried no information. `d0` is the
+ * distance at which similarity falls to 1/e (about 37).
+ *
+ * Only an exact compositional match reaches 100; everything else is capped at
+ * 99, so the display never implies certainty.
+ */
+function similarityFromDistance(distance: number, d0: number): number {
+  if (!Number.isFinite(distance)) return 0;
+  if (distance < 1e-6) return 100;
+  const raw = 100 * Math.exp(-Math.pow(distance / d0, 1.3));
+  return Math.max(0, Math.min(99, raw));
+}
+
 /**
  * Similarity of a sample to a reference rock composition.
  *
@@ -276,14 +295,14 @@ function scoreRock(
   }
 
   const distance = totalWeight > 0 ? Math.sqrt(sumWeightedSq / totalWeight) : Infinity;
-  let similarity = Number.isFinite(distance)
-    ? Math.max(0, Math.min(100, 100 * Math.exp(-0.025 * Math.pow(distance, 1.6))))
-    : 0;
+  let similarity = similarityFromDistance(distance, 3.0);
 
   const sampleAlk = (sample.Na2O || 0) + (sample.K2O || 0);
   const tas = classifyTAS(sample.SiO2 || 0, sampleAlk);
   if (ref.tasField && tas.field.toLowerCase().includes(ref.tasField.toLowerCase())) {
-    similarity = Math.min(100, similarity + 5);
+    // A small agreement bonus, applied before the cap so it can never
+    // manufacture a perfect score.
+    similarity = Math.min(99, similarity + 3);
     criteria.push(`Consistent with TAS field "${tas.field}"`);
   }
 
@@ -353,9 +372,9 @@ function scoreMineral(
   }
 
   const distance = totalWeight > 0 ? Math.sqrt(sumWeightedSq / totalWeight) : Infinity;
-  const similarity = Number.isFinite(distance)
-    ? Math.max(0, Math.min(100, Math.round(100 * Math.exp(-0.035 * Math.pow(distance, 1.5)))))
-    : 0;
+  // Minerals have tighter ideal compositions than rock averages, so the
+  // characteristic distance is smaller.
+  const similarity = similarityFromDistance(distance, 2.2);
 
   contributions.sort((a, b) => b.contribution - a.contribution);
 
@@ -418,8 +437,8 @@ export function identifyGeochemicalSample(
     return {
       reference: ref,
       type: 'rock' as const,
-      similarity: s.similarity,
-      confidence: s.similarity,
+      similarity: Math.round(s.similarity),
+      confidence: Math.round(s.similarity),
       distance: s.distance,
       analytesUsed: s.analytesUsed,
       contributions: s.contributions,
@@ -434,8 +453,8 @@ export function identifyGeochemicalSample(
     return {
       reference: ref,
       type: 'mineral' as const,
-      similarity: s.similarity,
-      confidence: s.similarity,
+      similarity: Math.round(s.similarity),
+      confidence: Math.round(s.similarity),
       distance: s.distance,
       analytesUsed: s.analytesUsed,
       contributions: s.contributions,

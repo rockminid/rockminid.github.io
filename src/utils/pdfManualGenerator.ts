@@ -1,4 +1,4 @@
-import { jsPDF } from 'jspdf';
+import type { jsPDF as JsPdfType } from 'jspdf';
 import { PETROLOGICAL_GLOSSARY } from '../data/petrologicalGlossary';
 
 /**
@@ -10,8 +10,17 @@ import { PETROLOGICAL_GLOSSARY } from '../data/petrologicalGlossary';
  * - Flowcharts and diagram schematics built with vector primitives within bounds.
  * - Clean section cards, callouts, and running headers/footers with "Page X of Y".
  */
-export function generateRockMinManualPDF(): void {
-  const doc = new jsPDF({
+/**
+ * Builds and downloads the PDF user manual.
+ *
+ * jsPDF (and its html2canvas/dompurify dependencies, ~635 kB) is imported
+ * dynamically so the library is fetched only when a manual is actually
+ * requested. A static import put it in the entry chunk's modulepreload list,
+ * downloading it on every page load for every visitor.
+ */
+export async function generateRockMinManualPDF(): Promise<void> {
+  const { jsPDF } = await import('jspdf');
+  const doc: JsPdfType = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
     format: 'a4',
@@ -683,7 +692,7 @@ export function generateRockMinManualPDF(): void {
   renderSubheader('Information Transmitted to AI:');
   renderBullet('Sample Identifier & Mode', 'Sample name, analytical total, and measurement mode (oxide wt% vs element wt%).');
   renderBullet('Major Oxide Chemistry', 'Normalized weight percentages of all core and minor oxides.');
-  renderBullet('Leading Candidates', 'Top rock and mineral classifications with Euclidean distance confidence scores.');
+  renderBullet('Leading Candidates', 'Top rock and mineral classifications ranked by weighted compositional distance. The similarity score orders candidates and is not a probability.');
   renderBullet('TAS Field & Indices', 'Assigned volcanic field, alkalinity affinity, Mg#, ASI, and silica saturation.');
   renderBullet('CIPW Assemblage', 'Calculated normative mineral percentages (Q, Or, Ab, An, Di, Hy, Ol, etc.) and differentiation index.');
 
@@ -724,7 +733,7 @@ export function generateRockMinManualPDF(): void {
 
   renderBullet('Step 1: Preserve Raw Laboratory Data', 'Retain pristine raw XRF, ICP-MS, or EPMA export files with original instrument metadata and detection limits.');
   renderBullet('Step 2: Validate Analytical Totals & Stoichiometry', 'Screen analytical totals against the 98.5%–101.5% acceptance window. Confirm Fe reporting convention (FeO vs. Fe2O3 vs. FeOT).');
-  renderBullet('Step 3: Geochemical Screening & Classification', 'Input data into RockMin ID Single Analyzer or Batch Processor. Record leading rock/mineral candidate rankings and confidence scores.');
+  renderBullet('Step 3: Geochemical Screening & Classification', 'Input data into RockMin ID Single Analyzer or Batch Processor. Record leading rock/mineral candidate rankings, similarity scores and compositional distances.');
   renderBullet('Step 4: Multi-Diagram Cross-Validation', 'Examine the specimen across TAS, AFM, and relevant ternary projections (QAPF, Feldspar, Pyroxene, or Ultramafic).');
   renderBullet('Step 5: Petrographic Ground-Truthing', 'Compare calculated CIPW normative mineralogy against observed optical thin-section modal mineralogy or XRD data.');
   renderBullet('Step 6: Literature & Tectonic Verification', 'Cross-reference results with authoritative regional geological literature, GEOROC compilations, and tectonic discrimination models.');

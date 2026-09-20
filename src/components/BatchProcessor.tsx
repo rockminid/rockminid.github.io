@@ -565,7 +565,7 @@ SAMPLE_03,41.50,0.02,0.05,0.00,8.80,0.15,49.20,0.20,0.01,0.00,0.00,0.12,0.35,0.0
           </div>
 
           <div className="bg-stone-900 border border-stone-800 rounded-xl p-3.5">
-            <div className="text-xs text-stone-400 font-medium">Avg Match Confidence</div>
+            <div className="text-xs text-stone-400 font-medium">Mean Similarity Score</div>
             <div className="text-xl font-bold font-mono text-emerald-400 mt-1">
               {stats.avgConfidence}%
             </div>
@@ -611,7 +611,7 @@ SAMPLE_03,41.50,0.02,0.05,0.00,8.80,0.15,49.20,0.20,0.01,0.00,0.00,0.12,0.35,0.0
                   <option value="rocks">Rocks Only</option>
                   <option value="minerals">Minerals Only</option>
                   <option value="good_quality">Good Quality Total (98-102%)</option>
-                  <option value="high_confidence">High Confidence (&ge;80%)</option>
+                  <option value="high_confidence">High Similarity (&ge;80)</option>
                 </select>
               </div>
 

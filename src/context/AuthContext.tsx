@@ -5,7 +5,7 @@ import {
   signInWithGoogle,
   logOut,
   onAuthStateChanged,
-  testFirebaseConnection,
+  isCloudEnabled,
   db,
 } from '../lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -14,6 +14,8 @@ import { syncLocalCollectionToCloud } from '../services/collectionService';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  /** False when this deployment has no Firebase project configured. */
+  cloudEnabled: boolean;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
   error: string | null;
@@ -23,6 +25,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  cloudEnabled: false,
   signIn: async () => {},
   signOut: async () => {},
   error: null,
@@ -35,8 +38,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Initial connection test
-    testFirebaseConnection();
+    // No blocking connection probe on boot. The previous implementation
+    // awaited a forced server read (getDocFromServer) before the UI settled,
+    // which left the app in a loading state for the SDK's full retry backoff
+    // whenever the network was slow, offline, or the project unreachable.
+    if (!isCloudEnabled()) {
+      setLoading(false);
+      return;
+    }
 
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
@@ -45,6 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (currentUser) {
         // Upsert user profile in firestore safely obeying security rules
         try {
+          if (!db) return;
           const userDocRef = doc(db, 'users', currentUser.uid);
           const existingSnap = await getDoc(userDocRef);
           
@@ -115,6 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         loading,
+        cloudEnabled: isCloudEnabled(),
         signIn,
         signOut: handleSignOut,
         error,

@@ -8,8 +8,32 @@ dotenv.config();
 
 import http from "http";
 
+// Model id is configurable so a deprecated or renamed model can be swapped
+// without a code change.
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
+
+// The frontend may be served from a different origin (e.g. GitHub Pages)
+// than this API. ALLOWED_ORIGINS is a comma-separated allowlist; when unset,
+// only same-origin requests work.
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  }
+  if (req.method === "OPTIONS") return res.sendStatus(204);
+  next();
+});
 
 app.use(express.json({ limit: "10mb" }));
 
@@ -89,13 +113,13 @@ Please provide a concise, high-density petrological report formatted with clean 
 - Comment on volatile content (LOI/H2O), total sum quality, and any notable oxide anomalies (e.g., high TiO2, anomalous K/Na ratio, Cr/Ni mantle signatures).`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.8-flash",
+      model: GEMINI_MODEL,
       contents: prompt,
     });
 
     return res.json({
       success: true,
-      source: "gemini-3.8-flash",
+      source: GEMINI_MODEL,
       interpretation: response.text || "No commentary generated.",
     });
   } catch (error: any) {

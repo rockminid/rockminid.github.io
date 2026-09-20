@@ -1,16 +1,48 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Navbar, ActiveTab } from './components/Navbar';
 import { SingleAnalyzer } from './components/SingleAnalyzer';
-import { BatchProcessor } from './components/BatchProcessor';
-import { TasView } from './components/TasView';
-import { TernaryView } from './components/TernaryView';
-import { DatasetExplorer } from './components/DatasetExplorer';
-import { SavedCollection } from './components/SavedCollection';
-import { DocumentationModal } from './components/DocumentationModal';
-import { ShareModal } from './components/ShareModal';
-import { FeedbackModal } from './components/FeedbackModal';
-import { PrivacyPolicyModal } from './components/PrivacyPolicyModal';
-import { MobileAppModal } from './components/MobileAppModal';
+
+// Views and modals are code-split: only the Single Analyzer is needed for the
+// first paint. Previously every view, plus jsPDF, d3 and the full Firebase
+// SDK, shipped in one ~1.9 MB entry chunk.
+const BatchProcessor = lazy(() =>
+  import('./components/BatchProcessor').then((m) => ({ default: m.BatchProcessor }))
+);
+const TasView = lazy(() => import('./components/TasView').then((m) => ({ default: m.TasView })));
+const TernaryView = lazy(() =>
+  import('./components/TernaryView').then((m) => ({ default: m.TernaryView }))
+);
+const DatasetExplorer = lazy(() =>
+  import('./components/DatasetExplorer').then((m) => ({ default: m.DatasetExplorer }))
+);
+const SavedCollection = lazy(() =>
+  import('./components/SavedCollection').then((m) => ({ default: m.SavedCollection }))
+);
+const DocumentationModal = lazy(() =>
+  import('./components/DocumentationModal').then((m) => ({ default: m.DocumentationModal }))
+);
+const ShareModal = lazy(() =>
+  import('./components/ShareModal').then((m) => ({ default: m.ShareModal }))
+);
+const FeedbackModal = lazy(() =>
+  import('./components/FeedbackModal').then((m) => ({ default: m.FeedbackModal }))
+);
+const PrivacyPolicyModal = lazy(() =>
+  import('./components/PrivacyPolicyModal').then((m) => ({ default: m.PrivacyPolicyModal }))
+);
+const MobileAppModal = lazy(() =>
+  import('./components/MobileAppModal').then((m) => ({ default: m.MobileAppModal }))
+);
+
+/** Lightweight placeholder shown while a view chunk loads. */
+const ViewFallback: React.FC = () => (
+  <div className="flex items-center justify-center py-24" role="status" aria-live="polite">
+    <div className="flex items-center gap-3 text-stone-400 text-sm">
+      <span className="w-4 h-4 rounded-full border-2 border-stone-600 border-t-amber-500 animate-spin" />
+      Loading view...
+    </div>
+  </div>
+);
 import { BatchRowResult, OxideComposition } from './types/geochem';
 import { SAMPLE_BENCHMARK_CSVS, parseCSV, processBatchCSV } from './utils/csv';
 import { AuthProvider } from './context/AuthContext';
@@ -21,13 +53,28 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('single');
   const [collectionCount, setCollectionCount] = useState<number>(0);
 
-  // Pre-load benchmark batch samples so user has instant data in batch/TAS views
-  const initialBatch = React.useMemo(() => {
-    const { rows } = parseCSV(SAMPLE_BENCHMARK_CSVS.georocVolcanicSuite);
-    return processBatchCSV(rows);
-  }, []);
+  // Benchmark samples are classified AFTER first paint. Running the full
+  // batch (CIPW + rock/mineral scoring + stoichiometry for every row) inside
+  // a render-phase useMemo blocked the main thread before anything appeared.
+  const [batchResults, setBatchResults] = useState<BatchRowResult[]>([]);
 
-  const [batchResults, setBatchResults] = useState<BatchRowResult[]>(initialBatch);
+  useEffect(() => {
+    let cancelled = false;
+    const run = () => {
+      const { rows } = parseCSV(SAMPLE_BENCHMARK_CSVS.georocVolcanicSuite);
+      const processed = processBatchCSV(rows);
+      if (!cancelled) setBatchResults(processed);
+    };
+    const id =
+      typeof window.requestIdleCallback === 'function'
+        ? window.requestIdleCallback(run, { timeout: 2000 })
+        : window.setTimeout(run, 0);
+    return () => {
+      cancelled = true;
+      if (typeof window.cancelIdleCallback === 'function') window.cancelIdleCallback(id as number);
+      else window.clearTimeout(id as number);
+    };
+  }, []);
 
   // Update collection count
   const refreshCollectionCount = () => {
@@ -99,7 +146,9 @@ export default function App() {
       window.removeEventListener('open-rockmin-privacy', handleOpenPrivacy);
       window.removeEventListener('open-rockmin-mobile', handleOpenMobile);
     };
-  }, [activeTab]);
+    // Listeners are global and stable; they must not be torn down and
+    // re-registered on every tab change.
+  }, []);
 
   // Active sample state for Single Analyzer workbench
   const [activeSampleName, setActiveSampleName] = useState<string>('N-MORB Basalt (Pacific)');
@@ -152,75 +201,87 @@ export default function App() {
               />
             )}
 
-            {activeTab === 'batch' && (
-              <BatchProcessor
-                batchResults={batchResults}
-                setBatchResults={setBatchResults}
-                onInspectSample={handleInspectSample}
-              />
-            )}
+            <Suspense fallback={<ViewFallback />}>
+              {activeTab === 'batch' && (
+                <BatchProcessor
+                  batchResults={batchResults}
+                  setBatchResults={setBatchResults}
+                  onInspectSample={handleInspectSample}
+                />
+              )}
 
-            {activeTab === 'tas' && (
-              <TasView
-                batchResults={batchResults}
-                activeSampleOxides={activeOxides}
-                activeSampleName={activeSampleName}
-                onSelectSample={handleInspectSample}
-              />
-            )}
+              {activeTab === 'tas' && (
+                <TasView
+                  batchResults={batchResults}
+                  activeSampleOxides={activeOxides}
+                  activeSampleName={activeSampleName}
+                  onSelectSample={handleInspectSample}
+                />
+              )}
 
-            {activeTab === 'ternary' && (
-              <TernaryView
-                batchResults={batchResults}
-                activeSampleOxides={activeOxides}
-                activeSampleName={activeSampleName}
-                onSelectSample={handleInspectSample}
-              />
-            )}
+              {activeTab === 'ternary' && (
+                <TernaryView
+                  batchResults={batchResults}
+                  activeSampleOxides={activeOxides}
+                  activeSampleName={activeSampleName}
+                  onSelectSample={handleInspectSample}
+                />
+              )}
 
-            {activeTab === 'dataset' && (
-              <DatasetExplorer onSelectComposition={handleInspectSample} />
-            )}
+              {activeTab === 'dataset' && (
+                <DatasetExplorer onSelectComposition={handleInspectSample} />
+              )}
 
-            {activeTab === 'collection' && (
-              <SavedCollection onLoadSampleToAnalyzer={handleInspectSample} />
-            )}
+              {activeTab === 'collection' && (
+                <SavedCollection onLoadSampleToAnalyzer={handleInspectSample} />
+              )}
+            </Suspense>
           </main>
 
-          {/* Global Documentation Modal & Drawer */}
-          <DocumentationModal
-            isOpen={isDocModalOpen}
-            onClose={() => setIsDocModalOpen(false)}
-            initialTab={docInitialTab}
-          />
+          {/* Modals are mounted only while open, so their chunks (and jsPDF,
+              which the documentation manual pulls in) are never fetched
+              unless the user actually opens them. */}
+          <Suspense fallback={null}>
+            {isDocModalOpen && (
+              <DocumentationModal
+                isOpen={isDocModalOpen}
+                onClose={() => setIsDocModalOpen(false)}
+                initialTab={docInitialTab}
+              />
+            )}
 
-          {/* Share Modal */}
-          <ShareModal
-            isOpen={isShareModalOpen}
-            onClose={() => setIsShareModalOpen(false)}
-            activeSampleName={shareSampleDetail.name || activeSampleName}
-            activeSampleSummary={shareSampleDetail.summary}
-          />
+            {isShareModalOpen && (
+              <ShareModal
+                isOpen={isShareModalOpen}
+                onClose={() => setIsShareModalOpen(false)}
+                activeSampleName={shareSampleDetail.name || activeSampleName}
+                activeSampleSummary={shareSampleDetail.summary}
+              />
+            )}
 
-          {/* Feedback & Suggestion System Modal */}
-          <FeedbackModal
-            isOpen={isFeedbackModalOpen}
-            onClose={() => setIsFeedbackModalOpen(false)}
-            activeSampleName={feedbackSampleDetail.name || activeSampleName}
-            activeSampleContext={feedbackSampleDetail.context}
-          />
+            {isFeedbackModalOpen && (
+              <FeedbackModal
+                isOpen={isFeedbackModalOpen}
+                onClose={() => setIsFeedbackModalOpen(false)}
+                activeSampleName={feedbackSampleDetail.name || activeSampleName}
+                activeSampleContext={feedbackSampleDetail.context}
+              />
+            )}
 
-          {/* Privacy Policy & Security Modal */}
-          <PrivacyPolicyModal
-            isOpen={isPrivacyModalOpen}
-            onClose={() => setIsPrivacyModalOpen(false)}
-          />
+            {isPrivacyModalOpen && (
+              <PrivacyPolicyModal
+                isOpen={isPrivacyModalOpen}
+                onClose={() => setIsPrivacyModalOpen(false)}
+              />
+            )}
 
-          {/* Mobile App & APK Packaging Modal */}
-          <MobileAppModal
-            isOpen={isMobileModalOpen}
-            onClose={() => setIsMobileModalOpen(false)}
-          />
+            {isMobileModalOpen && (
+              <MobileAppModal
+                isOpen={isMobileModalOpen}
+                onClose={() => setIsMobileModalOpen(false)}
+              />
+            )}
+          </Suspense>
 
           {/* Global Footer */}
           <footer className="w-full bg-stone-900 border-t border-stone-800 py-6 text-xs text-stone-500">

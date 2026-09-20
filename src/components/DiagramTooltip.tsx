@@ -99,7 +99,7 @@ export const DiagramTooltip: React.FC<DiagramTooltipProps> = ({
           <span className="font-semibold text-amber-400 truncate">{data.field}</span>
           {data.confidence !== undefined && (
             <span className="text-[10px] font-mono text-emerald-400 ml-auto font-bold">
-              {data.confidence}%
+              {data.confidence}<span className="opacity-60">/100</span>
             </span>
           )}
         </div>

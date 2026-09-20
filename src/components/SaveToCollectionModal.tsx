@@ -218,7 +218,7 @@ export const SaveToCollectionModal: React.FC<SaveToCollectionModalProps> = ({
                 Match Confidence
               </span>
               <span className="font-bold text-amber-400 font-mono block mt-0.5">
-                {confidence}% Match
+                Similarity {confidence}/100
               </span>
             </div>
           </div>

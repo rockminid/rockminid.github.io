@@ -40,6 +40,7 @@ import { getEnrichedSpecimen } from '../data/visualDatabase';
 import { DatabaseReferencesCard } from './DatabaseReferencesCard';
 import { SaveToCollectionModal } from './SaveToCollectionModal';
 import { NormativeMineralogyCard } from './NormativeMineralogyCard';
+import { generateInterpretation } from '../services/interpretationService';
 
 interface SingleAnalyzerProps {
   initialOxides?: OxideComposition;
@@ -228,42 +229,23 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
     return identifyGeochemicalSample(oxides, sampleName, inputMode);
   }, [oxides, sampleName, inputMode]);
 
-  // Standard Geochemical Ratios & Petrological Indices
+  // Standard geochemical ratios and petrological indices.
+  //
+  // These come straight from the engine rather than being recomputed here.
+  // The previous inline copy omitted the apatite correction and, worse,
+  // classified any ASI below 0.95 as peralkaline. Peralkaline is defined by
+  // A/NK < 1 (molar Al below Na+K), not by ASI < 1, so ordinary metaluminous
+  // basalts and gabbros were all mislabelled.
   const geochemicalIndices = useMemo(() => {
-    const ox = classificationReport.normalizedOxides;
-    const al = ox.Al2O3 || 0;
-    const feo = ox.FeO || 0;
-    const fe2o3 = ox.Fe2O3 || 0;
-    const mg = ox.MgO || 0;
-    const ca = ox.CaO || 0;
-    const na = ox.Na2O || 0;
-    const k = ox.K2O || 0;
-
-    const molAl = al / 101.96;
-    const molCa = ca / 56.08;
-    const molNa = na / 61.98;
-    const molK = k / 94.2;
-    const molMg = mg / 40.3;
-    const molFe = (feo + fe2o3 * 0.8998) / 71.84;
-
-    const alkSum = molCa + molNa + molK;
-    const asi = alkSum > 0 ? molAl / alkSum : 0;
-    const ank = molNa + molK > 0 ? molAl / (molNa + molK) : 0;
-    const mgNumber = molMg + molFe > 0 ? (molMg / (molMg + molFe)) * 100 : 0;
-
-    let asiClassification = 'Subaluminous';
-    if (asi > 1.05) asiClassification = 'Peraluminous';
-    else if (asi >= 0.95 && alkSum > 0) asiClassification = 'Metaluminous';
-    else if (asi > 0) asiClassification = 'Peralkaline';
-
+    const st = classificationReport.stoichiometry;
     return {
-      asi: asi > 0 ? asi.toFixed(2) : 'N/A',
-      asiClassification,
-      ank: ank > 0 ? ank.toFixed(2) : 'N/A',
-      mgNumber: mgNumber > 0 ? mgNumber.toFixed(1) : 'N/A',
-      totalAlkalis: (na + k).toFixed(2),
+      asi: st?.asi !== undefined ? st.asi.toFixed(2) : 'N/A',
+      asiClassification: st?.aluminaSaturation ?? 'Undetermined',
+      ank: st?.ank !== undefined ? st.ank.toFixed(2) : 'N/A',
+      mgNumber: st?.mgNumber !== undefined ? st.mgNumber.toFixed(1) : 'N/A',
+      totalAlkalis: (st?.totalAlkalis ?? 0).toFixed(2),
     };
-  }, [classificationReport.normalizedOxides]);
+  }, [classificationReport.stoichiometry]);
 
   // Handle Oxide Input Change
   const handleOxideChange = (key: string, valueStr: string) => {
@@ -322,41 +304,18 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
     if (hasMinors) setShowMinorOxides(true);
   };
 
-  // Call Server-side Gemini AI Interpretation
+  // Petrological interpretation. Uses a configured AI backend when present,
+  // otherwise a deterministic rule-based summary so that static and offline
+  // deployments still produce a report instead of a connection error.
   const handleGenerateAiReport = async () => {
     setIsAiLoading(true);
     try {
-      const res = await fetch('/api/georoc/interpret', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sampleName,
-          composition: oxides,
-          inputType: inputMode,
-          identifiedRock: classificationReport.topRocks[0]
-            ? {
-                name: classificationReport.topRocks[0].reference.name,
-                confidence: classificationReport.topRocks[0].confidence,
-              }
-            : null,
-          identifiedMineral: classificationReport.topMinerals[0]
-            ? {
-                name: classificationReport.topMinerals[0].reference.name,
-                confidence: classificationReport.topMinerals[0].confidence,
-              }
-            : null,
-          tasCategory: classificationReport.tasField,
-          cipwNorm: classificationReport.cipwNorm,
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setAiInterpretation(data.interpretation);
-      } else {
-        setAiInterpretation(`Error generating interpretation: ${data.error}`);
-      }
+      const result = await generateInterpretation(classificationReport, inputMode);
+      setAiInterpretation(result.interpretation);
     } catch (err: any) {
-      setAiInterpretation(`Connection failed: ${err.message}`);
+      setAiInterpretation(
+        `Interpretation failed: ${err?.message || 'unknown error'}`
+      );
     } finally {
       setIsAiLoading(false);
     }
@@ -453,7 +412,7 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
         defaultName={sampleName}
         identifiedName={bestMatch.reference.name}
         identifiedType={isRock ? 'rock' : 'mineral'}
-        confidence={bestMatch.confidence}
+        confidence={bestMatch.similarity}
         oxides={oxides}
         elements={elements}
         databaseRefs={enrichedBest.databaseRefs}
@@ -926,14 +885,35 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
                 </h2>
               </div>
 
-              {/* Confidence Gauge */}
-              <div className="flex flex-col items-center justify-center p-2.5 bg-stone-950/90 rounded-xl border border-stone-800 min-w-[95px] shrink-0">
+              {/* Similarity score.
+                  Deliberately NOT shown as a percentage: it is a bounded
+                  compositional-distance score used to rank candidates, and
+                  carries no probabilistic meaning. */}
+              <div
+                className="flex flex-col items-center justify-center p-2.5 bg-stone-950/90 rounded-xl border border-stone-800 min-w-[110px] shrink-0"
+                title={`Weighted compositional distance ${bestMatch.distance} over ${bestMatch.analytesUsed ?? 0} analytes. Similarity ranks candidates and is not a probability.`}
+              >
                 <span className="text-2xl font-bold font-mono text-amber-400">
-                  {bestMatch.confidence}%
+                  {bestMatch.similarity}
+                  <span className="text-sm text-stone-500">/100</span>
                 </span>
                 <span className="text-[9px] text-stone-400 uppercase tracking-wider font-semibold">
-                  Match Score
+                  Similarity
                 </span>
+                <span className="text-[9px] text-stone-500 font-mono mt-0.5">
+                  d={bestMatch.distance} &bull; n={bestMatch.analytesUsed ?? 0}
+                </span>
+                {classificationReport.scoreSeparation !== undefined && (
+                  <span
+                    className={`text-[9px] font-mono mt-0.5 ${
+                      classificationReport.scoreSeparation < 3 ? 'text-amber-400' : 'text-stone-500'
+                    }`}
+                  >
+                    {classificationReport.scoreSeparation < 3
+                      ? `ambiguous (+${classificationReport.scoreSeparation})`
+                      : `+${classificationReport.scoreSeparation} vs next`}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -996,7 +976,7 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
                     new CustomEvent('open-rockmin-share', {
                       detail: {
                         sampleName,
-                        summary: `Geochemical analysis for ${sampleName}: Identified as ${bestMatch.reference.name} (${isRock ? 'Rock' : 'Mineral'}) with ${Math.round(bestMatch.confidence)}% confidence via RockMin ID (IUGS calibrated).`,
+                        summary: `Geochemical analysis for ${sampleName}: Identified as ${bestMatch.reference.name} (${isRock ? 'Rock' : 'Mineral'}) with a similarity score of ${bestMatch.similarity}/100 (compositional distance ${bestMatch.distance}) via RockMin ID.`,
                       },
                     })
                   );
@@ -1018,7 +998,7 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
                     new CustomEvent('open-rockmin-feedback', {
                       detail: {
                         sampleName,
-                        context: `Sample: ${sampleName} | Classified: ${bestMatch.reference.name} (${Math.round(bestMatch.confidence)}% conf) | Oxides: [${oxideSummary}]`,
+                        context: `Sample: ${sampleName} | Classified: ${bestMatch.reference.name} (similarity ${bestMatch.similarity}/100) | Oxides: [${oxideSummary}]`,
                       },
                     })
                   );
@@ -1173,9 +1153,13 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
                               </div>
                             </div>
                             <div className="text-right shrink-0">
-                              <span className="text-xs font-mono font-bold text-amber-400">
-                                {match.confidence}%
-                              </span>
+                              <div className="text-xs font-mono font-bold text-amber-400">
+                                {match.similarity}
+                                <span className="text-stone-500">/100</span>
+                              </div>
+                              <div className="text-[9px] font-mono text-stone-500">
+                                d={match.distance}
+                              </div>
                             </div>
                           </div>
                         );
@@ -1214,9 +1198,13 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
                               </div>
                             </div>
                             <div className="text-right shrink-0">
-                              <span className="text-xs font-mono font-bold text-cyan-400">
-                                {match.confidence}%
-                              </span>
+                              <div className="text-xs font-mono font-bold text-cyan-400">
+                                {match.similarity}
+                                <span className="text-stone-500">/100</span>
+                              </div>
+                              <div className="text-[9px] font-mono text-stone-500">
+                                d={match.distance}
+                              </div>
                             </div>
                           </div>
                         );

@@ -68,8 +68,8 @@ export async function saveSampleToCollection(
   const updatedList = [fullSample, ...filtered];
   saveLocalCollection(updatedList);
 
-  // If user is authenticated, persist to Firestore
-  if (user) {
+  // If signed in and cloud is configured, mirror to Firestore.
+  if (user && db) {
     const path = `users/${user.uid}/savedSamples`;
     try {
       const docRef = doc(db, path, id);
@@ -98,8 +98,8 @@ export async function deleteSampleFromCollection(
   const updatedList = existing.filter((item) => item.id !== sampleId);
   saveLocalCollection(updatedList);
 
-  // If user is authenticated, delete from Firestore
-  if (user) {
+  // If signed in and cloud is configured, delete the mirrored copy too.
+  if (user && db) {
     const path = `users/${user.uid}/savedSamples`;
     try {
       const docRef = doc(db, path, sampleId);
@@ -112,6 +112,7 @@ export async function deleteSampleFromCollection(
 
 // Sync local samples to Firestore on login
 export async function syncLocalCollectionToCloud(user: User): Promise<void> {
+  if (!db) return;
   const localItems = getLocalCollection();
   if (localItems.length === 0) return;
 
@@ -138,6 +139,12 @@ export function subscribeToUserCollection(
   user: User,
   onUpdate: (samples: SavedSample[]) => void
 ): () => void {
+  if (!db) {
+    // Local-only deployment: serve the local collection once and do not
+    // pretend to hold a live subscription.
+    onUpdate(getLocalCollection());
+    return () => {};
+  }
   const path = `users/${user.uid}/savedSamples`;
   const colRef = collection(db, path);
 

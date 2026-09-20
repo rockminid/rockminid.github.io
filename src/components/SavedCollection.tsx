@@ -293,7 +293,7 @@ export const SavedCollection: React.FC<SavedCollectionProps> = ({ onLoadSampleTo
                         {sample.type}
                       </span>
                       <span className="text-xs text-stone-400 font-mono">
-                        {sample.confidence ? `${sample.confidence}% match` : ''}
+                        {sample.confidence ? `similarity ${sample.confidence}/100` : ''}
                       </span>
                       {sample.syncedToCloud ? (
                         <span className="text-[10px] text-emerald-400 flex items-center gap-0.5 font-mono" title="Synced to Firebase Firestore">
