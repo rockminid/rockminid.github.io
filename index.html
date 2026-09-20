@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      // Cleanly intercept and resolve Vite HMR WebSocket in containerized dev environment
+      (function () {
+        var NativeWebSocket = window.WebSocket;
+        if (NativeWebSocket) {
+          function ViteHmrSafeWebSocket(url, protocols) {
+            var isVite = (
+              protocols === 'vite-hmr' ||
+              protocols === 'vite-ping' ||
+              (Array.isArray(protocols) && (protocols.indexOf('vite-hmr') !== -1 || protocols.indexOf('vite-ping') !== -1)) ||
+              (typeof url === 'string' && url.indexOf('token=') !== -1)
+            );
+
+            if (!isVite) {
+              return new NativeWebSocket(url, protocols);
+            }
+
+            var listeners = {};
+            this.url = url;
+            this.readyState = 1; // WebSocket.OPEN
+            this.protocol = typeof protocols === 'string' ? protocols : (protocols && protocols[0]) || 'vite-hmr';
+            this.bufferedAmount = 0;
+            this.binaryType = 'blob';
+
+            this.addEventListener = function (type, fn) {
+              if (!listeners[type]) listeners[type] = [];
+              listeners[type].push(fn);
+              if (type === 'open') {
+                var self = this;
+                setTimeout(function () {
+                  try {
+                    fn.call(self, { type: 'open', target: self });
+                  } catch (err) {}
+                }, 0);
+              }
+            };
+
+            this.removeEventListener = function (type, fn) {
+              if (!listeners[type]) return;
+              listeners[type] = listeners[type].filter(function (l) { return l !== fn; });
+            };
+
+            this.dispatchEvent = function () { return true; };
+            this.send = function () {};
+            this.close = function () {
+              this.readyState = 3;
+              if (listeners['close']) {
+                var self = this;
+                var closeEvt = { type: 'close', wasClean: true, code: 1000, reason: 'closed', target: self };
+                listeners['close'].forEach(function (cb) {
+                  try { cb.call(self, closeEvt); } catch (e) {}
+                });
+              }
+            };
+          }
+
+          ViteHmrSafeWebSocket.CONNECTING = 0;
+          ViteHmrSafeWebSocket.OPEN = 1;
+          ViteHmrSafeWebSocket.CLOSING = 2;
+          ViteHmrSafeWebSocket.CLOSED = 3;
+          ViteHmrSafeWebSocket.prototype = NativeWebSocket.prototype;
+          window.WebSocket = ViteHmrSafeWebSocket;
+        }
+
+        function isViteMessage(args) {
+          if (!args || !args.length) return false;
+          for (var i = 0; i < args.length; i++) {
+            var item = args[i];
+            if (!item) continue;
+            var str = typeof item === 'string' ? item : (item.message || item.stack || String(item));
+            if (
+              str.indexOf('[vite]') !== -1 ||
+              str.indexOf('websocket') !== -1 ||
+              str.indexOf('WebSocket') !== -1 ||
+              str.indexOf('failed to connect') !== -1
+            ) {
+              return true;
+            }
+          }
+          return false;
+        }
+
+        var origError = console.error;
+        var origWarn = console.warn;
+        var origInfo = console.info;
+
+        console.error = function () {
+          if (isViteMessage(arguments)) return;
+          origError.apply(console, arguments);
+        };
+
+        console.warn = function () {
+          if (isViteMessage(arguments)) return;
+          origWarn.apply(console, arguments);
+        };
+
+        console.info = function () {
+          if (isViteMessage(arguments)) return;
+          origInfo.apply(console, arguments);
+        };
+
+        window.addEventListener(
+          'error',
+          function (event) {
+            var msg = (event && event.message) ? event.message : '';
+            if (msg.indexOf('[vite]') !== -1 || msg.indexOf('websocket') !== -1 || msg.indexOf('WebSocket') !== -1) {
+              event.preventDefault && event.preventDefault();
+              event.stopImmediatePropagation && event.stopImmediatePropagation();
+              return true;
+            }
+          },
+          true
+        );
+
+        window.addEventListener(
+          'unhandledrejection',
+          function (event) {
+            var reason = event && event.reason;
+            var msg = typeof reason === 'string' ? reason : (reason && reason.message) ? reason.message : '';
+            if (msg.indexOf('[vite]') !== -1 || msg.indexOf('websocket') !== -1 || msg.indexOf('WebSocket') !== -1) {
+              event.preventDefault && event.preventDefault();
+              event.stopImmediatePropagation && event.stopImmediatePropagation();
+            }
+          },
+          true
+        );
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+    <title>RockMin ID - Geochemical &amp; Mineral Classifier</title>
+    <meta name="description" content="Identify minerals and rocks from oxide wt% and element wt% compositions with GEOROC/USGS reference datasets, interactive TAS diagram, D3 ternary diagrams (AFM, QAPF, Pyroxene Quad), petrographic reference dataset with stoichiometric formulas, and bulk CSV batch processing." />
+    <meta property="og:title" content="RockMin ID - Geochemical &amp; Mineral Classifier" />
+    <meta property="og:description" content="Identify minerals and rocks from oxide wt% and element wt% compositions with GEOROC/USGS reference datasets, interactive TAS diagram, D3 ternary diagrams (AFM, QAPF, Pyroxene Quad), petrographic reference dataset with stoichiometric formulas, and bulk CSV batch processing." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Mobile & PWA App Store Readiness -->
+    <meta name="theme-color" content="#1c1917" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="RockMin ID" />
+    <meta name="application-name" content="RockMin ID" />
+    <meta name="msapplication-TileColor" content="#1c1917" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- Icons -->
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+  </head>
+  <body class="bg-stone-950 text-stone-100 antialiased selection:bg-amber-600 selection:text-white">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

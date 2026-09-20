@@ -1,0 +1,99 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all unknown collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Healthcheck / test connection document
+    match /test/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Security helper primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.id is string && data.id == userId &&
+             data.email is string && data.email.size() <= 200 &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 120)) &&
+             (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500)) &&
+             data.createdAt is string && data.createdAt.size() <= 40;
+    }
+
+    function isValidSavedSample(data, userId) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.userId is string && data.userId == userId &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 120 &&
+             data.sampleType in ['rock', 'mineral', 'custom'] &&
+             data.oxides is map &&
+             (!('identifiedName' in data) || (data.identifiedName is string && data.identifiedName.size() <= 120)) &&
+             (!('confidence' in data) || (data.confidence is number)) &&
+             (!('tasField' in data) || (data.tasField is string && data.tasField.size() <= 120)) &&
+             (!('alkaliAffinity' in data) || (data.alkaliAffinity is string && data.alkaliAffinity.size() <= 80)) &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 2000)) &&
+             (!('tags' in data) || (data.tags is list && data.tags.size() <= 15)) &&
+             (!('databaseRefs' in data) || (data.databaseRefs is map)) &&
+             data.createdAt is string && data.createdAt.size() <= 40;
+    }
+
+    function isValidFeedback(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.category in ['bug', 'feature', 'data', 'ux', 'other'] &&
+             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+             data.message is string && data.message.size() >= 3 && data.message.size() <= 3000 &&
+             (!('userEmail' in data) || (data.userEmail is string && data.userEmail.size() <= 200)) &&
+             (!('userId' in data) || (data.userId is string && data.userId.size() <= 128)) &&
+             (!('sampleContext' in data) || (data.sampleContext is string && data.sampleContext.size() <= 1000)) &&
+             data.createdAt is string && data.createdAt.size() <= 40;
+    }
+
+    // Public feedback submissions
+    match /feedback/{feedbackId} {
+      allow create: if isValidId(feedbackId) && isValidFeedback(incoming());
+      allow read, update, delete: if false;
+    }
+
+    // User profile matching
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming(), userId);
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming(), userId) &&
+                    incoming().id == existing().id && incoming().createdAt == existing().createdAt;
+      allow delete: if isOwner(userId);
+
+      // User's saved geochemical specimens and custom rock profiles
+      match /savedSamples/{sampleId} {
+        allow get, delete: if isOwner(userId) && isValidId(sampleId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(sampleId) && isValidSavedSample(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(sampleId) && isValidSavedSample(incoming(), userId) &&
+                      incoming().id == existing().id &&
+                      incoming().userId == existing().userId &&
+                      incoming().createdAt == existing().createdAt;
+      }
+    }
+  }
+}

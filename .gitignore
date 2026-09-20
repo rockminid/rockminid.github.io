@@ -1,0 +1,25 @@
+node_modules/
+build/
+dist/
+dist-server/
+dist-ssr/
+coverage/
+.DS_Store
+*.log
+*.local
+.env*
+!.env.example
+
+# Capacitor native projects (regenerate with `npx cap add android`)
+android/
+ios/
+
+# Reference data — never commit GEOROC bulk CSV to git.
+# Publish as a GitHub Release asset or Zenodo archive instead.
+data/
+*.csv.gz
+RockMin_GEOROC_*.csv
+
+# Local Firebase / secrets
+firebase-applet-config.json
+.firebase/

@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1c1917" />
+      <stop offset="100%" stop-color="#0c0a09" />
+    </linearGradient>
+
+    <!-- Amber Glow Gradient -->
+    <linearGradient id="amberGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="50%" stop-color="#d97706" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+
+    <!-- Gem Crystal Facet Gradients -->
+    <linearGradient id="facetTop" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+    <linearGradient id="facetLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#d97706" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+    <linearGradient id="facetRight" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#b45309" />
+      <stop offset="100%" stop-color="#78350f" />
+    </linearGradient>
+    <linearGradient id="facetCenter" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fde68a" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+
+    <!-- Subtle Drop Shadow -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
+  <rect width="512" height="512" rx="112" fill="none" stroke="#292524" stroke-width="6" />
+
+  <!-- Outer Protective Halo Circle -->
+  <circle cx="256" cy="256" r="180" fill="none" stroke="#d97706" stroke-opacity="0.2" stroke-width="2" stroke-dasharray="8 8" />
+
+  <!-- Central Mineral / Rock Crystal Silhouette (Octahedral / Hexagonal Crystal habit) -->
+  <g filter="url(#shadow)">
+    <!-- Top Crown -->
+    <polygon points="256,96 176,176 336,176" fill="url(#facetTop)" stroke="#78350f" stroke-width="3" stroke-linejoin="round"/>
+
+    <!-- Left Upper Facet -->
+    <polygon points="176,176 128,256 256,256" fill="url(#facetLeft)" stroke="#78350f" stroke-width="3" stroke-linejoin="round"/>
+
+    <!-- Right Upper Facet -->
+    <polygon points="336,176 256,256 384,256" fill="url(#facetRight)" stroke="#78350f" stroke-width="3" stroke-linejoin="round"/>
+
+    <!-- Center Upper Table -->
+    <polygon points="176,176 256,256 336,176" fill="url(#facetCenter)" stroke="#78350f" stroke-width="3" stroke-linejoin="round"/>
+
+    <!-- Center Lower Pavilion -->
+    <polygon points="128,256 256,384 256,256" fill="url(#facetLeft)" stroke="#78350f" stroke-width="3" stroke-linejoin="round"/>
+    <polygon points="384,256 256,384 256,256" fill="url(#facetRight)" stroke="#78350f" stroke-width="3" stroke-linejoin="round"/>
+
+    <!-- Culet Bottom Point -->
+    <polygon points="256,384 236,416 276,416" fill="url(#amberGrad)" stroke="#78350f" stroke-width="3" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Ternary System Overlay (Subtle scientific triangular grid) -->
+  <polygon points="256,150 166,310 346,310" fill="none" stroke="#fef08a" stroke-width="2.5" stroke-opacity="0.85" stroke-dasharray="4 3"/>
+  <circle cx="256" cy="150" r="5" fill="#fde68a" />
+  <circle cx="166" cy="310" r="5" fill="#fde68a" />
+  <circle cx="346" cy="310" r="5" fill="#fde68a" />
+
+  <!-- Analytical Crosshairs & Data Spot (EPMA electron microprobe beam spot) -->
+  <circle cx="256" cy="256" r="14" fill="#ef4444" fill-opacity="0.25" stroke="#ef4444" stroke-width="3" />
+  <circle cx="256" cy="256" r="4" fill="#ffffff" />
+  <line x1="256" y1="234" x2="256" y2="278" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" />
+  <line x1="234" y1="256" x2="278" y2="256" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" />
+
+  <!-- Brand Typography -->
+  <text x="256" y="468" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="34" font-weight="900" fill="#f59e0b" letter-spacing="4" text-anchor="middle">ROCKMIN ID</text>
+</svg>
