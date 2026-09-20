@@ -29,11 +29,14 @@ export default defineConfig(({ mode }) => {
         registerType: 'autoUpdate',
         // A relative manifest/scope keeps the PWA valid under a subpath.
         includeAssets: [
+          'favicon.ico',
           'apple-touch-icon.png',
           'icon.svg',
           'pwa-192x192.png',
           'pwa-512x512.png',
           'pwa-maskable-512x512.png',
+          'og-image.png',
+          'logo-wordmark.png',
         ],
         manifest: {
           id: resolvedBase,

@@ -99,9 +99,13 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-4 overflow-hidden">
           {/* Logo & Title */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center text-white shadow-md ring-1 ring-amber-500/30 shrink-0">
-              <FlaskConical className="w-4 h-4 sm:w-5 sm:h-5 text-amber-100" />
-            </div>
+            <img
+              src={`${import.meta.env.BASE_URL}pwa-192x192.png`}
+              alt=""
+              width={40}
+              height={40}
+              className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg shadow-md ring-1 ring-stone-700/60 shrink-0 bg-stone-950 object-contain"
+            />
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <h1 className="text-sm sm:text-base font-bold text-stone-100 tracking-tight whitespace-nowrap">

@@ -3,6 +3,7 @@ import { OxideComposition } from '../types/geochem';
 // keep the module graph acyclic.
 import { calculateCIPWNorm } from './cipw';
 import { totalIronAsFeO } from './iron';
+import { afmBoundaryCurve, afmBoundaryXF, classifyAFM } from './irvineBaragar';
 
 export type TernarySystemId =
   | 'afm-igneous'
@@ -209,30 +210,23 @@ export function cartesianToPyroxene(
  * the `projectOxides` classifier all derive from this array, so they cannot
  * drift apart.
  */
-/*
- * CAVEAT ON THESE CONTROL POINTS
- * ------------------------------
- * These vertices were inherited from the original implementation and have not
- * been re-digitized from Irvine & Baragar (1971) figure 2. The classifier and
- * the drawn curve are now guaranteed to agree with each other, but both depend
- * on this array being right. Before relying on the TH/CA label for published
- * work, check these points against the published figure.
+/**
+ * Irvine & Baragar (1971) tholeiitic / calc-alkaline boundary, computed from
+ * the eighth-order polynomial the authors published for exactly this purpose
+ * in their Appendix III (p. 547):
  *
- * Note also that AFM discriminates magmatic SUITES by their fractionation
- * trend. A single primitive sample plotting near the M apex may fall on the
- * calc-alkaline side even when it belongs to a tholeiitic suite.
+ *   X_F = f(X_M),  the rock is tholeiitic when X_F >= f(X_M)
+ *
+ * This replaces a nine-point control array of unknown provenance that was
+ * interpolated as a function of X_A rather than X_M — a different curve
+ * entirely. The drawn curve and the classifier now both come from the
+ * published equation, so they cannot disagree.
+ *
+ * Points are [F, A, M], clipped to the part of the curve that lies inside the
+ * triangle and is useful at natural rock compositions.
  */
-export const AFM_IGNEOUS_CURVE_POINTS: Array<[number, number, number]> = [
-  [64, 12, 24],
-  [57, 16, 27],
-  [50, 20, 30],
-  [44, 25, 31],
-  [37, 32, 31],
-  [30, 40, 30],
-  [22, 50, 28],
-  [15, 62, 23],
-  [10, 75, 15],
-];
+export const AFM_IGNEOUS_CURVE_POINTS: Array<[number, number, number]> =
+  afmBoundaryCurve(1).filter(([f, a, m]) => m <= 75 && f >= 0 && a >= 0);
 
 export const AFM_IGNEOUS_CONFIG: TernarySystemConfig = {
   id: 'afm-igneous',
@@ -240,7 +234,7 @@ export const AFM_IGNEOUS_CONFIG: TernarySystemConfig = {
   subtitle: 'Alkalis (A) – Total Iron (F) – Magnesium (M)',
   description:
     'The standard geochemical ternary plot for classifying subalkaline igneous rock SUITES. Delineates the iron-enriching Tholeiitic Series (typical of MORBs and rift flood basalts) from the iron-depleting Calc-Alkaline Series (typical of volcanic arc subduction zones). The discriminant describes the fractionation trend of a suite: a single primitive sample near the M apex can fall on the calc-alkaline side even when it belongs to a tholeiitic suite, so interpret a lone point with care.',
-  referenceAuthor: 'Irvine & Baragar (1971); Wager & Deer (1939)',
+  referenceAuthor: 'Irvine & Baragar (1971), Appendix III eq. for Fig. 2; Wager & Deer (1939)',
   apices: {
     top: {
       id: 'F',
@@ -302,54 +296,27 @@ export const AFM_IGNEOUS_CONFIG: TernarySystemConfig = {
     },
   ],
   projectOxides: (oxides: OxideComposition) => {
-    const a = (oxides.Na2O || 0) + (oxides.K2O || 0);
-    // Total iron as FeO, via the canonical resolver. Using FeO + 0.8998 x
-    // Fe2O3 directly meant that FeOT-only analyses (most of GEOROC) plotted
-    // with F = 0, collapsing them onto the A-M edge.
-    const f = totalIronAsFeO(oxides);
-    const m = oxides.MgO || 0;
-    const total = a + f + m;
-
-    if (total <= 0.001) return { a: 33.3, b: 33.3, c: 33.4, fieldName: 'Undetermined' };
-
-    const normA = (a / total) * 100;
-    const normF = (f / total) * 100;
-    const normM = (m / total) * 100;
-
-    // Classify against the SAME boundary curve that is drawn on the diagram,
-    // so the label can never contradict the plotted position.
-    const isTholeiitic = normF > afmBoundaryF(normA);
-
+    // Delegates to the published Irvine & Baragar procedure, which also
+    // applies their P < 40 precondition and falls back to their Fig. 6
+    // criterion when it is not met.
+    const r = classifyAFM(oxides);
+    if (r.series === 'Indeterminate') {
+      return { a: 33.3, b: 33.3, c: 33.4, fieldName: 'Undetermined' };
+    }
     return {
-      a: normF, // Top apex (F)
-      b: normA, // Bottom-Left (A)
-      c: normM, // Bottom-Right (M)
-      fieldName: isTholeiitic ? 'Tholeiitic Suite' : 'Calc-Alkaline Suite',
+      a: r.F, // Top apex (F)
+      b: r.A, // Bottom-Left (A)
+      c: r.M, // Bottom-Right (M)
+      fieldName: r.series === 'Tholeiitic' ? 'Tholeiitic Suite' : 'Calc-Alkaline Suite',
     };
   },
 };
 
 /**
- * Irvine & Baragar (1971) tholeiitic / calc-alkaline divide, expressed as the
- * F value of the boundary at a given A. Interpolated from the same control
- * points that `AFM_IGNEOUS_CONFIG.curves[0]` draws, so the field label and the
- * rendered curve are guaranteed to agree.
+ * Boundary X_F at a given X_M, re-exported from the published equation so
+ * callers that only need the curve do not import two modules.
  */
-export function afmBoundaryF(normA: number): number {
-  const pts = AFM_IGNEOUS_CURVE_POINTS;
-  // Points are ordered by increasing A.
-  if (normA <= pts[0][1]) return pts[0][0];
-  if (normA >= pts[pts.length - 1][1]) return pts[pts.length - 1][0];
-  for (let i = 0; i < pts.length - 1; i++) {
-    const [f1, a1] = pts[i];
-    const [f2, a2] = pts[i + 1];
-    if (normA >= a1 && normA <= a2) {
-      const t = (normA - a1) / (a2 - a1 || 1);
-      return f1 + t * (f2 - f1);
-    }
-  }
-  return pts[pts.length - 1][0];
-}
+export const afmBoundaryF = afmBoundaryXF;
 
 // =============================================================
 // SYSTEM 2: Metamorphic AFM Diagram (Al2O3 - FeO - MgO)

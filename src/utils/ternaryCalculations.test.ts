@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { OxideComposition } from '../types/geochem';
 import {
   AFM_IGNEOUS_CONFIG,
+  afmBoundaryF,
   QAPF_PLUTONIC_CONFIG,
   TERNARY_SYSTEMS_MAP,
   ternaryToCartesian,
@@ -78,27 +79,26 @@ describe('AFM igneous projection', () => {
   });
 
   it('labels the series consistently with the plotted boundary curve', () => {
-    // A point sampled just above and just below the drawn Irvine & Baragar
-    // curve must be labelled tholeiitic and calc-alkaline respectively.
+    // The drawn curve and the classifier both come from the published
+    // Appendix III polynomial, so a point placed just above the curve must be
+    // called tholeiitic and one just below it calc-alkaline.
     const curve = AFM_IGNEOUS_CONFIG.curves?.[0];
     expect(curve).toBeDefined();
-    for (const [f, a, m] of curve!.points) {
-      const total = f + a + m;
-      const above = AFM_IGNEOUS_CONFIG.projectOxides({
-        FeOT: (f + 3) / total,
-        Na2O: a / total,
-        K2O: 0,
-        MgO: (m - 3) / total,
-      });
-      const below = AFM_IGNEOUS_CONFIG.projectOxides({
-        FeOT: (f - 3) / total,
-        Na2O: a / total,
-        K2O: 0,
-        MgO: (m + 3) / total,
-      });
-      expect(above.fieldName).toContain('Tholeiitic');
-      expect(below.fieldName).toContain('Calc-Alkaline');
+    for (const [f, , m] of curve!.points) {
+      if (m < 5 || m > 60) continue; // skip the extreme ends of the curve
+      for (const [delta, expected] of [[+4, 'Tholeiitic'], [-4, 'Calc-Alkaline']] as const) {
+        const F = f + delta;
+        const A = Math.max(0, 100 - F - m);
+        // Fed as wt% with no Al or Ca, so the Fig. 2 path (P undefined) applies.
+        const p = AFM_IGNEOUS_CONFIG.projectOxides({ FeOT: F, Na2O: A, MgO: m });
+        expect(p.fieldName, `F=${F} A=${A} M=${m}`).toContain(expected);
+      }
     }
+  });
+
+  it('uses the published boundary value, not an interpolated one', () => {
+    // Constant term of the Appendix III polynomial: X_F = 30 at X_M = 0.
+    expect(afmBoundaryF(0)).toBeCloseTo(30.0, 6);
   });
 });
 

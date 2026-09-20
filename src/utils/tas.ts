@@ -1,3 +1,9 @@
+import {
+  subalkalineBoundarySiO2,
+  isSubalkaline,
+  FIG3_RELIABLE_ALKALI_MAX,
+} from './irvineBaragar';
+
 /**
  * Total Alkali-Silica (TAS) classification.
  *
@@ -139,42 +145,32 @@ export interface TASResult {
 /**
  * Irvine & Baragar (1971) alkaline / subalkaline dividing line.
  *
- * Returns the Na2O+K2O value of the boundary at a given SiO2. Points above
- * the line are alkaline. The curve is defined by the published control points
- * and interpolated linearly between them; outside the range it is clamped.
+ * Delegates to the authors' own published equation (their Appendix III,
+ * Fig. 3), rather than the interpolated control points used previously.
+ * See `irvineBaragar.ts`.
  *
- * The previous implementation used an undocumented quadratic that sat about
- * 1 wt% below this curve across the whole silica range, over-reporting
- * alkaline affinity.
+ * Returned as the Na2O+K2O value of the boundary at a given SiO2, which is
+ * the inverse of the published form, so it is solved numerically by bisection
+ * on the monotonic part of the curve.
  */
-const IRVINE_BARAGAR: Array<[number, number]> = [
-  [39.2, 0.0],
-  [40.0, 0.4],
-  [43.2, 2.0],
-  [45.0, 2.8],
-  [48.0, 3.9],
-  [50.0, 4.5],
-  [53.7, 5.5],
-  [55.0, 5.8],
-  [60.0, 6.6],
-  [65.0, 7.3],
-  [70.0, 7.8],
-  [77.4, 8.4],
-];
-
 export function irvineBaragarBoundary(sio2: number): number {
-  const pts = IRVINE_BARAGAR;
-  if (sio2 <= pts[0][0]) return pts[0][1];
-  if (sio2 >= pts[pts.length - 1][0]) return pts[pts.length - 1][1];
-  for (let i = 0; i < pts.length - 1; i++) {
-    const [x1, y1] = pts[i];
-    const [x2, y2] = pts[i + 1];
-    if (sio2 >= x1 && sio2 <= x2) {
-      const t = (sio2 - x1) / (x2 - x1);
-      return y1 + t * (y2 - y1);
-    }
+  if (!Number.isFinite(sio2)) return 0;
+  // S(A) is increasing over the reliable range, so bisect on A.
+  let lo = 0;
+  let hi = FIG3_RELIABLE_ALKALI_MAX;
+  if (subalkalineBoundarySiO2(lo) >= sio2) return 0;
+  if (subalkalineBoundarySiO2(hi) <= sio2) {
+    // Above the reliable range the polynomial still rises steeply; continue
+    // bisecting further out so the drawn line does not simply stop.
+    hi = 12;
+    if (subalkalineBoundarySiO2(hi) <= sio2) return hi;
   }
-  return pts[pts.length - 1][1];
+  for (let i = 0; i < 60; i++) {
+    const mid = (lo + hi) / 2;
+    if (subalkalineBoundarySiO2(mid) < sio2) lo = mid;
+    else hi = mid;
+  }
+  return (lo + hi) / 2;
 }
 
 /** Standard ray-casting point-in-polygon, inclusive of the boundary. */
@@ -229,7 +225,8 @@ export function classifyTAS(
   totalAlkalis: number,
   options: TASOptions = {}
 ): TASResult {
-  const isAlkaline = totalAlkalis > irvineBaragarBoundary(sio2);
+  // Exact published criterion: subalkaline iff S >= S_boundary(A).
+  const isAlkaline = !isSubalkaline(sio2, totalAlkalis).subalkaline;
   const regime = options.regime ?? 'volcanic';
 
   if (!Number.isFinite(sio2) || !Number.isFinite(totalAlkalis)) {

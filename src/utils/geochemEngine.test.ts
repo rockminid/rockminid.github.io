@@ -315,13 +315,16 @@ describe('classifyTAS', () => {
     expect(classifyTAS(69.5, 6.0).field).toContain('Rhyolite');
   });
 
-  it('applies the Irvine & Baragar alkaline boundary consistently', () => {
-    // The published boundary sits near 3.0 wt% alkalis at 50 wt% SiO2.
+  it('applies the published Irvine & Baragar alkaline boundary', () => {
+    // From their Appendix III equation for Fig. 3, the boundary sits at
+    // about 4.7 wt% alkalis at 50 wt% SiO2 and about 7.9 wt% at 60 wt%.
     expect(classifyTAS(50, 2.0).isAlkaline).toBe(false);
-    expect(classifyTAS(50, 5.0).isAlkaline).toBe(true);
-    // ...and near 5.3 wt% at 60 wt% SiO2.
+    expect(classifyTAS(50, 4.0).isAlkaline).toBe(false);
+    expect(classifyTAS(50, 6.0).isAlkaline).toBe(true);
+
     expect(classifyTAS(60, 4.0).isAlkaline).toBe(false);
-    expect(classifyTAS(60, 7.0).isAlkaline).toBe(true);
+    expect(classifyTAS(60, 7.0).isAlkaline).toBe(false);
+    expect(classifyTAS(60, 9.0).isAlkaline).toBe(true);
   });
 
   it('is monotonic across the alkaline boundary at fixed silica', () => {

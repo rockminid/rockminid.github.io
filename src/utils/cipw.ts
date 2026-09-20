@@ -140,11 +140,21 @@ export function calculateCIPWNorm(
     if (mass > 1e-9) phases[phase] = (phases[phase] || 0) + mass;
   };
 
+  // Formula-moles of each normative phase, tracked in parallel with mass so
+  // the cation norm can be derived without a second allocation pass.
+  // Irvine & Baragar (1971) express every criterion in the CATION norm, so
+  // this is needed for their published equations.
+  const molesOf: Record<string, number> = {};
+  const addMol = (phase: string, n: number) => {
+    if (n > 1e-12) molesOf[phase] = (molesOf[phase] || 0) + n;
+  };
+
   // --- 1. Calcite from CO2 ----------------------------------------------
   if (CO2 > 0 && Ca > 0) {
     const cc = Math.min(CO2, Ca);
     Ca -= cc;
     add('Cc', cc * (FW.CaO + FW.CO2));
+    addMol('Cc', cc);
   }
 
   // --- 2. Apatite: Ca5(PO4)3(OH), 3.333 CaO per P2O5 ---------------------
@@ -154,6 +164,7 @@ export function calculateCIPWNorm(
     const caUsed = 3.3333 * ap;
     Ca -= caUsed;
     add('Ap', ap * FW.P2O5 + caUsed * FW.CaO);
+    addMol('Ap', ap / 1.5); // Ca5(PO4)3 contains 1.5 P2O5
   }
 
   // --- 3. Chromite: FeCr2O4 ---------------------------------------------
@@ -162,6 +173,7 @@ export function calculateCIPWNorm(
     const drawn = mafic.take(cm);
     Cr -= cm;
     add('Cm', cm * FW.Cr2O3 + drawn.mass);
+    addMol('Cm', cm);
   }
 
   // --- 4. Ilmenite: FeTiO3; leftover TiO2 -> rutile ----------------------
@@ -170,9 +182,11 @@ export function calculateCIPWNorm(
     const drawn = mafic.take(il);
     Ti -= il;
     add('Il', il * FW.TiO2 + drawn.mass);
+    addMol('Il', il);
   }
   if (Ti > 0) {
     add('Ru', Ti * FW.TiO2);
+    addMol('Ru', Ti);
     Ti = 0;
   }
 
@@ -226,8 +240,10 @@ export function calculateCIPWNorm(
   // Magnetite draws from the mafic pool before the silicates.
   const mtDraw = mafic.take(mt);
   add('Mt', mt * FW.Fe2O3 + mtDraw.mass);
+  addMol('Mt', mt);
   if (Fe3 > 0) {
     add('Hm', Fe3 * FW.Fe2O3);
+    addMol('Hm', Fe3);
     Fe3 = 0;
   }
 
@@ -287,30 +303,33 @@ export function calculateCIPWNorm(
   const silicaBalance = deficit > 1e-9 ? deficit : 0;
 
   // --- 10. Accumulate silicate masses -----------------------------------
-  if (or_ > 0) add('Or', or_ * (FW.K2O + FW.Al2O3 + 6 * FW.SiO2));
-  if (lc > 0) add('Lc', lc * (FW.K2O + FW.Al2O3 + 4 * FW.SiO2));
-  if (ks > 0) add('Ks', ks * (FW.K2O + FW.SiO2));
-  if (ab > 0) add('Ab', ab * (FW.Na2O + FW.Al2O3 + 6 * FW.SiO2));
-  if (ne > 0) add('Ne', ne * (FW.Na2O + FW.Al2O3 + 2 * FW.SiO2));
-  if (ac > 0) add('Ac', ac * (FW.Na2O + FW.Fe2O3 + 4 * FW.SiO2));
-  if (ns > 0) add('Ns', ns * (FW.Na2O + FW.SiO2));
-  if (an > 0) add('An', an * (FW.CaO + FW.Al2O3 + 2 * FW.SiO2));
-  if (co > 0) add('C', co * FW.Al2O3);
-  if (wo > 0) add('Wo', wo * (FW.CaO + FW.SiO2));
+  if (or_ > 0) { add('Or', or_ * (FW.K2O + FW.Al2O3 + 6 * FW.SiO2)); addMol('Or', 2 * or_); }
+  if (lc > 0) { add('Lc', lc * (FW.K2O + FW.Al2O3 + 4 * FW.SiO2)); addMol('Lc', 2 * lc); }
+  if (ks > 0) { add('Ks', ks * (FW.K2O + FW.SiO2)); addMol('Ks', ks); }
+  if (ab > 0) { add('Ab', ab * (FW.Na2O + FW.Al2O3 + 6 * FW.SiO2)); addMol('Ab', 2 * ab); }
+  if (ne > 0) { add('Ne', ne * (FW.Na2O + FW.Al2O3 + 2 * FW.SiO2)); addMol('Ne', 2 * ne); }
+  if (ac > 0) { add('Ac', ac * (FW.Na2O + FW.Fe2O3 + 4 * FW.SiO2)); addMol('Ac', 2 * ac); }
+  if (ns > 0) { add('Ns', ns * (FW.Na2O + FW.SiO2)); addMol('Ns', ns); }
+  if (an > 0) { add('An', an * (FW.CaO + FW.Al2O3 + 2 * FW.SiO2)); addMol('An', an); }
+  if (co > 0) { add('C', co * FW.Al2O3); addMol('C', co); }
+  if (wo > 0) { add('Wo', wo * (FW.CaO + FW.SiO2)); addMol('Wo', wo); }
 
   if (di > 0) {
     const drawn = mafic.take(di);
     add('Di', di * FW.CaO + drawn.mass + di * 2 * FW.SiO2);
+    addMol('Di', di);
   }
   if (hy > 0) {
     const drawn = mafic.take(hy);
     add('Hy', drawn.mass + hy * FW.SiO2);
+    addMol('Hy', hy);
   }
   if (ol > 0) {
     const drawn = mafic.take(ol);
     add('Ol', drawn.mass + ol * 0.5 * FW.SiO2);
+    addMol('Ol', ol);
   }
-  if (quartz > 0) add('Q', quartz * FW.SiO2);
+  if (quartz > 0) { add('Q', quartz * FW.SiO2); addMol('Q', quartz); }
 
   // --- 11. Totals and diagnostics ---------------------------------------
   const norm: CIPWNorm = {};
@@ -326,7 +345,93 @@ export function calculateCIPWNorm(
   norm.ironBasis = iron.basis;
   norm.ironSplitEstimated = iron.isSplitEstimated;
 
+  lastCationNorm = cationNormFrom(molesOf);
+
   return norm;
+}
+
+/** Cations per formula unit of each normative phase. */
+const CATIONS_PER_FORMULA: Record<string, number> = {
+  Q: 1,      // SiO2
+  C: 2,      // Al2O3
+  Or: 5,     // KAlSi3O8
+  Ab: 5,     // NaAlSi3O8
+  An: 5,     // CaAl2Si2O8
+  Lc: 4,     // KAlSi2O6
+  Ne: 3,     // NaAlSiO4
+  Ac: 4,     // NaFe3+Si2O6
+  Ns: 3,     // Na2SiO3
+  Ks: 3,     // K2SiO3
+  Di: 4,     // Ca(Mg,Fe)Si2O6
+  Wo: 2,     // CaSiO3
+  Hy: 2,     // (Mg,Fe)SiO3
+  Ol: 3,     // (Mg,Fe)2SiO4
+  Mt: 3,     // Fe3O4
+  Hm: 2,     // Fe2O3
+  Il: 2,     // FeTiO3
+  Ru: 1,     // TiO2
+  Cm: 3,     // FeCr2O4
+  Ap: 8,     // Ca5(PO4)3
+  Cc: 2,     // CaCO3
+};
+
+function cationNormFrom(molesOf: Record<string, number>): CationNorm {
+  const cations: Record<string, number> = {};
+  let total = 0;
+  for (const [ph, n] of Object.entries(molesOf)) {
+    const c = (CATIONS_PER_FORMULA[ph] ?? 1) * n;
+    cations[ph] = c;
+    total += c;
+  }
+  const pct: Record<string, number> = {};
+  if (total > 0) {
+    for (const [ph, c] of Object.entries(cations)) pct[ph] = (c / total) * 100;
+  }
+
+  const An = pct.An || 0;
+  const Ab = pct.Ab || 0;
+  const Ne = pct.Ne || 0;
+  // Table 1: Ab' = Ab + 5/3 Ne; plagioclase composition = 100 An/(An + Ab')
+  const abPrime = Ab + (5 / 3) * Ne;
+  const plagioclase = An + abPrime > 0 ? (100 * An) / (An + abPrime) : undefined;
+
+  // Table 1: color index = Ol + Opx + Cpx + Mt + Il + Hm
+  const colorIndex =
+    (pct.Ol || 0) + (pct.Hy || 0) + (pct.Di || 0) + (pct.Mt || 0) + (pct.Il || 0) + (pct.Hm || 0);
+
+  return { percent: pct, plagioclase, colorIndex, abPrime };
+}
+
+/**
+ * Cation norm derived from the most recent `calculateCIPWNorm` call.
+ *
+ * Irvine & Baragar (1971) express every classification criterion in cation
+ * norm percentages (their Table 1), so their published equations cannot be
+ * evaluated from the weight norm alone.
+ */
+export interface CationNorm {
+  /** Normative phases in cation percent. */
+  percent: Record<string, number>;
+  /** 100 An / (An + Ab'), where Ab' = Ab + 5/3 Ne. Their "P". */
+  plagioclase?: number;
+  /** Ol + Opx + Cpx + Mt + Il + Hm, cation percent. Their "CI". */
+  colorIndex: number;
+  /** Ab' = Ab + 5/3 Ne. */
+  abPrime: number;
+}
+
+let lastCationNorm: CationNorm = { percent: {}, colorIndex: 0, abPrime: 0 };
+
+/**
+ * Computes the cation norm for a composition.
+ * Runs the weight norm internally and converts the phase amounts.
+ */
+export function calculateCationNorm(
+  oxides: OxideComposition,
+  options: CIPWOptions = {}
+): CationNorm {
+  calculateCIPWNorm(oxides, options);
+  return lastCationNorm;
 }
 
 /**
