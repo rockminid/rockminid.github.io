@@ -1,0 +1,31 @@
+node_modules/
+build/
+dist/
+dist-server/
+dist-ssr/
+coverage/
+.DS_Store
+*.log
+*.local
+.env*
+!.env.example
+
+# Capacitor native projects (regenerate with `npx cap add android`)
+android/
+ios/
+
+# Bulk GEOROC source CSVs (~210 MB) must never be committed. Publish them as
+# a GitHub Release asset or a Zenodo archive and point the ingest script at
+# them instead. The DERIVED library in public/data/ IS committed: it is the
+# app's reference dataset and only a few hundred kB.
+/data/
+/georoc-raw/
+../georoc-raw/
+*.csv.gz
+RockMin_GEOROC_*Staged*.csv
+2024-12-SGFTFN_*.csv
+2026-09-*JETOA_*.csv
+
+# Local Firebase / secrets
+firebase-applet-config.json
+.firebase/
