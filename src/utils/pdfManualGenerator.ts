@@ -323,7 +323,10 @@ export async function generateRockMinManualPDF(): Promise<void> {
     ['Application Field', 'Specification & Metadata Details'],
     [
       ['Application', 'RockMin ID — Mineral & Rock Geochemical Identification Engine'],
-      ['Creator & Author', 'Created by Kishan Tiwari (https://kishangeo.github.io)'],
+      ['Creator & Author', 'Kishan Tiwari, Indian Institute of Technology Kharagpur (https://kishangeo.github.io)'],
+      ['DOI', 'https://doi.org/10.5281/zenodo.22875578 — concept DOI, always the latest version. Version DOI for v2.4.0: 10.5281/zenodo.22875579'],
+      ['Live application', 'https://rockminid.github.io/ — source at https://github.com/rockminid/rockminid.github.io'],
+      ['Licence', 'MIT'],
       ['Purpose', 'Major-element geochemical screening, rock/mineral matching, classification diagrams, normative calculations, batch processing and specimen archiving.'],
       ['Target Audience', 'Petrologists, mineralogists, geochemists, planetary scientists, geology students, laboratory technicians, and researchers.'],
       ['Manual Scope', 'Comprehensive documentation of Single Analyzer, Batch CSV Processor, TAS and ternary classification, CIPW normative calculations, reference datasets, and figure export.']
@@ -1489,7 +1492,7 @@ export async function generateRockMinManualPDF(): Promise<void> {
     'External database cross-references have been independently verified at Mindat or RRUFF.',
     'Any AI-generated interpretation has been critically checked by a geologist and declared as such.',
     'Both raw laboratory CSVs and derived RockMin ID exports have been archived.',
-    'Software version (RockMin ID v2.4.0) and citation are recorded in the methods section.'
+    'Software version (RockMin ID v2.4.0) and its Zenodo DOI are recorded in the methods section.'
   ];
 
   checklistItems.forEach((item) => {
@@ -1510,7 +1513,7 @@ export async function generateRockMinManualPDF(): Promise<void> {
   cursorY += 4;
   renderCallout(
     'Suggested Citation & Methods Section Wording for Publications',
-    'Citation: Tiwari, K., & RockMin ID Contributors. (2026). RockMin ID: Automated Geochemical Classifier and Petrological Analysis Platform (Version 2.4.0) [Web Application]. Created by Kishan Tiwari (https://kishangeo.github.io). Calibrated with IUGS Le Maitre (2002) and GEOROC datasets.\n\nMethods wording: "Major-element compositions were screened, normalized and classified using the RockMin ID petrological platform (v2.4.0). Total iron was resolved to a single basis before any other calculation, and major oxide weight percentages were normalized to a 100% volatile-free basis. Volcanic rock names follow the IUGS total alkali-silica classification (Le Bas et al., 1986) with the sub-root rules of Le Maitre (2002, s.2.12.2); alkaline/subalkaline and tholeiitic/calc-alkaline discrimination follows the published Appendix III equations of Irvine and Baragar (1971). Normative mineralogy was calculated following standard CIPW conventions (Cross et al., 1902; Kelsey, 1965), with normative totals and residual silica reported rather than renormalized. Compositional similarity scores order candidate references and are not probabilities. Reference distributions were derived from the GEOROC compilation (DIGIS, Georg-August-Universitaet Goettingen); the original publications are cited separately. Diagnostic figures were generated using RockMin ID vector projections."',
+    'Citation: Tiwari, K. (2026). RockMin ID: Automated Geochemical Classifier and Petrological Analysis Platform (Version 2.4.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.22875578\n\nThat is the CONCEPT DOI, which always resolves to the latest release. To pin the exact release your results were produced with, cite the version DOI instead: 10.5281/zenodo.22875579 for v2.4.0. A CITATION.cff file in the repository carries the same metadata, so GitHub and reference managers can import it directly.\n\nMethods wording: "Major-element compositions were screened, normalized and classified using the RockMin ID petrological platform (v2.4.0; Tiwari, 2026, doi:10.5281/zenodo.22875578). Total iron was resolved to a single basis before any other calculation, and major oxide weight percentages were normalized to a 100% volatile-free basis. Volcanic rock names follow the IUGS total alkali-silica classification (Le Bas et al., 1986) with the sub-root rules of Le Maitre (2002, s.2.12.2); alkaline/subalkaline and tholeiitic/calc-alkaline discrimination follows the published Appendix III equations of Irvine and Baragar (1971). Normative mineralogy was calculated following standard CIPW conventions (Cross et al., 1902; Kelsey, 1965), with normative totals and residual silica reported rather than renormalized. Compositional similarity scores order candidate references and are not probabilities. Reference distributions were derived from the GEOROC compilation (DIGIS, Georg-August-Universitaet Goettingen); the original publications are cited separately. Diagnostic figures were generated using RockMin ID vector projections."',
     'emerald'
   );
 

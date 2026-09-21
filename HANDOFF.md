@@ -344,7 +344,12 @@ In rough priority order.
 
 7. **No component or end-to-end tests.** Coverage is the engine only.
 
-8. **Zenodo DOI.** The in-app Cite tab should point at one.
+8. ~~**Zenodo DOI.**~~ Done. Concept DOI `10.5281/zenodo.22875578`
+   (always latest), version DOI `10.5281/zenodo.22875579` for v2.4.0. Wired
+   into `CITATION.cff`, the README, the in-app Cite tab and the PDF manual.
+   **One thing still to fix:** the Zenodo deposit records the licence as
+   CC-BY-4.0, but the repository ships under MIT. Edit the deposit metadata on
+   Zenodo so the archived record matches.
 
 9. **APK signing.** Regenerate the SHA-256 fingerprint in
    `public/.well-known/assetlinks.json` from your real release keystore
@@ -358,7 +363,8 @@ In rough priority order.
 - [x] ~~Search Console verification~~ — `public/google7ec5781ae9df420f.html`
       is live. Submit `https://rockminid.github.io/sitemap.xml` under
       **Sitemaps** in Search Console to finish indexing setup.
-- [ ] Add a `CITATION.cff` so GitHub shows a citation widget.
+- [x] ~~Add a `CITATION.cff` so GitHub shows a citation widget.~~ — done,
+      carrying the Zenodo DOI and the five papers the engine implements.
 - [ ] **Firebase (optional).** The live site currently runs in **Local
       Mode**, shown in the top-right. Every calculation, diagram, batch run,
       export and the local specimen collection work; only Google sign-in and

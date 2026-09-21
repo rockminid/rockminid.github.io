@@ -1,0 +1,143 @@
+cff-version: 1.2.0
+message: >-
+  If you use RockMin ID in work that you publish, please cite it using the
+  metadata below. Cite the concept DOI for the software in general, or the
+  version DOI under `identifiers` when you need to pin the exact release your
+  results were produced with.
+title: >-
+  RockMin ID: Automated Geochemical Classifier and Petrological Analysis
+  Platform
+abstract: >-
+  A deterministic geochemical classifier and petrological analysis platform.
+  Rocks and minerals are identified from major-element compositions using a
+  full CIPW weight and cation norm, the IUGS total alkali-silica classification
+  with its sub-root naming rules, the published Irvine & Baragar (1971)
+  discriminant equations, ten ternary projections, and structural-formula
+  (APFU) mineral identification. Reference distributions are derived from the
+  full GEOROC archives. No AI is involved in classification: every
+  identification, field assignment and index is a reproducible, unit-tested
+  calculation. Runs entirely in the browser, installs as a PWA, and works
+  offline.
+type: software
+authors:
+  - given-names: Kishan
+    family-names: Tiwari
+    affiliation: Indian Institute of Technology Kharagpur, India
+    website: 'https://kishangeo.github.io'
+version: 2.4.0
+date-released: '2026-09-21'
+doi: 10.5281/zenodo.22875578
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.22875578
+    description: >-
+      Concept DOI, resolving to the latest version. Use this to cite RockMin ID
+      in general.
+  - type: doi
+    value: 10.5281/zenodo.22875579
+    description: Version DOI for release v2.4.0.
+url: 'https://rockminid.github.io/'
+repository-code: 'https://github.com/rockminid/rockminid.github.io'
+license: MIT
+keywords:
+  - petrology
+  - geochemistry
+  - igneous petrology
+  - mineralogy
+  - CIPW norm
+  - TAS diagram
+  - QAPF
+  - AFM diagram
+  - classification
+  - GEOROC
+  - IUGS
+  - electron microprobe
+  - XRF
+references:
+  - type: article
+    title: >-
+      A chemical classification of volcanic rocks based on the total
+      alkali-silica diagram
+    authors:
+      - family-names: Le Bas
+        given-names: M. J.
+      - family-names: Le Maitre
+        given-names: R. W.
+      - family-names: Streckeisen
+        given-names: A.
+      - family-names: Zanettin
+        given-names: B.
+    journal: Journal of Petrology
+    volume: 27
+    issue: 3
+    start: 745
+    end: 750
+    year: 1986
+    doi: 10.1093/petrology/27.3.745
+  - type: book
+    title: 'Igneous Rocks: A Classification and Glossary of Terms'
+    editors:
+      - family-names: Le Maitre
+        given-names: R. W.
+    publisher:
+      name: Cambridge University Press
+    edition: '2'
+    year: 2002
+    isbn: '9780521619486'
+  - type: article
+    title: >-
+      A guide to the chemical classification of the common volcanic rocks
+    authors:
+      - family-names: Irvine
+        given-names: T. N.
+      - family-names: Baragar
+        given-names: W. R. A.
+    journal: Canadian Journal of Earth Sciences
+    volume: 8
+    issue: 5
+    start: 523
+    end: 548
+    year: 1971
+    doi: 10.1139/e71-055
+  - type: article
+    title: >-
+      A quantitative chemico-mineralogical classification and nomenclature of
+      igneous rocks
+    authors:
+      - family-names: Cross
+        given-names: C. W.
+      - family-names: Iddings
+        given-names: J. P.
+      - family-names: Pirsson
+        given-names: L. V.
+      - family-names: Washington
+        given-names: H. S.
+    journal: The Journal of Geology
+    volume: 10
+    issue: 6
+    start: 555
+    end: 690
+    year: 1902
+    doi: 10.1086/621030
+  - type: article
+    title: To each plutonic rock its proper name
+    authors:
+      - family-names: Streckeisen
+        given-names: A.
+    journal: Earth-Science Reviews
+    volume: 12
+    issue: 1
+    start: 1
+    end: 33
+    year: 1976
+    doi: 10.1016/0012-8252(76)90052-0
+  - type: database
+    title: >-
+      GEOROC: Geochemistry of Rocks of the Oceans and Continents
+    authors:
+      - name: >-
+          DIGIS, Georg-August-Universitaet Goettingen
+    url: 'https://georoc.eu'
+    notes: >-
+      Source of the derived reference library. Users must cite GEOROC and the
+      original publications for any analysis derived from it.
