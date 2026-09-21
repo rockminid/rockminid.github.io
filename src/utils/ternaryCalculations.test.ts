@@ -3,6 +3,7 @@ import { OxideComposition } from '../types/geochem';
 import {
   AFM_IGNEOUS_CONFIG,
   afmBoundaryF,
+  FELDSPAR_CONFIG,
   QAPF_PLUTONIC_CONFIG,
   TERNARY_SYSTEMS_MAP,
   ternaryToCartesian,
@@ -11,6 +12,7 @@ import {
 import {
   ALBITE,
   ANORTHITE,
+  FW,
   N_MORB,
   ORTHOCLASE,
   QUARTZ,
@@ -157,6 +159,62 @@ describe('QAPF plutonic projection', () => {
 // ---------------------------------------------------------------------------
 // System registry integrity
 // ---------------------------------------------------------------------------
+
+describe('feldspar ternary projection', () => {
+  // Or = KAlSi3O8, Ab = NaAlSi3O8, An = CaAl2Si2O8. One mole of K2O or Na2O
+  // makes TWO moles of feldspar, one mole of CaO makes one, so the projection
+  // must work in cation moles. These anchors come from the formulae, not from
+  // what the implementation happens to return.
+
+  /** Builds a wt% feldspar composition from end-member molar proportions. */
+  function feldspar(or: number, ab: number, an: number): OxideComposition {
+    return {
+      K2O: (or / 2) * FW.K2O,
+      Na2O: (ab / 2) * FW.Na2O,
+      CaO: an * FW.CaO,
+      Al2O3: ((or + ab) / 2 + an) * FW.Al2O3,
+      SiO2: (3 * or + 3 * ab + 2 * an) * FW.SiO2,
+    };
+  }
+
+  it('projects an equimolar Ab-An plagioclase to An50', () => {
+    const { b, c } = FELDSPAR_CONFIG.projectOxides(feldspar(0, 0.5, 0.5));
+    expect(c).toBeCloseTo(50, 1);
+    expect(b).toBeCloseTo(50, 1);
+    expect(Math.abs(c - 50)).toBeLessThanOrEqual(0.5);
+  });
+
+  it('projects pure albite to Ab100', () => {
+    const { a, b, c } = FELDSPAR_CONFIG.projectOxides(ALBITE);
+    expect(b).toBeCloseTo(100, 4);
+    expect(a).toBeCloseTo(0, 6);
+    expect(c).toBeCloseTo(0, 6);
+  });
+
+  it('projects pure anorthite to An100 and pure orthoclase to Or100', () => {
+    expect(FELDSPAR_CONFIG.projectOxides(ANORTHITE).c).toBeCloseTo(100, 4);
+    expect(FELDSPAR_CONFIG.projectOxides(ORTHOCLASE).a).toBeCloseTo(100, 4);
+  });
+
+  it('projects an equimolar Or-Ab alkali feldspar to Or50 Ab50', () => {
+    const { a, b } = FELDSPAR_CONFIG.projectOxides(feldspar(0.5, 0.5, 0));
+    expect(a).toBeCloseTo(50, 1);
+    expect(b).toBeCloseTo(50, 1);
+  });
+
+  it('names an equimolar Ab-An plagioclase andesine/labradorite at the An50 limit', () => {
+    expect(FELDSPAR_CONFIG.projectOxides(feldspar(0, 0.5, 0.5)).fieldName).toMatch(
+      /Andesine|Labradorite/
+    );
+  });
+
+  it('is linear in An across the plagioclase join', () => {
+    for (const an of [0.1, 0.3, 0.7, 0.9]) {
+      const { c } = FELDSPAR_CONFIG.projectOxides(feldspar(0, 1 - an, an));
+      expect(c, `An${an * 100}`).toBeCloseTo(an * 100, 1);
+    }
+  });
+});
 
 describe('ternary system registry', () => {
   it('every system projects to a normalized triple', () => {

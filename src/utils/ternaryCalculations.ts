@@ -1089,9 +1089,16 @@ export const FELDSPAR_CONFIG: TernarySystemConfig = {
     },
   ],
   projectOxides: (oxides: OxideComposition) => {
-    const k = (oxides.K2O || 0) / 94.2;
-    const na = (oxides.Na2O || 0) / 61.98;
-    const ca = (oxides.CaO || 0) / 56.08;
+    // Or/Ab/An are molar proportions of KAlSi3O8 / NaAlSi3O8 / CaAl2Si2O8, so
+    // the alkalis must be converted to CATION moles: one mole of K2O yields
+    // two moles of orthoclase and one mole of Na2O two moles of albite, while
+    // one mole of CaO yields only one mole of anorthite. Dividing the oxide
+    // weights straight through (the previous behaviour) halved Or and Ab
+    // relative to An and reported An50 plagioclase as Ab33/An67. Same error
+    // class as the one fixed in QAPF_PLUTONIC_CONFIG.projectOxides above.
+    const k = (2 * (oxides.K2O || 0)) / 94.196;
+    const na = (2 * (oxides.Na2O || 0)) / 61.979;
+    const ca = (oxides.CaO || 0) / 56.077;
 
     const sum = k + na + ca;
     if (sum <= 0.001) return { a: 33.3, b: 33.3, c: 33.3, fieldName: 'Undetermined' };
