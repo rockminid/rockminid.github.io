@@ -132,6 +132,23 @@ claimed the `github-pages` environment; the deploy job was only briefly
 queued while the environment was provisioned. Pushing the workflow was
 sufficient.
 
+### Files that must be served at the site root
+
+Anything that has to appear at `https://rockminid.github.io/<file>` —
+search-engine verification files, `robots.txt`, `sitemap.xml`, a `CNAME` for
+a custom domain — belongs in **`public/`**, not the repository root.
+
+Vite copies `public/` into `dist/` verbatim, and `dist/` is what gets
+published. A file sitting at the repository root is **not** served, because
+Pages publishes the build artifact rather than the repo.
+
+Already handled this way:
+
+- `public/google7ec5781ae9df420f.html` — Google Search Console verification.
+  It was first uploaded to the repo root, where it would never have been
+  served, and was moved.
+- `public/.well-known/assetlinks.json` — Android App Links.
+
 ### What is deliberately NOT in the repo
 
 - **`georoc-raw/`** — 2.8 GB of extracted GEOROC CSV, one directory up. Only
