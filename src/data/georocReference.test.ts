@@ -27,6 +27,7 @@ interface Entry {
   tectonicSettings: Array<{ value: string; n: number }>;
   groupTags: Array<{ value: string; n: number }>;
   variants?: Array<{ value: string; n: number }>;
+  hostRocks?: Array<{ value: string; n: number }>;
 }
 
 function load(kind: 'rocks' | 'minerals'): Entry[] {
@@ -47,7 +48,7 @@ describe('GEOROC library — structural integrity', () => {
     // root, because those distinctions are petrographic and a chemical
     // classifier cannot act on them.
     expect(rocks.length).toBeGreaterThan(50);
-    expect(minerals.length).toBeGreaterThan(20);
+    expect(minerals.length).toBeGreaterThan(40);
     // Every group must be big enough for its percentiles to mean something.
     const median = [...rocks].map((e) => e.n).sort((a, b) => a - b)[Math.floor(rocks.length / 2)];
     expect(median).toBeGreaterThan(50);
@@ -63,9 +64,18 @@ describe('GEOROC library — structural integrity', () => {
     for (const e of [...rocks, ...minerals]) expect(e.name).not.toContain(',');
   });
 
-  it('is built from a large number of analyses', () => {
+  it('is built from the full GEOROC archives, not a subset', () => {
     const total = rocks.reduce((a, e) => a + e.n, 0) + minerals.reduce((a, e) => a + e.n, 0);
-    expect(total).toBeGreaterThan(200_000);
+    expect(total).toBeGreaterThan(1_000_000);
+  });
+
+  it('records host rocks for mineral groups', () => {
+    const ol = M.get('OLIVINE')!;
+    expect(ol.hostRocks?.length).toBeGreaterThan(0);
+  });
+
+  it('normalizes awkward GEOROC spellings', () => {
+    for (const e of minerals) expect(e.name).not.toContain('(AL)');
   });
 
   it('respects the minimum group size', () => {
@@ -121,6 +131,17 @@ describe('GEOROC library — geological sanity', () => {
     ['ALKALI BASALT', 42, 50],
     ['BASANITE', 40, 48],
     ['TRACHYTE', 57, 70],
+    // Types only present once the full archive is ingested.
+    ['KOMATIITE', 42, 52],
+    ['BONINITE', 52, 62],
+    ['PICRITE', 40, 52],
+    ['NEPHELINITE', 36, 46],
+    ['PHONOLITE', 52, 62],
+    ['TONALITE', 58, 70],
+    ['SYENITE', 55, 68],
+    ['HARZBURGITE', 38, 48],
+    ['DUNITE', 33, 45],
+    ['TRONDHJEMITE', 66, 78],
   ];
 
   for (const [name, lo, hi] of expectedSiO2) {
@@ -168,6 +189,12 @@ describe('GEOROC library — geological sanity', () => {
     ['GARNET', 'SiO2', 34, 44],
     ['AMPHIBOLE', 'SiO2', 36, 55],
     ['NEPHELINE', 'Al2O3', 28, 38],
+    ['BIOTITE', 'SiO2', 32, 42],
+    ['SANIDINE', 'SiO2', 60, 70],
+    ['ALBITE', 'SiO2', 63, 72],
+    ['MAGNETITE', 'SiO2', 0, 3],
+    ['CHROMITE', 'Cr2O3', 20, 65],
+    ['APATITE', 'CaO', 40, 60],
   ];
 
   for (const [name, ox, lo, hi] of expectedMineral) {
@@ -179,6 +206,23 @@ describe('GEOROC library — geological sanity', () => {
       expect(p50).toBeLessThanOrEqual(hi);
     });
   }
+
+  it('puts ultramafic rocks below basalt in silica', () => {
+    const si = (n: string) => R.get(n)!.oxides.SiO2!.p50 as number;
+    expect(si('HARZBURGITE')).toBeLessThan(si('BASALT'));
+    expect(si('DUNITE')).toBeLessThan(si('HARZBURGITE'));
+  });
+
+  it('gives komatiite far more MgO than basalt', () => {
+    expect(R.get('KOMATIITE')!.oxides.MgO!.p50!).toBeGreaterThan(
+      R.get('BASALT')!.oxides.MgO!.p50! * 1.5
+    );
+  });
+
+  it('gives albite and sanidine the right alkali', () => {
+    expect(M.get('ALBITE')!.oxides.Na2O!.p50!).toBeGreaterThan(M.get('ALBITE')!.oxides.K2O!.p50!);
+    expect(M.get('SANIDINE')!.oxides.K2O!.p50!).toBeGreaterThan(2);
+  });
 
   it('gives ilmenite and spinel almost no silica', () => {
     expect(M.get('ILMENITE')!.oxides.SiO2!.p50!).toBeLessThan(2);
@@ -198,8 +242,10 @@ describe('GEOROC library — provenance', () => {
     expect(m.source).toContain('GEOROC');
     expect(m.license).toMatch(/cite/i);
     expect(m.method).toMatch(/percentile|p10|p50/i);
-    expect(m.knownSourceDefect).toMatch(/45-column/);
-    expect(m.datasets.rocks.accepted).toBeGreaterThan(100_000);
+    expect(m.sourceKind).toBe('full-archive');
+    expect(m.parser).toMatch(/RFC 4180|streaming/i);
+    expect(m.datasets.rocks.accepted).toBeGreaterThan(200_000);
+    expect(m.datasets.minerals.accepted).toBeGreaterThan(500_000);
   });
 });
 

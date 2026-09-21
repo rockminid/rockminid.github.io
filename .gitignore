@@ -19,8 +19,12 @@ ios/
 # them instead. The DERIVED library in public/data/ IS committed: it is the
 # app's reference dataset and only a few hundred kB.
 /data/
+/georoc-raw/
+../georoc-raw/
 *.csv.gz
 RockMin_GEOROC_*Staged*.csv
+2024-12-SGFTFN_*.csv
+2026-09-*JETOA_*.csv
 
 # Local Firebase / secrets
 firebase-applet-config.json

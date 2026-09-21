@@ -1,34 +1,35 @@
 {
-  "generated": "2026-09-20",
-  "source": "GEOROC (DIGIS, Georg-August-Universitaet Goettingen) staged extracts",
-  "license": "GEOROC data are provided under the terms of the DIGIS/GEOROC data policy. Users must cite GEOROC and the original publications for any analysis used.",
-  "method": "Per-name distributions (n, p10/p25/p50/p75/p90) of major oxides. Rows filtered to whole-rock or volcanic-glass material with a 97-103 wt% major-oxide total counting iron once, and at least 6 (rocks) or 4 (minerals) reported oxides.",
-  "minimumGroupSize": 25,
-  "knownSourceDefect": "Staged CSVs declare a 45-column header but emit 39 columns; the six volatile columns (H2O, CO2, F, Cl, SO3, S) are named and never written. Columns are remapped positionally by this script.",
+  "generated": "2026-09-21",
+  "source": "GEOROC precompiled archives (DIGIS, Georg-August-Universitaet Goettingen)",
+  "sourceKind": "full-archive",
+  "license": "GEOROC data are provided under the DIGIS/GEOROC data policy. Users must cite GEOROC and the original publications for any analysis used.",
+  "method": "Per-group distributions (n, p10/p25/p50/p75/p90) of major oxides. Rocks are grouped by GEOROC's own precompiled file name; minerals by the MINERAL column. Rows filtered to whole-rock or glass material (rocks), a 97-103 wt% major-oxide total counting iron once, and at least 6 (rocks) or 4 (minerals) reported oxides.",
+  "minimumGroupSize": 30,
+  "parser": "Streaming RFC 4180 reader; GEOROC files contain quoted fields with embedded newlines and a trailing bibliography block, both of which defeat line-based parsing.",
   "datasets": {
     "rocks": {
-      "files": 10,
-      "rows": 463489,
-      "rejectedShape": 392,
-      "rejectedName": 558,
-      "rejectedMaterial": 56873,
-      "rejectedTotal": 82270,
-      "rejectedSparse": 57165,
-      "accepted": 266231,
-      "groups": 74,
-      "bytes": 93973
+      "files": 90,
+      "rows": 463716,
+      "nonTabular": 54803,
+      "rejectedMaterial": 2576,
+      "rejectedSparse": 57314,
+      "rejectedTotal": 82348,
+      "rejectedName": 0,
+      "accepted": 266675,
+      "groups": 69,
+      "bytes": 89804
     },
     "minerals": {
-      "files": 5,
-      "rows": 108852,
-      "rejectedShape": 0,
-      "rejectedName": 559,
+      "files": 19,
+      "rows": 1930973,
+      "nonTabular": 35991,
       "rejectedMaterial": 0,
-      "rejectedTotal": 16146,
-      "rejectedSparse": 44772,
-      "accepted": 47375,
-      "groups": 36,
-      "bytes": 35725
+      "rejectedSparse": 816108,
+      "rejectedTotal": 124942,
+      "rejectedName": 0,
+      "accepted": 953932,
+      "groups": 74,
+      "bytes": 88976
     }
   }
 }

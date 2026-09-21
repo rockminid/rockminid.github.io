@@ -872,12 +872,42 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
                   >
                     {isRock ? (bestMatch.reference as any).category : (bestMatch.reference as any).group}
                   </span>
-                  <span className="text-xs text-stone-400 font-mono bg-stone-950/70 px-2 py-0.5 rounded border border-stone-850">
+                  <span
+                    className="text-xs text-stone-400 font-mono bg-stone-950/70 px-2 py-0.5 rounded border border-stone-850"
+                    title={`Le Bas et al. (1986) TAS field${classificationReport.tasCode ? ` ${classificationReport.tasCode}` : ''}. ${classificationReport.tasWarnings?.join(' ') || ''}`}
+                  >
                     TAS: {classificationReport.tasField}
                   </span>
+                  {/* IUGS sub-root name: the name a petrologist would actually
+                      use, derived from the norm (Le Maitre 2002, s.2.12.2). */}
+                  {classificationReport.tasSubRootName &&
+                    classificationReport.tasSubRootName !== classificationReport.tasField && (
+                      <span
+                        className="text-xs font-mono bg-emerald-950/50 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800/50"
+                        title={classificationReport.tasSubRoot?.reasons.join(' ')}
+                      >
+                        {classificationReport.tasSubRootName}
+                      </span>
+                    )}
+                  {classificationReport.tasSubRoot?.potassiumSeries && (
+                    <span
+                      className="text-xs text-stone-400 font-mono bg-stone-950/70 px-2 py-0.5 rounded border border-stone-850"
+                      title="Peccerillo & Taylor series, as redrawn in Le Maitre (2002) Fig. 2.17. High-K is not the same as potassic."
+                    >
+                      {classificationReport.tasSubRoot.potassiumSeries}
+                    </span>
+                  )}
                   <span className="text-xs text-stone-400 font-mono bg-stone-950/70 px-2 py-0.5 rounded border border-stone-850">
                     Affinity: {classificationReport.alkaliAffinity}
                   </span>
+                  {classificationReport.tasSubRoot?.peralkaline && (
+                    <span
+                      className="text-xs font-mono bg-fuchsia-950/50 text-fuchsia-300 px-2 py-0.5 rounded border border-fuchsia-800/50"
+                      title={`Peralkaline index (molar Na2O+K2O / Al2O3) = ${classificationReport.tasSubRoot.peralkalineIndex?.toFixed(2)}`}
+                    >
+                      peralkaline
+                    </span>
+                  )}
                 </div>
 
                 <h2 className="text-2xl sm:text-3xl font-bold text-stone-100 tracking-tight">

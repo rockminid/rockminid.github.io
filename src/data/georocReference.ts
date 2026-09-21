@@ -40,6 +40,8 @@ interface GeorocEntry {
   tectonicSettings: Array<{ value: string; n: number }>;
   groupTags: Array<{ value: string; n: number }>;
   variants?: Array<{ value: string; n: number }>;
+  /** For minerals: the rocks the analyses came from. */
+  hostRocks?: Array<{ value: string; n: number }>;
 }
 
 interface GeorocFile {
@@ -65,6 +67,8 @@ export interface GeorocProvenance {
   /** Per-oxide percentile statistics, for the "why this match" panel. */
   stats: Record<string, OxideStats>;
   tectonicSettings: Array<{ value: string; n: number }>;
+  /** For minerals: the host rocks these analyses came from. */
+  hostRocks?: Array<{ value: string; n: number }>;
 }
 
 const ROCK_CLASS_BY_TAG: Record<string, RockClass> = {
@@ -127,6 +131,26 @@ function toRockReference(e: GeorocEntry): RockReference {
 }
 
 const MINERAL_GROUP_BY_TAG: Record<string, MineralGroup> = {
+  // Keys are GEOROC precompiled file names, lower-cased.
+  OLIVINES: 'Nesosilicate',
+  GARNETS: 'Nesosilicate',
+  ZIRCONS: 'Nesosilicate',
+  TITANITES: 'Nesosilicate',
+  CLINOPYROXENES: 'Inosilicate',
+  ORTHOPYROXENES: 'Inosilicate',
+  PYROXENES: 'Inosilicate',
+  AMPHIBOLES: 'Inosilicate',
+  FELDSPARS: 'Tectosilicate',
+  FELDSPATHOIDES: 'Tectosilicate',
+  QUARTZ: 'Tectosilicate',
+  MICA: 'Phyllosilicate',
+  'CLAY MINERALS': 'Phyllosilicate',
+  SPINELS: 'Oxide',
+  ILMENITES: 'Oxide',
+  PEROVSKITES: 'Oxide',
+  CARBONATES: 'Carbonate',
+  APATITES: 'Phosphate',
+  CHALCOGENIDES: 'Sulfide',
   olivines: 'Nesosilicate',
   garnets: 'Nesosilicate',
   zircons: 'Nesosilicate',
@@ -150,6 +174,7 @@ const MINERAL_GROUP_BY_TAG: Record<string, MineralGroup> = {
 
 function toMineralReference(e: GeorocEntry): MineralReference {
   const tag = e.groupTags[0]?.value ?? '';
+  const hosts = e.hostRocks ?? [];
   return {
     id: `georoc-min-${e.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
     name: titleCase(e.name),
@@ -161,13 +186,23 @@ function toMineralReference(e: GeorocEntry): MineralReference {
       min: medians(e.oxides, 'p10'),
       max: medians(e.oxides, 'p90'),
     },
-    description: `Median of ${e.n.toLocaleString()} GEOROC microprobe analyses. The quoted range is the 10th-90th percentile of that population, so it reflects real solid-solution spread rather than an ideal formula.`,
+    description:
+      `Median of ${e.n.toLocaleString()} GEOROC microprobe analyses; the quoted range is the ` +
+      `10th-90th percentile of that population, so it reflects real solid-solution spread ` +
+      `rather than an ideal formula.` +
+      (hosts.length
+        ? ` Most commonly analysed in ${hosts.slice(0, 3).map((h) => h.value.toLowerCase()).join(', ')}.`
+        : ''),
+    typicalOccurrence: hosts.length
+      ? hosts.slice(0, 4).map((h) => titleCase(h.value)).join(', ')
+      : undefined,
     source: 'GEOROC',
     georoc: {
       analyses: e.n,
       variants: e.variants ?? [],
       stats: e.oxides,
       tectonicSettings: e.tectonicSettings,
+      hostRocks: hosts,
     },
   } as MineralReference & { source: string; georoc: GeorocProvenance };
 }
