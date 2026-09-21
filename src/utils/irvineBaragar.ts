@@ -252,6 +252,88 @@ export function classifyAFM(oxides: OxideComposition, cnorm?: CationNorm): AFMRe
 }
 
 // ---------------------------------------------------------------------------
+// Fig. 4 — Alkaline vs. subalkaline, on the Ne'-Ol'-Q' normative projection
+// ---------------------------------------------------------------------------
+
+/**
+ * The authors' Summary (p.541) ranks their three alkaline/subalkaline
+ * diagrams: "Fig. 3 is simplest; Fig. 4 is considered most reliable for
+ * general purposes; and Fig. 5 may be best for basalts."
+ *
+ * Fig. 4 projects the cation norm onto the base of the basalt tetrahedron:
+ *
+ *   Ne' = Ne + 3/5 Ab
+ *   Ol' = Ol + 3/4 Opx
+ *   Q'  = Q  + 2/5 Ab + 1/4 Opx
+ *
+ * Appendix III gives the criterion directly. The rock is subalkaline if
+ *
+ *   X_Ne' <= 1.5 X_Q'                where X_Ol' = 40-100
+ *   X_Ne' <  15 + 0.8889 X_Q'        where X_Ol' = 0-40
+ *
+ *   given X_Ol' + X_Ne' + X_Q' = 100.
+ */
+export interface NeOlQResult {
+  /** Normalized projection coordinates summing to 100. */
+  Ne: number;
+  Ol: number;
+  Q: number;
+  subalkaline: boolean;
+  /** Which of the two published inequalities was applied. */
+  rule: 'Ol′ 40-100' | 'Ol′ 0-40' | 'undetermined';
+  notes: string[];
+}
+
+export function classifyNeOlQ(oxides: OxideComposition, cnorm?: CationNorm): NeOlQResult {
+  const cn = cnorm ?? calculateCationNorm(oxides);
+  const p = cn.percent;
+
+  const ne = p.Ne || 0;
+  const ab = p.Ab || 0;
+  const ol = p.Ol || 0;
+  const opx = p.Hy || 0;
+  const q = p.Q || 0;
+
+  const nePrime = ne + 0.6 * ab;
+  const olPrime = ol + 0.75 * opx;
+  const qPrime = q + 0.4 * ab + 0.25 * opx;
+  const total = nePrime + olPrime + qPrime;
+
+  if (total <= 1e-9) {
+    return {
+      Ne: 0, Ol: 0, Q: 0, subalkaline: true, rule: 'undetermined',
+      notes: ['The cation norm contains none of Ne, Ab, Ol, Opx or Q, so the Fig. 4 projection is undefined.'],
+    };
+  }
+
+  const XNe = (nePrime / total) * 100;
+  const XOl = (olPrime / total) * 100;
+  const XQ = (qPrime / total) * 100;
+
+  let subalkaline: boolean;
+  let rule: NeOlQResult['rule'];
+  if (XOl >= 40) {
+    subalkaline = XNe <= 1.5 * XQ;
+    rule = 'Ol′ 40-100';
+  } else {
+    subalkaline = XNe < 15 + 0.8889 * XQ;
+    rule = 'Ol′ 0-40';
+  }
+
+  return {
+    Ne: Number(XNe.toFixed(2)),
+    Ol: Number(XOl.toFixed(2)),
+    Q: Number(XQ.toFixed(2)),
+    subalkaline,
+    rule,
+    notes: [
+      `Ne′ ${XNe.toFixed(1)}, Ol′ ${XOl.toFixed(1)}, Q′ ${XQ.toFixed(1)} (cation norm).`,
+      'Irvine & Baragar consider Fig. 4 their most reliable general alkaline/subalkaline discriminant.',
+    ],
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Fig. 7 — Classification of subalkaline rocks
 // ---------------------------------------------------------------------------
 
@@ -284,8 +366,12 @@ export function classifySubalkaline(cn: CationNorm): string {
 export interface IBClassification {
   /** Step 1: peralkaline if the norm contains acmite. */
   peralkaline: boolean;
-  /** Step 2 (Fig. 3). */
+  /** Step 2 (Fig. 3), the simplest discriminant. */
   subalkaline: boolean;
+  /** Step 2 by Fig. 4, which the authors call their most reliable. */
+  neOlQ: NeOlQResult;
+  /** True when Fig. 3 and Fig. 4 disagree. */
+  discriminantsDisagree: boolean;
   /** Step 3a (Figs. 2 / 6). Only meaningful for subalkaline rocks. */
   series: MagmaticSeries;
   /** Step 3b (Fig. 7). Only meaningful for subalkaline rocks. */
@@ -327,6 +413,16 @@ export function classifyIrvineBaragar(oxides: OxideComposition): IBClassificatio
     );
   }
 
+  const neOlQ = classifyNeOlQ(oxides, cn);
+  const disagree = neOlQ.rule !== 'undetermined' && neOlQ.subalkaline !== sub.subalkaline;
+  if (disagree) {
+    notes.push(
+      `Fig. 3 (alkalies-silica) says ${sub.subalkaline ? 'subalkaline' : 'alkaline'} but Fig. 4 ` +
+        `(Ne′-Ol′-Q′ normative projection) says ${neOlQ.subalkaline ? 'subalkaline' : 'alkaline'}. ` +
+        'The authors regard Fig. 4 as the more reliable of the two.'
+    );
+  }
+
   const afm = classifyAFM(oxides, cn);
 
   let series: MagmaticSeries = afm.series;
@@ -344,6 +440,8 @@ export function classifyIrvineBaragar(oxides: OxideComposition): IBClassificatio
   return {
     peralkaline,
     subalkaline: sub.subalkaline,
+    neOlQ,
+    discriminantsDisagree: disagree,
     series,
     rockName,
     afm,

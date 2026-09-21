@@ -27,11 +27,13 @@ import { resolveIron, suggestedFe2O3FeORatio } from './iron';
 import { calculateCIPWNorm, differentiationIndex, normativeAn } from './cipw';
 import { classifyTAS, tasApplicability, irvineBaragarBoundary } from './tas';
 import { refineTASName, isPicrite, SubRootResult } from './tasSubRoot';
+import { structureSpecFor, structuralFormula, endMembers } from './mineralStoichiometry';
 
 export { resolveIron, suggestedFe2O3FeORatio } from './iron';
 export { calculateCIPWNorm, normToPercent, CIPW_PHASE_ORDER, differentiationIndex, normativeAn } from './cipw';
 export { classifyTAS, tasApplicability, irvineBaragarBoundary, TAS_VOLCANIC_FIELDS } from './tas';
 export { refineTASName, peralkalineIndex, potassiumSeries, isSodic, isPicrite } from './tasSubRoot';
+export { structureSpecFor, structuralFormula, endMembers, STRUCTURE_SPECS } from './mineralStoichiometry';
 
 export const MAJOR_OXIDES = [
   'SiO2',
@@ -342,7 +344,23 @@ function scoreRock(
   };
 }
 
-/** Similarity of a sample to an ideal mineral composition. */
+/**
+ * Similarity of a sample to a mineral reference.
+ *
+ * Combines two independent lines of evidence:
+ *
+ *  1. Compositional distance in oxide space, as before.
+ *  2. STRUCTURAL FIT — the analysis is recast as cations per formula unit on
+ *     the candidate's oxygen basis, and judged on whether the cation total
+ *     and tetrahedral occupancy come out right.
+ *
+ * (2) is what a petrologist actually uses, and it is the discriminating one.
+ * A forsteritic and a fayalitic olivine are far apart in oxide space yet both
+ * give 3.00 cations on 4 oxygens; a pyroxene of similar SiO2 gives 4.00 on 6
+ * oxygens and is excluded. Oxide distance alone cannot see that difference,
+ * which is why it ranked hornblende and omphacite as the best "mineral"
+ * matches for a whole-rock basalt.
+ */
 function scoreMineral(
   sample: OxideComposition,
   mineral: MineralReference
@@ -353,6 +371,8 @@ function scoreMineral(
   criteria: string[];
   analytesUsed: number;
   contributions: Array<{ oxide: string; delta: number; contribution: number }>;
+  structural?: ReturnType<typeof structuralFormula>;
+  structuralFit?: number;
 } {
   const criteria: string[] = [];
   const deltas: Record<string, number> = {};
@@ -396,19 +416,56 @@ function scoreMineral(
   }
 
   const distance = totalWeight > 0 ? Math.sqrt(sumWeightedSq / totalWeight) : Infinity;
-  // Minerals have tighter ideal compositions than rock averages, so the
-  // characteristic distance is smaller.
-  const similarity = similarityFromDistance(distance, 2.2);
+
+  // --- Structural test ---------------------------------------------------
+  const spec = structureSpecFor(mineral.name, mineral.group);
+  let structural: ReturnType<typeof structuralFormula> | undefined;
+  let structuralFit: number | undefined;
+
+  // Structure is weighted far above composition, because that is the way
+  // round these two pieces of evidence actually work for minerals. Solid
+  // solution moves oxide weights a long way (Fo90 against an Fo80 reference
+  // is 4.95 units of distance) while leaving the structure untouched, so a
+  // composition-led score buries correct identifications. Structure, by
+  // contrast, excludes wrong candidates cleanly.
+  const compositional = similarityFromDistance(distance, 6.0) / 100;
+  let similarity: number;
+
+  if (spec) {
+    structural = structuralFormula(sample, spec);
+    structuralFit = structural.fit;
+    similarity = 100 * Math.pow(structuralFit, 0.7) * Math.pow(Math.max(compositional, 1e-6), 0.3);
+
+    if (structuralFit > 0.6) {
+      criteria.push(
+        `Normalizes to ${structural.cationSum.toFixed(2)} cations on ${spec.oxygenBasis} oxygens ` +
+          `(ideal ${spec.idealCations}), so the structural formula fits.`
+      );
+      const em = endMembers(mineral.name, structural);
+      if (em) criteria.push(`${em.label}: ${em.value}`);
+    } else if (structuralFit < 0.2) {
+      criteria.push(
+        `Does NOT normalize to this structure: ${structural.cationSum.toFixed(2)} cations on ` +
+          `${spec.oxygenBasis} oxygens against an ideal of ${spec.idealCations}.`
+      );
+    }
+  } else {
+    // No structural expectation on file; fall back to composition alone and
+    // discount it, since the identification rests on weaker evidence.
+    similarity = 100 * compositional * 0.8;
+  }
 
   contributions.sort((a, b) => b.contribution - a.contribution);
 
   return {
     distance: Number(distance.toFixed(2)),
-    similarity,
+    similarity: Math.max(0, Math.min(99, similarity)),
     deltas,
     criteria,
     analytesUsed,
     contributions: contributions.slice(0, 8),
+    structural,
+    structuralFit,
   };
 }
 
@@ -496,6 +553,8 @@ export function identifyGeochemicalSample(
       distance: s.distance,
       analytesUsed: s.analytesUsed,
       contributions: s.contributions,
+      structuralFormula: s.structural,
+      structuralFit: s.structuralFit,
       deltaOxides: s.deltas,
       matchedCriteria: s.criteria,
       notes: `${ref.formula} (${ref.group})`,
@@ -505,14 +564,26 @@ export function identifyGeochemicalSample(
   const topRock = rockScores[0];
   const topMineral = mineralScores[0];
 
-  // Sample type, when the user has declared it, decides which library wins.
+  // Whether the analysis is a whole rock or a single mineral grain.
+  //
+  // When the user has declared it, that decides. Otherwise the STRUCTURAL
+  // test decides, which is what it is good for: a single mineral normalizes
+  // cleanly to its formula, a whole rock does not normalize to any mineral
+  // formula at all. Compositional similarity cannot make this call — a pure
+  // olivine analysis is compositionally almost identical to a dunite.
+  const topMineralFit = topMineral?.structuralFit ?? 0;
+  let inferredType: SampleType = sampleType;
   let bestOverall: MatchScore = topRock;
+
   if (sampleType === 'mineral') {
     bestOverall = topMineral;
   } else if (sampleType === 'whole_rock' || sampleType === 'glass' || sampleType === 'melt_inclusion') {
     bestOverall = topRock;
-  } else if (topMineral && topMineral.similarity >= (topRock ? topRock.similarity + 5 : 50)) {
+  } else if (topMineral && topMineralFit >= 0.75 && topMineral.similarity >= (topRock?.similarity ?? 0) - 12) {
+    // Normalizes cleanly to a mineral formula and is compositionally
+    // competitive, so treat it as a mineral grain.
     bestOverall = topMineral;
+    inferredType = 'mineral';
   }
 
   // Score separation: how clearly the leader is ahead of the runner-up.
@@ -520,14 +591,14 @@ export function identifyGeochemicalSample(
   const separation =
     pool.length > 1 ? Number((pool[0].similarity - pool[1].similarity).toFixed(1)) : undefined;
 
-  const qualityFlags = assessDataQuality(input, sampleType);
+  const qualityFlags = assessDataQuality(input, inferredType);
   const applicability = tasApplicability({
-    sampleType,
+    sampleType: inferredType,
     loi: input.LOI,
     analyticalTotal: rawTotal,
   });
 
-  const stoichiometry = calculateStoichiometry(normalized, isUltramafic ? 4 : 6, sampleType);
+  const stoichiometry = calculateStoichiometry(normalized, isUltramafic ? 4 : 6, inferredType);
 
   const legacyWarning = qualityFlags.find(
     (f) => f.code === 'low-total' || f.code === 'high-total'
@@ -535,7 +606,8 @@ export function identifyGeochemicalSample(
 
   return {
     sampleName,
-    sampleType,
+    sampleType: inferredType,
+    sampleTypeWasInferred: inferredType !== sampleType,
     inputMode,
     rawTotal,
     normalizedOxides: normalized,

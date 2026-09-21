@@ -199,6 +199,18 @@ export interface MatchScore {
   analytesUsed?: number;
   /** Per-oxide contribution to the distance, for "Why this match?". */
   contributions?: Array<{ oxide: string; delta: number; contribution: number }>;
+  /** Structural formula of the sample recast on this mineral's oxygen basis. */
+  structuralFormula?: {
+    oxygenBasis: number;
+    apfu: Record<string, number>;
+    cationSum: number;
+    tetrahedral: number;
+    deviation: number;
+    fit: number;
+    text: string;
+  };
+  /** 0-1 quality of the structural fit; gates the similarity score. */
+  structuralFit?: number;
   deltaOxides: { [oxide: string]: number }; // sample - reference
   matchedCriteria: string[];
   notes?: string;
@@ -217,6 +229,7 @@ export interface CIPWNorm {
   Ks?: number; // Potassium metasilicate
   Di?: number; // Diopside
   Wo?: number; // Wollastonite
+  Cs?: number; // Larnite / dicalcium silicate (melilitite indicator)
   Hy?: number; // Hypersthene
   Ol?: number; // Olivine
   Mt?: number; // Magnetite
@@ -249,6 +262,9 @@ export type CIPWNormPercent = Record<string, number>;
 export interface ClassificationReport {
   sampleName: string;
   sampleType?: SampleType;
+  /** True when the sample type was inferred from the structural fit rather
+   *  than declared by the user. */
+  sampleTypeWasInferred?: boolean;
   inputMode: InputMode;
   rawTotal: number;
   normalizedOxides: OxideComposition;

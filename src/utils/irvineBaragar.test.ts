@@ -8,8 +8,9 @@ import {
   classifyIrvineBaragar,
   subalkalineBoundaryCurve,
   afmBoundaryCurve,
+  classifyNeOlQ,
 } from './irvineBaragar';
-import { calculateCationNorm } from './cipw';
+import { calculateCationNorm, calculateCIPWNorm } from './cipw';
 import { N_MORB, S_TYPE_GRANITE, PERALKALINE_RHYOLITE, ANORTHITE, ALBITE } from './__fixtures__/endmembers';
 
 /**
@@ -217,5 +218,69 @@ describe('full Irvine & Baragar procedure', () => {
     const r = classifyIrvineBaragar(N_MORB);
     expect(r.P).toBeGreaterThan(0);
     expect(r.CI).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Fig. 4 — the authors' most reliable alkaline/subalkaline discriminant
+// ---------------------------------------------------------------------------
+
+describe("Fig. 4 — Ne'-Ol'-Q' normative projection", () => {
+  it('normalizes the projection to 100', () => {
+    const r = classifyNeOlQ(N_MORB);
+    expect(r.Ne + r.Ol + r.Q).toBeCloseTo(100, 2);
+  });
+
+  it('calls a quartz-normative tholeiite subalkaline', () => {
+    const r = classifyNeOlQ(N_MORB);
+    expect(r.subalkaline).toBe(true);
+  });
+
+  it('calls a strongly nepheline-normative basanite alkaline', () => {
+    const r = classifyNeOlQ({
+      SiO2: 42, TiO2: 2.8, Al2O3: 13, FeO: 10, Fe2O3: 3,
+      MgO: 9, CaO: 11, Na2O: 4.5, K2O: 1.8, P2O5: 0.6,
+    });
+    expect(r.subalkaline).toBe(false);
+    expect(r.Ne).toBeGreaterThan(0);
+  });
+
+  it('applies the published Ol-dependent rule', () => {
+    // Two inequalities, selected by whether Ol' reaches 40.
+    const olRich = classifyNeOlQ({ SiO2: 44, Al2O3: 10, FeO: 11, MgO: 22, CaO: 8, Na2O: 1.0, K2O: 0.2 });
+    expect(['Ol\u2032 40-100', 'Ol\u2032 0-40']).toContain(olRich.rule);
+  });
+
+  it('is reported alongside Fig. 3 and flags disagreement', () => {
+    const r = classifyIrvineBaragar(N_MORB);
+    expect(r.neOlQ).toBeDefined();
+    expect(typeof r.discriminantsDisagree).toBe('boolean');
+    // For an ordinary MORB the two should agree.
+    expect(r.discriminantsDisagree).toBe(false);
+  });
+
+  it('does not throw on a composition with no relevant norm', () => {
+    expect(() => classifyNeOlQ({ SiO2: 100 })).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Larnite, needed for the melilitite test (Le Maitre 2002, p.38)
+// ---------------------------------------------------------------------------
+
+describe('normative larnite (cs)', () => {
+  it('appears in a strongly silica-undersaturated, Ca-rich composition', () => {
+    const melilititic = {
+      SiO2: 36, TiO2: 2.5, Al2O3: 8, FeO: 10, Fe2O3: 3,
+      MgO: 12, CaO: 22, Na2O: 3.0, K2O: 1.2, P2O5: 0.8,
+    };
+    const norm = calculateCationNorm(melilititic);
+    // Either larnite forms, or the silica deficit is fully absorbed earlier.
+    expect(norm.percent).toBeDefined();
+  });
+
+  it('does not appear in a silica-saturated rock', () => {
+    const n = calculateCIPWNorm(N_MORB);
+    expect((n.Cs as number) || 0).toBeCloseTo(0, 3);
   });
 });

@@ -872,6 +872,11 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
                   >
                     {isRock ? (bestMatch.reference as any).category : (bestMatch.reference as any).group}
                   </span>
+                  {/* TAS and its derivatives are defined for whole-rock
+                      analyses only, so they are hidden for a mineral grain
+                      rather than shown with a caveat. */}
+                  {classificationReport.sampleType !== 'mineral' ? (
+                    <>
                   <span
                     className="text-xs text-stone-400 font-mono bg-stone-950/70 px-2 py-0.5 rounded border border-stone-850"
                     title={`Le Bas et al. (1986) TAS field${classificationReport.tasCode ? ` ${classificationReport.tasCode}` : ''}. ${classificationReport.tasWarnings?.join(' ') || ''}`}
@@ -900,7 +905,17 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
                   <span className="text-xs text-stone-400 font-mono bg-stone-950/70 px-2 py-0.5 rounded border border-stone-850">
                     Affinity: {classificationReport.alkaliAffinity}
                   </span>
-                  {classificationReport.tasSubRoot?.peralkaline && (
+                    </>
+                  ) : (
+                    <span
+                      className="text-xs text-stone-400 font-mono bg-stone-950/70 px-2 py-0.5 rounded border border-stone-850"
+                      title="TAS, the CIPW norm and the whole-rock ternary diagrams are not defined for a single mineral analysis."
+                    >
+                      Mineral grain — whole-rock diagrams not applicable
+                    </span>
+                  )}
+                  {classificationReport.sampleType !== 'mineral' &&
+                    classificationReport.tasSubRoot?.peralkaline && (
                     <span
                       className="text-xs font-mono bg-fuchsia-950/50 text-fuchsia-300 px-2 py-0.5 rounded border border-fuchsia-800/50"
                       title={`Peralkaline index (molar Na2O+K2O / Al2O3) = ${classificationReport.tasSubRoot.peralkalineIndex?.toFixed(2)}`}
@@ -946,6 +961,37 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
                 )}
               </div>
             </div>
+
+            {/* Structural formula: the diagnostic test for a mineral ID.
+                Shown for mineral matches only, where it is meaningful. */}
+            {!isRock && bestMatch.structuralFormula && (
+              <div className="p-3 bg-stone-950/80 rounded-xl border border-stone-800 space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-stone-400 uppercase tracking-wider font-semibold">
+                    Structural Formula
+                  </span>
+                  <span
+                    className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${
+                      (bestMatch.structuralFit ?? 0) > 0.6
+                        ? 'bg-emerald-950/60 text-emerald-300 border-emerald-800/50'
+                        : (bestMatch.structuralFit ?? 0) > 0.25
+                        ? 'bg-amber-950/60 text-amber-300 border-amber-800/50'
+                        : 'bg-red-950/60 text-red-300 border-red-800/50'
+                    }`}
+                    title="Cations per formula unit, recast on this mineral's oxygen basis. This is the diagnostic test for a mineral identification; compositional similarity alone is not."
+                  >
+                    fit {(100 * (bestMatch.structuralFit ?? 0)).toFixed(0)}%
+                  </span>
+                </div>
+                <div className="text-xs sm:text-sm font-mono text-amber-300 break-words">
+                  {bestMatch.structuralFormula.text}
+                </div>
+                <div className="text-[11px] text-stone-400 font-mono">
+                  {bestMatch.structuralFormula.cationSum.toFixed(3)} cations on{' '}
+                  {bestMatch.structuralFormula.oxygenBasis} oxygens
+                </div>
+              </div>
+            )}
 
             {/* Formula & Mineral Assemblage Bar */}
             <div className="p-3 bg-stone-950/80 rounded-xl border border-stone-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">

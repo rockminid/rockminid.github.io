@@ -299,6 +299,18 @@ export function calculateCIPWNorm(
     deficit -= conv * 0.5;
   }
 
+  let cs = 0;
+  if (deficit > 1e-12 && wo > 0) {
+    // (e) Wollastonite -> larnite (dicalcium silicate). 2 CaSiO3 -> Ca2SiO4
+    // releases 1 SiO2, so 2 units of Wo give 1 unit of Cs.
+    // Needed for strongly undersaturated rocks: Le Maitre (2002) p.38 uses
+    // normative cs > 10% to separate melilitites from foidites.
+    const conv = Math.min(wo, deficit * 2);
+    wo -= conv;
+    cs += conv / 2;
+    deficit -= conv / 2;
+  }
+
   const quartz = deficit < 0 ? -deficit : 0;
   const silicaBalance = deficit > 1e-9 ? deficit : 0;
 
@@ -313,6 +325,7 @@ export function calculateCIPWNorm(
   if (an > 0) { add('An', an * (FW.CaO + FW.Al2O3 + 2 * FW.SiO2)); addMol('An', an); }
   if (co > 0) { add('C', co * FW.Al2O3); addMol('C', co); }
   if (wo > 0) { add('Wo', wo * (FW.CaO + FW.SiO2)); addMol('Wo', wo); }
+  if (cs > 0) { add('Cs', cs * (2 * FW.CaO + FW.SiO2)); addMol('Cs', cs); }
 
   if (di > 0) {
     const drawn = mafic.take(di);
@@ -465,6 +478,7 @@ export const CIPW_PHASE_ORDER: Array<[string, string]> = [
   ['Ks', 'Potassium metasilicate'],
   ['Di', 'Diopside'],
   ['Wo', 'Wollastonite'],
+  ['Cs', 'Larnite (dicalcium silicate)'],
   ['Hy', 'Hypersthene'],
   ['Ol', 'Olivine'],
   ['Mt', 'Magnetite'],

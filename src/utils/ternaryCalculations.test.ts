@@ -214,8 +214,10 @@ describe('QAPF subdivision limits (Streckeisen 1976)', () => {
     const cao = (p / 278.2) * 56.077;
     const al2o3 = ((a / 556.6) * 1 + (p / 278.2) * 1) * 101.961;
     const sio2 = ((a / 556.6) * 6 + (p / 278.2) * 2) * 60.084 + q;
-    return QAPF_PLUTONIC_CONFIG.projectOxides({ SiO2: sio2, Al2O3: al2o3, K2O: k2o, CaO: cao })
-      .fieldName;
+    return (
+      QAPF_PLUTONIC_CONFIG.projectOxides({ SiO2: sio2, Al2O3: al2o3, K2O: k2o, CaO: cao })
+        .fieldName ?? ''
+    );
   }
 
   it('changes the name across every plagioclase-ratio limit', () => {
