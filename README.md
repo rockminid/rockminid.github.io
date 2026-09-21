@@ -12,6 +12,7 @@ Everything runs in the browser. It installs as a PWA and works offline.
 
 | Feature | Notes |
 | --- | --- |
+| **Mineral identification** | Structural formula (APFU) on the correct oxygen basis, with end-member proportions (Fo, An-Ab-Or, Wo-En-Fs, Cr#) — not oxide-distance matching |
 | **Single-sample analyzer** | Oxide or element input, live classification, candidate ranking, petrogenetic indices |
 | **IUGS naming** | TAS root name refined to the sub-root name — alkali vs subalkali basalt, basanite vs tephrite, hawaiite vs shoshonite, trachyte vs trachydacite, peralkaline comendite/pantellerite — plus low-K/medium-K/high-K |
 | **Batch processor** | CSV in, classified CSV out, for hundreds of analyses at a time |
@@ -135,6 +136,7 @@ publishing, or Android App Links will silently fail.
 | AFM | Wager & Deer (1939); Irvine & Baragar (1971) |
 | QAPF subdivision limits | Streckeisen (1976), *Earth-Sci. Rev.* 12, 1–33 — f.r. 10/35/65/90 and Q 5/20/60, verified |
 | ASI (A/CNK) | Shand (1943); Zen (1986) |
+| Mineral structural formulae | Deer, Howie & Zussman — standard oxygen bases |
 
 ### Similarity scores are not probabilities
 
@@ -200,7 +202,7 @@ the exact ingestion parameters and record counts.
 npm test
 ```
 
-200 tests. The geochemistry is anchored on exact stoichiometric end-members: a
+242 tests. The geochemistry is anchored on exact stoichiometric end-members: a
 CIPW norm of pure albite must return ~100% normative albite, pure anorthite must
 give ASI exactly 1.00, and so on. The suite also asserts mass balance and silica
 closure for every norm, checks the published Le Bas TAS field boundaries, and

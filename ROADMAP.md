@@ -171,18 +171,22 @@ potassic trachybasalt/shoshonite/latite, trachyte vs trachydacite,
 peralkaline varieties with the comenditic/pantelleritic split, nephelinite
 and melanephelinite, low-K/medium-K/high-K, and picrite.
 
-Still open:
+**Mineral identification rewritten to use structural formulae** (`mineralStoichiometry.ts`).
+Analyses are recast as cations per formula unit on each candidate's oxygen
+basis and judged on cation total, tetrahedral occupancy and required site
+occupancies. Scoring is structure-led with composition secondary. An Fo90
+analysis now identifies as forsterite at 85/100 with a 98% structural fit;
+a whole-rock basalt's best mineral match fell from 61 to 23. Sample type is
+inferred from the structural fit when not declared.
 
-- **Mineral identification uses oxide-space distance**, not site occupancy /
-  APFU normalization, which is how EPMA mineral identification is properly
-  done. `calculateStoichiometry` already computes APFU and marks it
-  inapplicable for whole rocks; wiring it into mineral matching is next, and
-  is now the single weakest part of the app.
-- **Fig. 4** (the Ne'-Ol'-Q' normative projection, which Irvine & Baragar call
-  their most reliable alkaline/subalkaline discriminant) is not implemented.
-  The cation norm it needs now exists, so this is straightforward.
-- **Melilitite / kalsilite checks** for TAS field F (Le Maitre p.38) need
-  normative cs (larnite), which the CIPW module does not yet allocate.
+**Fig. 4 implemented** — the Ne'-Ol'-Q' normative projection Irvine & Baragar
+call their most reliable discriminant, from their Appendix III inequalities.
+Reported alongside Fig. 3 with an explicit flag when the two disagree.
+
+**Normative larnite (Cs) added** to the CIPW desilication cascade, which the
+melilitite test needs.
+
+Still open: see HANDOFF.md section 8.
 
 ### Stage 06 — Batch and plot studio
 
