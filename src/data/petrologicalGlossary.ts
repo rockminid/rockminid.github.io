@@ -143,8 +143,8 @@ export const PETROLOGICAL_GLOSSARY: GlossaryTerm[] = [
     acronym: 'ASI / A/CNK',
     category: 'Geochemical Indices',
     definition:
-      'The molar ratio of alumina to the sum of calcium and alkali oxides in granitic and felsic rocks.',
-    formula: 'A/CNK = Al₂O₃ / (CaO + Na₂O + K₂O) (molar)',
+      'The molar ratio of alumina to the sum of calcium and alkali oxides in granitic and felsic rocks. RockMin ID applies the apatite correction, subtracting 1.67 × P₂O₅ to remove the calcium locked in Ca₅(PO₄)₃; omitting it systematically under-reports ASI for apatite-bearing calcic rocks. A rock is reported as peraluminous only when ASI > 1 AND the CIPW norm actually yields corundum.',
+    formula: 'A/CNK = Al₂O₃ / (CaO − 1.67·P₂O₅ + Na₂O + K₂O) (molar oxide ratio)',
     significance:
       'Distinguishes Peraluminous (ASI > 1.0, typical of S-type granites from pelitic crustal sources; contains corundum/biotite/garnet) from Metaluminous (ASI < 1.0 and A/NK > 1.0; I-type hornblende-bearing) and Peralkaline (A/NK < 1.0; aegirine/riebeckite).',
     reference: 'Shand (1927); Chappell & White (1974)',
