@@ -23,6 +23,7 @@ Everything runs in the browser. It installs as a PWA and works offline.
 | **Specimen collection** | Saved locally; synced to the cloud when signed in |
 | **Google sign-in** | Optional — see [Cloud features](#cloud-features-optional) |
 | **Feedback** | In-app submission, stored locally and mirrored to Firestore when configured |
+| **SEO** | Generated `sitemap.xml` and `robots.txt`, canonical link, Open Graph card |
 | **Export** | CSV, diagram images, and a generated PDF user manual |
 | **AI interpretation** | Optional narrative petrogenesis; falls back to a deterministic rule engine |
 

@@ -39,6 +39,7 @@ full GEOROC archives.
 | Entry chunk | 470 kB (was 1.88 MB) |
 | Reference library | 234 references from 1,220,127 GEOROC analyses |
 | Cloud features | Off — running in Local Mode, see section 9 |
+| SEO | `sitemap.xml`, `robots.txt`, canonical link; Search Console verified |
 
 ### Toolchain
 
@@ -148,6 +149,29 @@ Already handled this way:
   It was first uploaded to the repo root, where it would never have been
   served, and was moved.
 - `public/.well-known/assetlinks.json` — Android App Links.
+
+`sitemap.xml` and `robots.txt` are the exception: they are **generated at
+build time**, not committed, by the Vite plugin in `scripts/lib/seo.mjs`.
+That keeps `lastmod` equal to the date of the deploy that produced it, rather
+than a committed date that silently rots.
+
+### The sitemap has exactly one URL, deliberately
+
+RockMin ID is a single-page application. The tabs (Analyzer, Batch, TAS,
+Ternary, Dataset, Collection) are React state, not routes, so the entire app
+lives at `https://rockminid.github.io/`.
+
+Listing `/tas`, `/batch` and the rest would be actively harmful: those paths
+do not exist, so the SPA fallback (`404.html`) serves the same document for
+every one of them, and a search engine reads that as duplicate content.
+
+If real routing is added later, extend `SITE_PAGES` in `scripts/lib/seo.mjs`
+and the sitemap grows automatically. `src/utils/seo.test.ts` asserts the
+current count, so that change is a deliberate one rather than a silent drift.
+
+The site origin comes from `VITE_SITE_URL` (default
+`https://rockminid.github.io`). Change it in one place if you move to a
+custom domain — the canonical link, the sitemap and robots.txt all follow.
 
 ### What is deliberately NOT in the repo
 
@@ -331,6 +355,9 @@ In rough priority order.
 ## 9. Post-launch checklist
 
 - [x] ~~Push and enable Pages~~ — done, site is live and verified.
+- [x] ~~Search Console verification~~ — `public/google7ec5781ae9df420f.html`
+      is live. Submit `https://rockminid.github.io/sitemap.xml` under
+      **Sitemaps** in Search Console to finish indexing setup.
 - [ ] Add a `CITATION.cff` so GitHub shows a citation widget.
 - [ ] **Firebase (optional).** The live site currently runs in **Local
       Mode**, shown in the top-right. Every calculation, diagram, batch run,

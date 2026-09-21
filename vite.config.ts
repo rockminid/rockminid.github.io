@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import { seoPlugin } from './scripts/lib/seo.mjs';
 
 /**
  * BASE_PATH controls where the app is served from.
@@ -18,6 +19,8 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const base = env.VITE_BASE_PATH || '/';
   const isCapacitor = env.VITE_BUILD_TARGET === 'capacitor';
+  // Absolute origin, used for the canonical link, sitemap and robots.txt.
+  const siteUrl = (env.VITE_SITE_URL || 'https://rockminid.github.io').replace(/\/+$/, '');
   const resolvedBase = isCapacitor ? './' : base;
 
   return {
@@ -25,6 +28,9 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       tailwindcss(),
+      // Emits sitemap.xml and robots.txt into the build, with lastmod
+      // stamped at build time so it cannot go stale.
+      ...(isCapacitor ? [] : [seoPlugin({ siteUrl })]),
       VitePWA({
         registerType: 'autoUpdate',
         // A relative manifest/scope keeps the PWA valid under a subpath.
