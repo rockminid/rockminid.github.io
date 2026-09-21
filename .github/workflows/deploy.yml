@@ -51,10 +51,15 @@ jobs:
 
       - name: Build
         env:
-          # For a PROJECT page (user.github.io/<repo>/) this must be "/<repo>/".
-          # Set the repository variable VITE_BASE_PATH to "/" instead if you
-          # deploy to a user/org page or a custom domain.
-          VITE_BASE_PATH: ${{ vars.VITE_BASE_PATH || format('/{0}/', github.event.repository.name) }}
+          # A repository named "<user>.github.io" is a USER site served at the
+          # domain root, so the base path is "/". Any other repository name is
+          # a PROJECT site served under "/<repo>/". The repository variable
+          # VITE_BASE_PATH overrides both (set it for a custom domain).
+          VITE_BASE_PATH: >-
+            ${{ vars.VITE_BASE_PATH
+                || (endsWith(github.event.repository.name, '.github.io')
+                    && '/'
+                    || format('/{0}/', github.event.repository.name)) }}
           # Optional: define these as repository secrets to enable sign-in,
           # cloud sync and feedback. The build works without them.
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}

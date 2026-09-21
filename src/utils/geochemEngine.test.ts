@@ -310,9 +310,14 @@ describe('classifyTAS', () => {
     });
   }
 
-  it('places 69-70 wt% SiO2 low-alkali rocks in the rhyolite field, not dacite', () => {
-    // The dacite/rhyolite boundary is SiO2 = 69 (Le Bas et al. 1986).
-    expect(classifyTAS(69.5, 6.0).field).toContain('Rhyolite');
+  it('separates dacite from rhyolite along the sloping boundary, not a vertical cut', () => {
+    // Verified against Le Maitre (2002) Fig. 2.15: the O3/R divide is the
+    // line (69,8)-(77,0), so SiO2 = 69 only marks the divide ABOVE 8 wt%
+    // alkalis. Below it, the boundary moves to higher silica.
+    expect(classifyTAS(69.5, 6.0).field).toBe('Dacite'); // below the line
+    expect(classifyTAS(69.5, 9.0).field).toBe('Rhyolite'); // above it
+    expect(classifyTAS(76, 2.0).field).toBe('Rhyolite'); // above the line at 76 (=1.0)
+    expect(classifyTAS(74, 2.0).field).toBe('Dacite'); // below the line at 74 (=3.0)
   });
 
   it('applies the published Irvine & Baragar alkaline boundary', () => {

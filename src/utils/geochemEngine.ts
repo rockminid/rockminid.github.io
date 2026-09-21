@@ -26,10 +26,12 @@ import { elementsToOxides, oxidesToElements } from '../data/stoichiometry';
 import { resolveIron, suggestedFe2O3FeORatio } from './iron';
 import { calculateCIPWNorm, differentiationIndex, normativeAn } from './cipw';
 import { classifyTAS, tasApplicability, irvineBaragarBoundary } from './tas';
+import { refineTASName, isPicrite, SubRootResult } from './tasSubRoot';
 
 export { resolveIron, suggestedFe2O3FeORatio } from './iron';
 export { calculateCIPWNorm, normToPercent, CIPW_PHASE_ORDER, differentiationIndex, normativeAn } from './cipw';
 export { classifyTAS, tasApplicability, irvineBaragarBoundary, TAS_VOLCANIC_FIELDS } from './tas';
+export { refineTASName, peralkalineIndex, potassiumSeries, isSodic, isPicrite } from './tasSubRoot';
 
 export const MAJOR_OXIDES = [
   'SiO2',
@@ -454,6 +456,16 @@ export function identifyGeochemicalSample(
     fe2o3FeoRatio: options.fe2o3FeoRatio,
   });
 
+  // Refine the TAS root name into the sub-root name the IUGS defines for
+  // that field (Le Maitre 2002, sections 2.12.2 and Le Bas et al. 1986,
+  // Table 1): alkali vs subalkali basalt, basanite vs tephrite, hawaiite vs
+  // potassic trachybasalt, trachyte vs trachydacite, peralkaline varieties,
+  // and the low-K / medium-K / high-K series.
+  const subRoot: SubRootResult | undefined = tas.code
+    ? refineTASName(tas.code, tas.field, normalized, cipwNorm)
+    : undefined;
+  const picrite = isPicrite(normalized);
+
   // Curated references plus, once loaded, the GEOROC-derived library.
   const rockLibrary = [...ROCKS_DATASET, ...getGeorocRocks()];
   const mineralLibrary = [...MINERALS_DATASET, ...getGeorocMinerals()];
@@ -530,6 +542,9 @@ export function identifyGeochemicalSample(
     normalizedElements: elements,
     isVolatileFree: true,
     tasField: tas.field,
+    tasSubRootName: picrite ? 'Picrite' : subRoot?.name,
+    tasSubRoot: subRoot,
+    isPicrite: picrite,
     tasCode: tas.code,
     tasOutOfRange: tas.outOfRange,
     tasWarnings: applicability.warnings,

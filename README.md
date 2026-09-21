@@ -66,9 +66,13 @@ deploys on every push to `main`.
 2. In **Settings → Pages**, set **Source** to **GitHub Actions**.
 3. Push to `main`.
 
-For a **project page** (`https://<user>.github.io/<repo>/`) the base path is
-derived from the repository name automatically. For a **user page** or a custom
-domain, set the repository variable `VITE_BASE_PATH` to `/`.
+The base path is derived automatically: a repository named `<user>.github.io`
+is a **user site** served at the domain root (`/`), anything else is a
+**project site** served under `/<repo>/`. For a custom domain, set the
+repository variable `VITE_BASE_PATH` to `/`.
+
+This repository is `rockminid/rockminid.github.io`, so it deploys to
+**https://rockminid.github.io/** at the root.
 
 The workflow also writes `404.html` and `.nojekyll`, which GitHub Pages needs for
 a single-page app to handle deep links correctly.
@@ -207,4 +211,4 @@ See the **Cite** tab in the in-app documentation.
 EarthChem/PetDB, Mindat.org, RRUFF and the USGS remains subject to those
 providers' terms and citation requirements.
 
-Created by [Kishan Tiwari](https://kishangeo.github.io).
+Created by Kishan Tiwari — <https://rockminid.github.io>

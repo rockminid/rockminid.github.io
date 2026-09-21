@@ -255,6 +255,21 @@ export interface ClassificationReport {
   normalizedElements: ElementComposition;
   isVolatileFree: boolean;
   tasField: string;
+  /**
+   * IUGS sub-root name for the TAS field, e.g. "Alkali Basalt" rather than
+   * just "Basalt" (Le Maitre 2002, section 2.12.2).
+   */
+  tasSubRootName?: string;
+  tasSubRoot?: {
+    name: string;
+    potassiumSeries?: 'low-K' | 'medium-K' | 'high-K';
+    peralkalineIndex?: number;
+    peralkaline: boolean;
+    peralkalineType?: 'comenditic' | 'pantelleritic';
+    reasons: string[];
+  };
+  /** MgO > 12 wt% with alkalis < 3 wt% (Le Maitre 2002, p.36). */
+  isPicrite?: boolean;
   tasCode?: string;
   tasOutOfRange?: boolean;
   /** Reasons TAS may not be applicable to this sample. */

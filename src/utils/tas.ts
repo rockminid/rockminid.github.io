@@ -38,8 +38,12 @@ export const TAS_VOLCANIC_FIELDS: TASField[] = [
   {
     code: 'F',
     name: 'Foidite',
+    // Everything left of the (41,7)-(45,9.4)-(48.4,11.5)-(52.5,14) chain.
+    // The 41 wt% SiO2 edge below 7 wt% alkalis is DASHED in the source:
+    // nephelinites and melanephelinites fall in both U1 and F, and are
+    // separated by normative criteria instead (see `refineTASName`).
     vertices: [
-      [35, 9], [35, 20], [52.5, 20], [48.4, 11.5], [45, 9.4], [41, 7], [41, 3], [37, 3], [35, 9],
+      [35, 0], [41, 0], [41, 7], [45, 9.4], [48.4, 11.5], [52.5, 14], [48.1, 16], [35, 16],
     ],
     plutonic: 'Foidolite',
   },
@@ -70,13 +74,23 @@ export const TAS_VOLCANIC_FIELDS: TASField[] = [
   {
     code: 'O3',
     name: 'Dacite',
-    vertices: [[63, 0], [69, 0], [69, 8], [63, 7]],
+    // The dacite/rhyolite divide is the SLOPING line (69,8)-(77,0), not a
+    // vertical cut at 69 wt% SiO2. Digitizing Le Maitre (2002) Fig. 2.15
+    // gives that line a slope of exactly -1 (measured: 70->7.0, 72->5.0,
+    // 74->3.0, 75->2.0, 76->1.0). A silica-rich but alkali-poor rock, say
+    // 74 wt% SiO2 with 2 wt% alkalis, is therefore a DACITE, not a rhyolite.
+    vertices: [[63, 0], [77, 0], [69, 8], [63, 7]],
     plutonic: 'Granodiorite',
   },
   {
     code: 'R',
     name: 'Rhyolite',
-    vertices: [[69, 0], [85, 0], [85, 12], [69, 8]],
+    // Bounded left by the vertical at 69 wt% SiO2 (confirmed in the figure
+    // at 68.99) above the (69,8) node, and below-right by the sloping
+    // dacite boundary. Extended to 85 wt% SiO2 and 16 wt% alkalis beyond the
+    // published axes; `outOfRange` reports when a sample leaves the
+    // published diagram.
+    vertices: [[69, 8], [77, 0], [85, 0], [85, 16], [69, 16]],
     plutonic: 'Granite',
   },
   {
@@ -100,7 +114,9 @@ export const TAS_VOLCANIC_FIELDS: TASField[] = [
   {
     code: 'T',
     name: 'Trachyte / Trachydacite',
-    vertices: [[63, 7], [69, 8], [69, 12], [63, 16.2], [57.6, 11.7]],
+    // Upper-left edge traced from (57.6,11.7) through (61.0,13.5): slope
+    // 0.525 alkalis per wt% SiO2, extrapolated to the 16 wt% ceiling.
+    vertices: [[57.6, 11.7], [63, 7], [69, 8], [69, 16], [65.8, 16]],
     plutonic: 'Syenite / Quartz Monzonite',
   },
   {
@@ -124,7 +140,8 @@ export const TAS_VOLCANIC_FIELDS: TASField[] = [
   {
     code: 'Ph',
     name: 'Phonolite',
-    vertices: [[57.6, 11.7], [63, 16.2], [57.6, 20], [52.5, 20], [52.5, 14]],
+    // Upper-left edge traced from (52.5,14) through (49.2,15.5).
+    vertices: [[52.5, 14], [57.6, 11.7], [65.8, 16], [48.1, 16]],
     plutonic: 'Foid Syenite',
   },
 ];
