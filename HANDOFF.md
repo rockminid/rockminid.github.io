@@ -1,6 +1,10 @@
 # RockMin ID — handoff
 
-Written 2026-09-21. Everything needed to pick this up cold.
+Written 2026-09-21, updated after first deployment. Everything needed to pick
+this up cold.
+
+**The site is live: <https://rockminid.github.io/>** — building and deploying
+from GitHub Actions on every push to `main`.
 
 ---
 
@@ -15,8 +19,10 @@ It started as a Google AI Studio export. The engine has since been rewritten
 against the primary literature and the reference library rebuilt from the
 full GEOROC archives.
 
-**Repo:** `rockminid/rockminid.github.io` → deploys to <https://rockminid.github.io/>
-**Working directory:** `E:\PHD\Meteorites\RockMin ID\rockmin-id_Source code`
+- **Repo:** `rockminid/rockminid.github.io`
+- **Live:** <https://rockminid.github.io/>
+- **Working directory:** `E:/PHD/Meteorites/RockMin ID/rockmin-id_Source code`
+- **Remote:** configured. `git push` from that directory is all that is needed.
 
 ---
 
@@ -28,9 +34,11 @@ full GEOROC archives.
 | Typecheck | clean (`npm run lint`) |
 | Build | clean (`npm run build`) |
 | Full gate | `npm run verify` |
-| Commits | 10, all on `main`, nothing pushed yet |
+| Commits | 21 on `main`, pushed |
+| Deployment | Live, GitHub Actions, verified in a browser with zero console errors |
 | Entry chunk | 470 kB (was 1.88 MB) |
 | Reference library | 234 references from 1,220,127 GEOROC analyses |
+| Cloud features | Off — running in Local Mode, see section 9 |
 
 ### Toolchain
 
@@ -46,56 +54,94 @@ open a fresh terminal or re-add that directory.
 
 ---
 
-## 3. Your immediate question: what to upload to GitHub
+## 3. Deployment
 
-**Do not drag and drop the folder.** Two reasons:
-
-1. GitHub's web uploader silently skips dotfiles and dot-directories on some
-   browsers. You would lose `.github/workflows/deploy.yml` (the entire
-   deployment), `.gitignore` and `.env.example`.
-2. You would upload `node_modules/` (~400 MB, 678 packages) and `dist/`,
-   which must never be in the repo.
-
-**Use git instead.** The repository is already initialised and committed:
+The site deploys automatically. **Push and nothing else:**
 
 ```bash
-git remote add origin https://github.com/rockminid/rockminid.github.io.git
-git branch -M main
-git push -u origin main
+cd "E:/PHD/Meteorites/RockMin ID/rockmin-id_Source code"
+git add -A
+git commit -m "your message"
+git push
 ```
 
-Then **Settings → Pages → Source: GitHub Actions**. The workflow builds,
-typechecks, runs all 242 tests, and deploys. First deploy takes ~2 minutes.
+`.github/workflows/deploy.yml` then typechecks, runs all 242 tests, builds,
+and publishes. **A failing test blocks the deploy**, which is the point. A run
+takes about two minutes; watch it at
+<https://github.com/rockminid/rockminid.github.io/actions>.
 
-### If you must use drag and drop
+Base path is derived automatically: a repo named `<user>.github.io` is a user
+site served at `/`, anything else is a project site at `/<repo>/`. Override
+with the repository variable `VITE_BASE_PATH` (set it to `/` for a custom
+domain).
 
-Upload **only** these, and create `.github/workflows/` manually through
-GitHub's "Add file → Create new file" (type the path with slashes, which is
-the only way to make directories in the web UI):
+### Never use GitHub's web uploader
 
+This cost a broken deployment once already — see section 3.1. Drag and drop
+uploads only the files at the top level, silently skips dot-directories, and
+strips the leading dot from names you type. Use `git push`.
+
+### 3.1 The first deployment failure, and what it teaches
+
+The first attempt used drag and drop and put **19 of 98 files** on the remote.
+Only the top level arrived: `src/`, `public/`, `scripts/` and `.github/` were
+all missing, and `.github` became `github` because the UI stripped the dot, so
+Actions never saw the workflow.
+
+With no workflow, Pages fell back to its **built-in Jekyll pipeline**, which
+publishes the repository root verbatim. Visitors were served the *source*
+`index.html`, whose entry point is:
+
+```html
+<script type="module" src="/src/main.tsx"></script>
 ```
-src/            public/         scripts/
-index.html      package.json    package-lock.json
-vite.config.ts  vitest.config.ts  tsconfig.json
-server.ts       capacitor.config.ts  build-apk.sh
-firestore.rules  README.md  ROADMAP.md  HANDOFF.md
-LICENSE  MOBILE_BUILD_GUIDE.md  security_spec.md
-.gitignore  .env.example  .github/workflows/deploy.yml
+
+Browsers cannot execute TypeScript/JSX, so the page rendered blank with no
+obvious error.
+
+**Diagnosing this again, if it ever recurs.** One command tells you which
+`index.html` is being served:
+
+```bash
+curl -s https://rockminid.github.io/ | grep -o 'src="[^"]*"'
 ```
 
-**Never upload:** `node_modules/`, `dist/`, `dist-server/`,
-`firebase-applet-config.json` (old AI Studio credentials), `.env.local`,
-`bun.lock`.
+- `/assets/index-<hash>.js` → the built site. Correct.
+- `/src/main.tsx` → the raw repository. The build never deployed.
+
+Then confirm the cause:
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" \
+  https://raw.githubusercontent.com/rockminid/rockminid.github.io/main/.github/workflows/deploy.yml
+
+curl -s -o /dev/null -w "%{http_code}\n" https://rockminid.github.io/package.json
+```
+
+A 404 on the workflow, or a **200 on `package.json`** (the repo root is being
+published), pins it down.
+
+**The fix applied:** the remote history was *merged*, not force-overwritten,
+so the web-upload commits are preserved; the stray `github/` directory was
+removed; `master` was renamed to `main`; all 98 files pushed.
+
+**One correction worth recording:** during the incident it looked as though
+GitHub Pages had to be switched from "Deploy from a branch" to "GitHub
+Actions" by hand. It did not. GitHub made that switch itself once a workflow
+claimed the `github-pages` environment; the deploy job was only briefly
+queued while the environment was provisioned. Pushing the workflow was
+sufficient.
 
 ### What is deliberately NOT in the repo
 
 - **`georoc-raw/`** — 2.8 GB of extracted GEOROC CSV, one directory up. Only
   needed to re-run the ingest. Safe to delete; the two zips are the archive.
 - **`RockMin_Improvement steps/data/`** — 210 MB of staged CSV, superseded.
-- The derived library in `public/data/` (~180 kB) **is** committed. That is
-  the app's reference dataset.
+- `node_modules/`, `dist/`, `firebase-applet-config.json` (old AI Studio
+  credentials), `.env.local`.
 
----
+The derived library in `public/data/` (~180 kB) **is** committed. That is the
+app's reference dataset, and the site fetches it at runtime.
 
 ## 4. Architecture
 
@@ -230,11 +276,12 @@ records the exact ingestion parameters.
 
 In rough priority order.
 
-1. **Mobile information architecture** (improvement-pack Stage 07). The PWA
-   installs and works offline, but the UI is still the desktop layout. The
-   prompt asks for bottom navigation, a step-by-step Analyze wizard, 48 dp
-   touch targets, pinch-zoom full-screen diagrams and card layouts instead of
-   wide tables. This is the largest remaining piece of work.
+1. **Mobile information architecture** (improvement-pack Stage 07). Now the
+   single largest remaining piece of work, and the most visible: the site is
+   public, so phone visitors get the desktop layout shrunk down. The PWA
+   installs and works offline already. Stage 07 asks for bottom navigation, a
+   step-by-step Analyze wizard, 48 dp touch targets, pinch-zoom full-screen
+   diagrams, and card layouts instead of wide tables.
 
 2. **"Why this match?" panel.** `MatchScore.contributions` already carries
    the per-oxide breakdown and `structuralFormula` the APFU. Nothing renders
@@ -264,14 +311,19 @@ In rough priority order.
 
 ---
 
-## 9. Before the site goes public
+## 9. Post-launch checklist
 
-- [ ] Push and enable Pages (section 3).
-- [ ] Create your own Firebase project if you want sign-in, cloud sync and
-      feedback. Add the `VITE_FIREBASE_*` repository secrets, deploy
-      `firestore.rules`, and restrict the API key to your domains. Without
-      this the app runs in **Local Mode** and says so — everything except
-      cloud sync works.
+- [x] ~~Push and enable Pages~~ — done, site is live and verified.
+- [ ] Add a `CITATION.cff` so GitHub shows a citation widget.
+- [ ] **Firebase (optional).** The live site currently runs in **Local
+      Mode**, shown in the top-right. Every calculation, diagram, batch run,
+      export and the local specimen collection work; only Google sign-in and
+      cloud sync are off. To enable them: create a Firebase project, turn on
+      Authentication (Google) and Firestore, deploy `firestore.rules`, add the
+      `VITE_FIREBASE_*` values as **repository secrets** (Settings → Secrets
+      and variables → Actions), and restrict the API key to
+      `rockminid.github.io` in the Google Cloud console. The workflow already
+      passes those secrets through; a push then redeploys with cloud enabled.
 - [ ] Decide on the AI interpretation. It needs a server to hold the Gemini
       key. Without one the deterministic rule engine runs instead, which is
       fine. **Never put a Gemini key in a `VITE_*` variable** — those are
@@ -312,7 +364,18 @@ npm run preview        # serve the built app
 npm run verify         # lint + test + build — run before every commit
 npm run ingest:georoc -- --src ../georoc-raw   # rebuild the library
 npm run build:apk      # Capacitor Android sync
+
+git push               # deploy: runs the full gate, then publishes
 ```
+
+### Verifying a deployment
+
+```bash
+curl -s https://rockminid.github.io/ | grep -o 'src="[^"]*"'
+```
+
+Expect `/assets/index-<hash>.js`. Seeing `/src/main.tsx` means the build did
+not deploy — see section 3.1.
 
 Build for a subpath (only if the repo is renamed away from
 `rockminid.github.io`):
