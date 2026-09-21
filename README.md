@@ -13,6 +13,7 @@ Everything runs in the browser. It installs as a PWA and works offline.
 | Feature | Notes |
 | --- | --- |
 | **Single-sample analyzer** | Oxide or element input, live classification, candidate ranking, petrogenetic indices |
+| **IUGS naming** | TAS root name refined to the sub-root name — alkali vs subalkali basalt, basanite vs tephrite, hawaiite vs shoshonite, trachyte vs trachydacite, peralkaline comendite/pantellerite — plus low-K/medium-K/high-K |
 | **Batch processor** | CSV in, classified CSV out, for hundreds of analyses at a time |
 | **TAS diagram** | Le Bas et al. (1986) volcanic fields, Middlemost (1994) plutonic equivalents |
 | **Ternary diagrams** | AFM (igneous and metamorphic), QAPF and APF (plutonic and volcanic), pyroxene quadrilateral, feldspar, ultramafic, basalt tetrahedron |
@@ -122,7 +123,9 @@ publishing, or Android App Links will silently fail.
 
 | Calculation | Reference |
 | --- | --- |
-| TAS volcanic classification | Le Bas, Le Maitre, Streckeisen & Zanettin (1986), *J. Petrol.* 27, 745–750 |
+| TAS volcanic classification | Le Bas, Le Maitre, Streckeisen & Zanettin (1986), *J. Petrol.* 27, 745–750 — all 14 published intersection coordinates verified |
+| TAS sub-root names, K-series | Le Maitre (2002), *Igneous Rocks*, 2nd edn, §2.12.2, pp.36–38 |
+| Comenditic / pantelleritic split | Macdonald (1974), via Le Maitre (2002) Fig. 2.18 |
 | TAS plutonic equivalents | Middlemost (1994), *Earth-Sci. Rev.* 37, 215–224 |
 | Alkaline / subalkaline divide | Irvine & Baragar (1971), *Can. J. Earth Sci.* 8, 523–548, Appendix III eq. for Fig. 3 |
 | Tholeiitic / calc-alkaline divide | Irvine & Baragar (1971), Appendix III eq. for Figs. 2 and 6 |
@@ -130,7 +133,7 @@ publishing, or Android App Links will silently fail.
 | CIPW norm | Cross, Iddings, Pirsson & Washington (1902); Kelsey (1965); Le Maitre (2002) |
 | Fe³⁺/Fe²⁺ estimation | Middlemost (1989), *Chem. Geol.* 77, 19–26 |
 | AFM | Wager & Deer (1939); Irvine & Baragar (1971) |
-| QAPF | IUGS, Streckeisen (1976); Le Maitre (2002) |
+| QAPF subdivision limits | Streckeisen (1976), *Earth-Sci. Rev.* 12, 1–33 — f.r. 10/35/65/90 and Q 5/20/60, verified |
 | ASI (A/CNK) | Shand (1943); Zen (1986) |
 
 ### Similarity scores are not probabilities
@@ -143,23 +146,43 @@ runner-up alongside it, and flags a match as ambiguous when that gap is small.
 
 ### Reference library
 
-Matching runs against **201 reference compositions**:
+Matching runs against **234 reference compositions**:
 
 - **91 curated entries** — hand-written rock and mineral compositions with
   descriptions, type localities and external database cross-links.
-- **110 GEOROC population distributions** — derived from **313,606 real
+- **143 GEOROC population distributions** — derived from **1,220,607 real
   analyses**, each reduced to a median and a 10th–90th percentile band per
   oxide, so a match reports "within the observed range of N analyses" rather
   than proximity to one hand-picked number.
 
-The GEOROC library is built offline by `npm run ingest:georoc`, ships as
-127 kB of JSON in `public/data/`, is fetched after first paint and is
-precached for offline use. If it fails to load the app says so and falls back
-to the curated set.
+| | groups | analyses |
+| --- | ---: | ---: |
+| Rocks | 69 | 266,675 |
+| Minerals | 74 | 953,932 |
+
+Rocks are grouped by GEOROC's own precompiled file name, which is an
+authoritative curation — so the library covers komatiite, boninite, adakite,
+picrite, lherzolite, harzburgite, dunite, nephelinite, lamprophyre,
+trondhjemite and the full IUGS sub-root series, not just the common types.
+Minerals keep every analysis (olivine n=244,015; plagioclase n=202,631;
+clinopyroxene n=171,414) and record the host rocks they were analysed in.
+
+The library is built offline, ships as ~180 kB of JSON in `public/data/`, is
+fetched after first paint and is precached for offline use. If it fails to
+load the app says so and falls back to the curated set.
 
 ```bash
-npm run ingest:georoc -- --src "../RockMin_Improvement steps/data"
+npm run ingest:georoc -- --src ../georoc-raw
 ```
+
+Expects `<src>/rocks/*.csv` and `<src>/minerals/*.csv` from the GEOROC
+precompiled downloads.
+
+> **Note on the source files.** GEOROC's rock archive uses bare CR line
+> endings while the mineral archive uses CRLF, and both contain quoted fields
+> with embedded newlines plus a trailing bibliography block. The ingester uses
+> a character-level RFC 4180 parser for exactly this reason; a line-based
+> reader silently collapses every rock file into a single row.
 
 Bulk GEOROC CSVs (~210 MB) must never be committed or bundled; `.gitignore`
 excludes them. Publish them as a GitHub Release asset or a Zenodo archive and
@@ -177,7 +200,7 @@ the exact ingestion parameters and record counts.
 npm test
 ```
 
-159 tests. The geochemistry is anchored on exact stoichiometric end-members: a
+200 tests. The geochemistry is anchored on exact stoichiometric end-members: a
 CIPW norm of pure albite must return ~100% normative albite, pure anorthite must
 give ASI exactly 1.00, and so on. The suite also asserts mass balance and silica
 closure for every norm, checks the published Le Bas TAS field boundaries, and
@@ -190,10 +213,16 @@ agree within 0.65 wt% SiO₂ over the range the fit covers. The digitizer was
 itself validated by recovering MacDonald's (1968) line from their Fig. 3A as
 `alk = 0.3738 SiO₂ − 14.859`, against the published `0.37 SiO₂ − 14.43`.
 
+The TAS field polygons are checked against every intersection coordinate
+published in Le Maitre (2002) Fig. 2.15, and proven non-overlapping by an
+exhaustive sweep of the diagram. QAPF subdivision limits are checked against
+Streckeisen (1976).
+
 The GEOROC library is guarded by geological sanity checks — median SiO₂ in the
 accepted range for every named rock type, the volcanic series ordered by silica,
-orthopyroxene poorer in CaO than clinopyroxene — plus a round trip that feeds
-each group's own median back through the engine.
+komatiite far richer in MgO than basalt, ultramafic rocks below basalt in
+silica, orthopyroxene poorer in CaO than clinopyroxene — plus a round trip that
+feeds each group's own median back through the engine.
 
 ---
 

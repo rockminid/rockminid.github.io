@@ -185,3 +185,71 @@ describe('ternary system registry', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// QAPF subdivision limits, verified against the IUGS source:
+//   Streckeisen, A. (1976) "To each plutonic rock its proper name",
+//   Earth-Science Reviews 12, 1-33.
+// ---------------------------------------------------------------------------
+
+describe('QAPF subdivision limits (Streckeisen 1976)', () => {
+  /**
+   * Streckeisen p.10: "we decided for limits at 10-35-65-90" for the
+   * plagioclase ratio along the A-P side, and the quartz divisions are set at
+   * Q = 5 (dashed, syenite vs quartz syenite), Q = 20, and Q = 60 as the
+   * upper limit of the granitoid field.
+   */
+  const PLAGIOCLASE_LIMITS = [10, 35, 65, 90];
+  const QUARTZ_LIMITS = [5, 20, 60];
+
+  /** Builds a Q-A-P composition by choosing Q and the plagioclase ratio. */
+  function nameAt(q: number, plagRatio: number): string {
+    // Compose an oxide mix that norms to roughly the requested Q/A/P, then
+    // read the field the projection assigns.
+    const felsic = 100 - q;
+    const p = (felsic * plagRatio) / 100;
+    const a = felsic - p;
+    // Or = 556.6 g per mol K2O, Ab/An handled via An-rich plagioclase.
+    const k2o = (a / 556.6) * 94.196;
+    const cao = (p / 278.2) * 56.077;
+    const al2o3 = ((a / 556.6) * 1 + (p / 278.2) * 1) * 101.961;
+    const sio2 = ((a / 556.6) * 6 + (p / 278.2) * 2) * 60.084 + q;
+    return QAPF_PLUTONIC_CONFIG.projectOxides({ SiO2: sio2, Al2O3: al2o3, K2O: k2o, CaO: cao })
+      .fieldName;
+  }
+
+  it('changes the name across every plagioclase-ratio limit', () => {
+    for (const limit of PLAGIOCLASE_LIMITS) {
+      const below = nameAt(35, limit - 4);
+      const above = nameAt(35, limit + 4);
+      expect(below, `plagioclase ratio ${limit}: ${below} vs ${above}`).not.toBe(above);
+    }
+  });
+
+  it('uses the published granitoid sequence across the A-P side', () => {
+    // Alkali-feldspar granite -> syenogranite -> monzogranite ->
+    // granodiorite -> tonalite, at f.r. 10 / 35 / 65 / 90.
+    const seq = [5, 20, 50, 80, 95].map((r) => nameAt(35, r));
+    expect(seq[0]).toContain('Alkali-feldspar');
+    expect(seq[1]).toContain('Syenogranite');
+    expect(seq[2]).toContain('Monzogranite');
+    expect(seq[3]).toContain('Granodiorite');
+    expect(seq[4]).toContain('Tonalite');
+  });
+
+  it('changes the name across the quartz limits', () => {
+    for (const limit of QUARTZ_LIMITS) {
+      const below = nameAt(Math.max(1, limit - 4), 50);
+      const above = nameAt(limit + 4, 50);
+      expect(below, `Q = ${limit}: ${below} vs ${above}`).not.toBe(above);
+    }
+  });
+
+  it('places a quartz-poor, alkali-feldspar-rich rock in the syenite field', () => {
+    expect(nameAt(2, 10)).toContain('Syenite');
+  });
+
+  it('places a quartz-poor, plagioclase-rich rock in the diorite/gabbro field', () => {
+    expect(nameAt(2, 95)).toMatch(/Diorite|Gabbro/);
+  });
+});

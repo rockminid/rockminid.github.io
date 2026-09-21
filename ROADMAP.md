@@ -48,8 +48,8 @@ Defects found in the original AI Studio build and corrected:
 - `esbuild ^0.25` incompatible with Vite 8 — `npm install` could not complete.
 
 **Reference data**
-- Library was 39 rocks and 52 minerals, hand-written; now 201 references
-  including 110 GEOROC population distributions from 313,606 analyses.
+- Library was 39 rocks and 52 minerals, hand-written; now 234 references
+  including 143 GEOROC population distributions from 1,220,607 analyses.
 - GEOROC "ROOT, MODIFIER" variant names fragmented the library so badly that
   dacite's own median composition failed to identify as dacite.
 
@@ -66,8 +66,10 @@ Defects found in the original AI Studio build and corrected:
 - No Fe³⁺/Fe²⁺ split, so FeOT-only data always produced zero magnetite.
 - Albite → nepheline conversion mixed a silica deficit with an
   already-converted olivine quantity.
-- TAS used axis-aligned rectangles instead of the Le Bas polygons; 69–70 wt%
-  SiO₂ returned dacite instead of rhyolite.
+- TAS used axis-aligned rectangles instead of the Le Bas polygons.
+- The dacite/rhyolite boundary was a vertical cut at 69 wt% SiO₂ rather than
+  the published sloping line (69,8)–(77,0), misclassifying silica-rich,
+  alkali-poor dacites as rhyolite.
 - Irvine & Baragar boundary used an undocumented quadratic sitting ~1 wt%
   below the published curve, and contradicting its own comment.
 - AFM F apex ignored FeOT, collapsing most GEOROC samples onto the A–M edge;
@@ -83,15 +85,21 @@ Defects found in the original AI Studio build and corrected:
 
 ## Not done
 
-### Stage 02–04 — GEOROC reference database ✅ (static route)
+### Stage 02–04 — GEOROC reference database ✅ (static route, full archive)
 
 **Done, via the static aggregation route (Option A), which needs no server.**
 
-`scripts/ingest-georoc.mjs` streams the staged extracts and reduces each named
-group to a population distribution — n plus p10/p25/p50/p75/p90 per oxide.
-The result is 110 groups from **313,606 accepted analyses** in 127 kB of JSON,
+`scripts/ingest-georoc-raw.mjs` streams the **full GEOROC precompiled
+archives** and reduces each group to a population distribution — n plus
+p10/p25/p50/p75/p90 per oxide. The result is 143 groups from **1,220,607
+accepted analyses** (266,675 rock + 953,932 mineral) in ~180 kB of JSON,
 fetched at runtime and precached for offline use. The library grew from 91
-hand-written entries to 201 references.
+hand-written entries to 234 references.
+
+Rocks are grouped by GEOROC's own precompiled file name rather than the
+free-text ROCK NAME column, which adds komatiite, boninite, adakite, picrite,
+lherzolite, harzburgite, dunite, nephelinite, lamprophyre, trondhjemite and
+the full IUGS sub-root series.
 
 This deliberately does *not* build the server-side query API of the original
 Stage 02 plan. That plan assumed per-sample record retrieval; for a chemical
@@ -106,12 +114,18 @@ does need the hosted API described below.
 | **B. Pages + hosted API** | ✅ frontend | ✅ | ✅ per-record retrieval | needs network |
 | **C. Full-stack host** | ❌ | ✅ | ✅ | ✅ |
 
-**Defect found in the staged CSVs:** every file declares a 45-column header
-but writes only 39 columns — the six volatile columns (H2O, CO2, F, Cl, SO3,
-S) are named and never emitted. A header-based parse silently reads
-`fe_basis` as H2O, `FeO_equiv` as CO2 and `major_oxide_total` as F. The
-ingest script remaps positionally and refuses to run on an unrecognised
-shape. Worth fixing in whatever produced those files.
+**Two source defects found, both worth knowing about:**
+
+1. *Staged CSVs* — every file declares a 45-column header but writes only 39
+   columns; the six volatile columns (H2O, CO2, F, Cl, SO3, S) are named and
+   never emitted, so a header-based parse reads `fe_basis` as H2O. Worth
+   fixing in whatever produced those files. (Superseded now that the full
+   archives are ingested, but `npm run ingest:georoc:staged` still handles it.)
+2. *GEOROC's own rock archive* uses **bare CR line endings** (classic Mac)
+   with no LF anywhere, while the mineral archive uses CRLF. A reader that
+   treats only LF as a row terminator collapses every rock file into one row
+   and produces an empty library. Python's universal-newline decoding hides
+   this entirely; it only appears in a byte-level reader.
 
 **The 210 MB of staged CSV is still excluded from git** (`/data/`,
 `RockMin_GEOROC_*Staged*.csv`). The derived library in `public/data/` is
@@ -142,15 +156,33 @@ Known limitation, documented in `irvineBaragar.ts`: above ~8 wt% total alkalis
 the published Fig. 3 fit diverges from the curve the authors drew (dS/dA rises
 from ~2.8 to ~22). It is flagged at runtime rather than silently corrected.
 
+**TAS verified against Le Bas (1986) and Le Maitre (2002).** All 14 published
+intersection coordinates are reproduced exactly. One real bug was found: the
+dacite/rhyolite divide is the sloping line (69,8)-(77,0), not a vertical cut
+at 69 wt% SiO2, so silica-rich but alkali-poor rocks were being called
+rhyolite instead of dacite.
+
+**QAPF verified against Streckeisen (1976).** The plagioclase-ratio limits
+(10/35/65/90) and quartz limits (5/20/60) already matched the source.
+
+**IUGS sub-root names implemented** from Le Maitre (2002) §2.12.2: alkali vs
+subalkali basalt, basanite vs tephrite, hawaiite/mugearite/benmoreite vs
+potassic trachybasalt/shoshonite/latite, trachyte vs trachydacite,
+peralkaline varieties with the comenditic/pantelleritic split, nephelinite
+and melanephelinite, low-K/medium-K/high-K, and picrite.
+
 Still open:
 
 - **Mineral identification uses oxide-space distance**, not site occupancy /
   APFU normalization, which is how EPMA mineral identification is properly
   done. `calculateStoichiometry` already computes APFU and marks it
-  inapplicable for whole rocks; wiring it into mineral matching is next.
-- **Fig. 4** (the Ne'-Ol'-Q' normative projection, which the authors call the
-  most reliable alkaline/subalkaline discriminant) is not implemented. The
-  cation norm it needs now exists, so this is straightforward.
+  inapplicable for whole rocks; wiring it into mineral matching is next, and
+  is now the single weakest part of the app.
+- **Fig. 4** (the Ne'-Ol'-Q' normative projection, which Irvine & Baragar call
+  their most reliable alkaline/subalkaline discriminant) is not implemented.
+  The cation norm it needs now exists, so this is straightforward.
+- **Melilitite / kalsilite checks** for TAS field F (Le Maitre p.38) need
+  normative cs (larnite), which the CIPW module does not yet allocate.
 
 ### Stage 06 — Batch and plot studio
 
