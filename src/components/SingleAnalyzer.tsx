@@ -24,7 +24,15 @@ import {
   Share2,
   MessageSquarePlus,
 } from 'lucide-react';
-import { InputMode, OxideComposition, ElementComposition, RockReference, MineralReference } from '../types/geochem';
+import {
+  InputMode,
+  OxideComposition,
+  ElementComposition,
+  RockReference,
+  MineralReference,
+  SampleType,
+  SAMPLE_TYPE_LABELS,
+} from '../types/geochem';
 import { MAJOR_OXIDES, identifyGeochemicalSample } from '../utils/geochemEngine';
 import { STOICHIOMETRY_TABLE, oxidesToElements, elementsToOxides } from '../data/stoichiometry';
 import { TasDiagram, TASPoint } from './TasDiagram';
@@ -38,6 +46,8 @@ import {
 import { SpecimenModal } from './SpecimenModal';
 import { getEnrichedSpecimen } from '../data/visualDatabase';
 import { DatabaseReferencesCard } from './DatabaseReferencesCard';
+import { DataQualityPanel } from './DataQualityPanel';
+import { MatchExplanation } from './MatchExplanation';
 import { SaveToCollectionModal } from './SaveToCollectionModal';
 import { NormativeMineralogyCard } from './NormativeMineralogyCard';
 import { generateInterpretation } from '../services/interpretationService';
@@ -177,6 +187,11 @@ const MINOR_OXIDES = ['TiO2', 'MnO', 'P2O5', 'Cr2O3', 'NiO', 'LOI'];
 export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, sampleName: propSampleName }) => {
   const [sampleName, setSampleName] = useState<string>(propSampleName || 'Sample-X1');
   const [inputMode, setInputMode] = useState<InputMode>('oxide');
+  // 'unknown' lets the engine infer rock-versus-mineral from the structural
+  // fit, which it does well. Declaring the type overrides that inference,
+  // which matters most for glasses and melt inclusions: they are whole-rock-
+  // like in composition but are not rocks, and a user knows which they have.
+  const [sampleType, setSampleType] = useState<SampleType>('unknown');
   const [oxides, setOxides] = useState<OxideComposition>(
     initialOxides || {
       SiO2: 50.45,
@@ -226,8 +241,8 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
 
   // Evaluation by Geochemical Identification Engine
   const classificationReport = useMemo(() => {
-    return identifyGeochemicalSample(oxides, sampleName, inputMode);
-  }, [oxides, sampleName, inputMode]);
+    return identifyGeochemicalSample(oxides, sampleName, inputMode, { sampleType });
+  }, [oxides, sampleName, inputMode, sampleType]);
 
   // Standard geochemical ratios and petrological indices.
   //
@@ -391,6 +406,9 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
 
   const bestMatch = classificationReport.bestOverall;
   const isRock = bestMatch.type === 'rock';
+  // The runner-up from the SAME pool the winner came from, so the reported
+  // gap compares like with like rather than a rock against a mineral.
+  const runnerUp = (isRock ? classificationReport.topRocks : classificationReport.topMinerals)[1];
   const enrichedBest = useMemo(() => getEnrichedSpecimen(bestMatch.reference), [bestMatch.reference]);
 
   return (
@@ -552,6 +570,38 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
                     Element wt%
                   </button>
                 </div>
+              </div>
+
+              {/* Sample type. The engine infers this from the structural fit
+                  when left on Auto; declaring it removes the guesswork. */}
+              <div>
+                <label
+                  htmlFor="sample-type"
+                  className="block text-[11px] font-medium text-stone-400 mb-1"
+                >
+                  Sample Type
+                </label>
+                <select
+                  id="sample-type"
+                  value={sampleType}
+                  onChange={(e) => setSampleType(e.target.value as SampleType)}
+                  className="w-full bg-stone-950 border border-stone-700 rounded-md px-2.5 py-1.5 text-sm text-stone-100 focus:outline-none focus:border-amber-500"
+                >
+                  <option value="unknown">Auto-detect</option>
+                  <option value="whole_rock">{SAMPLE_TYPE_LABELS.whole_rock}</option>
+                  <option value="mineral">{SAMPLE_TYPE_LABELS.mineral}</option>
+                  <option value="glass">{SAMPLE_TYPE_LABELS.glass}</option>
+                  <option value="melt_inclusion">{SAMPLE_TYPE_LABELS.melt_inclusion}</option>
+                </select>
+                <p className="mt-1 text-[10px] text-stone-500 leading-snug">
+                  {sampleType === 'unknown'
+                    ? classificationReport.sampleTypeWasInferred
+                      ? `Inferred: ${SAMPLE_TYPE_LABELS[classificationReport.sampleType ?? 'unknown']}. Set it explicitly to override.`
+                      : 'Inferred from how cleanly the analysis fits a mineral formula.'
+                    : sampleType === 'mineral'
+                    ? 'Ranked against minerals only. Whole-rock diagrams are suppressed.'
+                    : 'Ranked against rocks only.'}
+                </p>
               </div>
             </div>
 
@@ -810,13 +860,13 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
               </div>
             </div>
 
-            {classificationReport.dataQualityWarning && (
-              <div className="mt-3 p-2.5 bg-amber-950/40 border border-amber-800/40 rounded-lg text-xs text-amber-300 flex items-start gap-2">
-                <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                <span>{classificationReport.dataQualityWarning}</span>
-              </div>
-            )}
           </div>
+
+          {/* Structured data-quality flags. Replaces the legacy single-string
+              warning, which only ever reported totals and silently discarded
+              the iron-basis, analyte-coverage and LOI flags the engine also
+              produces. */}
+          <DataQualityPanel flags={classificationReport.qualityFlags ?? []} />
 
           {/* Quick Petrological & Geochemical Indices Card */}
           <div className="bg-stone-900 border border-stone-800 rounded-xl p-3.5 shadow-sm">
@@ -1102,6 +1152,13 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
               </div>
             )}
           </div>
+
+          {/* Per-oxide breakdown behind the similarity score. */}
+          <MatchExplanation
+            match={bestMatch}
+            runnerUpSimilarity={runnerUp?.similarity}
+            runnerUpName={runnerUp?.reference.name}
+          />
 
           {/* Results Navigation Bar: Organized Tabs to eliminate clutter */}
           <div className="flex flex-wrap items-center justify-between gap-2 bg-stone-900 border border-stone-800 rounded-xl p-1.5 shadow-sm">
