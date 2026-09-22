@@ -30,16 +30,25 @@ full GEOROC archives.
 
 | | |
 | --- | --- |
-| Tests | **242 passing** (`npm test`) |
+| Version | **2.5.0**, released 22 September 2026 |
+| Tests | **301 passing** (`npm test`) — 276 engine, 25 component/convention |
 | Typecheck | clean (`npm run lint`) |
 | Build | clean (`npm run build`) |
 | Full gate | `npm run verify` |
-| Commits | 21 on `main`, pushed |
 | Deployment | Live, GitHub Actions, verified in a browser with zero console errors |
-| Entry chunk | 470 kB (was 1.88 MB) |
+| Firebase SDK | Out of the entry graph; never downloaded in Local Mode |
 | Reference library | 234 references from 1,220,127 GEOROC analyses |
-| Cloud features | Off — running in Local Mode, see section 9 |
-| SEO | `sitemap.xml`, `robots.txt`, canonical link; Search Console verified |
+| Cloud features | Configured — Google sign-in and Firestore sync are live |
+| SEO | `sitemap.xml`, `robots.txt`, canonical link, JSON-LD; Search Console verified |
+| Security | CSP meta tag; API server rate-limited and input-allowlisted |
+| Concept DOI | `10.5281/zenodo.22875578` — always the latest release |
+| v2.5.0 DOI | `10.5281/zenodo.22891898` |
+
+Releasing: tag `vX.Y.Z`, push the tag, then create a GitHub Release from it.
+Zenodo watches releases, not tags, and mints a new version DOI within about a
+minute. The version itself is written **only** in `package.json`; Vite stamps it
+into the bundle and into the JSON-LD, and two tests fail if `CITATION.cff`
+disagrees or if the version is typed out anywhere in `src/`.
 
 ### Toolchain
 
