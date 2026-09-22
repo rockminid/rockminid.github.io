@@ -1,4 +1,5 @@
 import React from 'react';
+import { APP_VERSION } from '../version';
 
 /**
  * Top-level error boundary.
@@ -47,7 +48,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
     const { error, componentStack } = this.state;
     return [
       `RockMin ID error report`,
-      `Version: 2.4.0`,
+      `Version: ${APP_VERSION}`,
       `Area: ${this.props.area ?? 'application'}`,
       `Time: ${new Date().toISOString()}`,
       `User agent: ${typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'}`,

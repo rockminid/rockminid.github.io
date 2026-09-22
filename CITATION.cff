@@ -1,9 +1,10 @@
 cff-version: 1.2.0
 message: >-
   If you use RockMin ID in work that you publish, please cite it using the
-  metadata below. Cite the concept DOI for the software in general, or the
-  version DOI under `identifiers` when you need to pin the exact release your
-  results were produced with.
+  metadata below. The DOI here is the concept DOI, which always resolves to the
+  latest release; cite it for the software in general. When you need to pin the
+  exact release your results were produced with, cite that release's own
+  version DOI, which is shown on its Zenodo record.
 title: >-
   RockMin ID: Automated Geochemical Classifier and Petrological Analysis
   Platform
@@ -24,8 +25,8 @@ authors:
     family-names: Tiwari
     affiliation: Indian Institute of Technology Kharagpur, India
     website: 'https://kishangeo.github.io'
-version: 2.4.0
-date-released: '2026-09-21'
+version: 2.5.0
+date-released: '2026-09-22'
 doi: 10.5281/zenodo.22875578
 identifiers:
   - type: doi
@@ -33,9 +34,11 @@ identifiers:
     description: >-
       Concept DOI, resolving to the latest version. Use this to cite RockMin ID
       in general.
-  - type: doi
-    value: 10.5281/zenodo.22875579
-    description: Version DOI for release v2.4.0.
+  - type: url
+    value: 'https://zenodo.org/doi/10.5281/zenodo.22875578'
+    description: >-
+      Zenodo record. Each release also has its own version DOI, listed there;
+      cite that one when you need to pin the exact release.
 url: 'https://rockminid.github.io/'
 repository-code: 'https://github.com/rockminid/rockminid.github.io'
 license: MIT

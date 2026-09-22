@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { APP_VERSION, CONCEPT_DOI, CITATION_APA } from '../version';
 import {
   BookOpen,
   FileText,
@@ -142,7 +143,7 @@ export const DocumentationModal: React.FC<DocumentationModalProps> = ({
               <h2 className="text-base sm:text-lg font-bold text-stone-100 tracking-tight flex items-center gap-2">
                 <span>RockMin ID Documentation</span>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-950/80 text-amber-300 border border-amber-800/60 font-medium">
-                  v2.4.0
+                  v{APP_VERSION}
                 </span>
               </h2>
               <p className="text-xs text-stone-400 hidden sm:block">
@@ -275,7 +276,7 @@ export const DocumentationModal: React.FC<DocumentationModalProps> = ({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="text-xl sm:text-2xl font-black text-amber-400">RockMin ID</h3>
                   <span className="text-xs font-mono px-2.5 py-1 rounded bg-stone-850 text-stone-300 border border-stone-750">
-                    Version 2.4.0 • Technical Reference
+                    Version {APP_VERSION} • Technical Reference
                   </span>
                 </div>
                 <p className="text-sm text-stone-200 font-medium">
@@ -693,14 +694,14 @@ export const DocumentationModal: React.FC<DocumentationModalProps> = ({
                   <div>
                     <div className="font-bold text-amber-300 mb-1">Standard Academic Citation:</div>
                     <blockquote className="p-3 bg-stone-900 rounded-lg border border-stone-850 font-mono text-[11px] text-stone-300">
-                      Tiwari, K. (2026). RockMin ID: Automated Geochemical Classifier and Petrological Analysis Platform (Version 2.4.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.22875578 &mdash; created by <a href="https://kishangeo.github.io" target="_blank" rel="noopener noreferrer" className="text-amber-400 underline">Kishan Tiwari</a>.
+                      {CITATION_APA} &mdash; created by <a href="https://kishangeo.github.io" target="_blank" rel="noopener noreferrer" className="text-amber-400 underline">Kishan Tiwari</a>.
                     </blockquote>
                   </div>
 
                   <div>
                     <div className="font-bold text-amber-300 mb-1">Suggested Methods Section Wording:</div>
                     <blockquote className="p-3 bg-stone-900 rounded-lg border border-stone-850 italic text-stone-300">
-                      &ldquo;Major-element compositions were screened and visualized using RockMin ID (v2.4.0, created by Kishan Tiwari). Compositions were evaluated using the application&apos;s normalization, similarity-matching, TAS/ternary projection and normative-mineralogy routines. Final classifications were independently checked against the relevant IUGS classification scheme, analytical conventions and geological observations.&rdquo;
+                      &ldquo;Major-element compositions were screened and visualized using RockMin ID (v{APP_VERSION}, created by Kishan Tiwari). Compositions were evaluated using the application&apos;s normalization, similarity-matching, TAS/ternary projection and normative-mineralogy routines. Final classifications were independently checked against the relevant IUGS classification scheme, analytical conventions and geological observations.&rdquo;
                     </blockquote>
                   </div>
                 </div>
@@ -896,7 +897,7 @@ export const DocumentationModal: React.FC<DocumentationModalProps> = ({
                 <button
                   onClick={() =>
                     handleCopy(
-                      'Tiwari, K. (2026). RockMin ID: Automated Geochemical Classifier and Petrological Analysis Platform (Version 2.4.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.22875578',
+                      CITATION_APA,
                       'apa'
                     )
                   }
@@ -916,7 +917,7 @@ export const DocumentationModal: React.FC<DocumentationModalProps> = ({
                 </button>
               </div>
               <p className="font-mono text-xs text-stone-300 p-2.5 bg-stone-900 rounded border border-stone-850">
-                Tiwari, K. (2026). RockMin ID: Automated Geochemical Classifier and Petrological Analysis Platform (Version 2.4.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.22875578
+                {CITATION_APA}
               </p>
               <div className="text-xs text-stone-400 flex items-center gap-1.5 pt-1">
                 <span>Created by</span>
@@ -947,10 +948,10 @@ export const DocumentationModal: React.FC<DocumentationModalProps> = ({
   author    = {Tiwari, Kishan},
   title     = {RockMin ID: Automated Geochemical Classifier and Petrological Analysis Platform},
   year      = {2026},
-  version   = {2.4.0},
+  version   = {${APP_VERSION}},
   publisher = {Zenodo},
-  doi       = {10.5281/zenodo.22875578},
-  url       = {https://doi.org/10.5281/zenodo.22875578},
+  doi       = {${CONCEPT_DOI}},
+  url       = {https://doi.org/${CONCEPT_DOI}},
   note      = {Calibrated with IUGS Le Maitre (2002) and GEOROC datasets}
 }`,
                       'bibtex'
@@ -976,10 +977,10 @@ export const DocumentationModal: React.FC<DocumentationModalProps> = ({
   author    = {Tiwari, Kishan},
   title     = {RockMin ID: Automated Geochemical Classifier and Petrological Analysis Platform},
   year      = {2026},
-  version   = {2.4.0},
+  version   = {${APP_VERSION}},
   publisher = {Zenodo},
-  doi       = {10.5281/zenodo.22875578},
-  url       = {https://doi.org/10.5281/zenodo.22875578},
+  doi       = {${CONCEPT_DOI}},
+  url       = {https://doi.org/${CONCEPT_DOI}},
   note      = {Calibrated with IUGS Le Maitre (2002) and GEOROC datasets}
 }`}
               </pre>

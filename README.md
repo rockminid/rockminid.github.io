@@ -239,13 +239,13 @@ feeds each group's own median back through the engine.
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22875578.svg)](https://doi.org/10.5281/zenodo.22875578)
 
 > Tiwari, K. (2026). *RockMin ID: Automated Geochemical Classifier and
-> Petrological Analysis Platform* (Version 2.4.0) [Computer software]. Zenodo.
+> Petrological Analysis Platform* (Version 2.5.0) [Computer software]. Zenodo.
 > <https://doi.org/10.5281/zenodo.22875578>
 
 `10.5281/zenodo.22875578` is the **concept DOI** and always resolves to the
 latest release — use it to cite RockMin ID in general. To pin the exact release
-your results came from, cite the **version DOI** instead: `10.5281/zenodo.22875579`
-for v2.4.0.
+your results came from, cite that release's **version DOI** instead; it is shown
+on its [Zenodo record](https://zenodo.org/doi/10.5281/zenodo.22875578).
 
 [`CITATION.cff`](CITATION.cff) carries the same metadata, so GitHub's "Cite this
 repository" button and most reference managers can import it directly. BibTeX and

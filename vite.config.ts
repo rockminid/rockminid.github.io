@@ -5,6 +5,7 @@ import { defineConfig, loadEnv } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { seoPlugin } from './scripts/lib/seo.mjs';
 import { cspPlugin } from './scripts/lib/csp.mjs';
+import pkg from './package.json' with { type: 'json' };
 
 /**
  * BASE_PATH controls where the app is served from.
@@ -26,6 +27,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: resolvedBase,
+    define: {
+      __APP_VERSION__: JSON.stringify(pkg.version),
+    },
     plugins: [
       react(),
       tailwindcss(),
@@ -37,6 +41,15 @@ export default defineConfig(({ mode }) => {
       // when one is configured, so enabling a backend does not silently
       // break every request to it.
       cspPlugin({ apiBaseUrl: env.VITE_API_BASE_URL }),
+      // The version lives in package.json and nowhere else. This stamps it
+      // into the JSON-LD block in index.html; `define` below stamps it into
+      // the bundle. Previously it was typed out in eight files and drifted.
+      {
+        name: 'rockmin-version-html',
+        transformIndexHtml(html: string) {
+          return html.replace(/"softwareVersion":\s*"[^"]*"/, `"softwareVersion": "${pkg.version}"`);
+        },
+      },
       VitePWA({
         registerType: 'autoUpdate',
         // A relative manifest/scope keeps the PWA valid under a subpath.

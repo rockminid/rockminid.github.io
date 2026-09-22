@@ -1,4 +1,5 @@
 import React from 'react';
+import { APP_VERSION } from '../version';
 import {
   ShieldCheck,
   Lock,
@@ -298,8 +299,8 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({ isOpen, 
           </Section>
 
           <div className="text-[11px] text-stone-500 pt-2 border-t border-stone-800">
-            Last updated: 22 September 2026 · applies to RockMin ID v2.4.0 as deployed at
-            rockminid.github.io
+            Last updated: 22 September 2026 · applies to RockMin ID v{APP_VERSION} as
+            deployed at rockminid.github.io
           </div>
         </div>
 
