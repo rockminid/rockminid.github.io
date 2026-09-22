@@ -315,47 +315,54 @@ records the exact ingestion parameters.
 
 ## 8. What is still open
 
-In rough priority order.
+Reviewed end to end on 22 September 2026, before going public. Items 1-4,
+6 and the Zenodo DOI from the previous list are done; what follows is what
+genuinely remains.
 
-1. **Mobile information architecture** (improvement-pack Stage 07). Now the
-   single largest remaining piece of work, and the most visible: the site is
-   public, so phone visitors get the desktop layout shrunk down. The PWA
-   installs and works offline already. Stage 07 asks for bottom navigation, a
-   step-by-step Analyze wizard, 48 dp touch targets, pinch-zoom full-screen
-   diagrams, and card layouts instead of wide tables.
-
-2. **"Why this match?" panel.** `MatchScore.contributions` already carries
-   the per-oxide breakdown and `structuralFormula` the APFU. Nothing renders
-   them as an explanation panel yet.
-
-3. **Sample-type selector in the UI.** The engine accepts and infers it, but
-   the user cannot declare it. Inference works well; an explicit control
-   would still be better for melt inclusions and glasses.
-
-4. **`qualityFlags` are not surfaced.** The engine produces structured flags;
-   the analyzer still shows only the legacy single-string warning.
-
-5. **`vendor-firebase` (~528 kB) loads eagerly.** Could be dynamically
+1. **`vendor-firebase` (~528 kB) loads eagerly.** Could be dynamically
    imported when `isFirebaseConfigured` is true. Non-trivial because the
-   module exports are consumed synchronously.
+   module exports are consumed synchronously. This is the single biggest
+   remaining win on first-load weight.
 
-6. **Melilitite / kalsilite rules** (Le Maitre p.38). Normative larnite is
-   now computed, so the remaining rules are implementable.
+2. **No component or end-to-end tests.** Coverage is the engine only — 271
+   tests, all of them calculation-layer. The UI has now grown panels with real
+   logic in them (data-quality severities, the match breakdown, the sample-type
+   override), and none of it is tested.
 
-7. **No component or end-to-end tests.** Coverage is the engine only.
+3. **Mobile refinement.** The layout IS responsive and usable on a phone —
+   cards stack, the oxide grid reflows to two columns, the nav is a horizontal
+   scroll strip, touch targets are adequate. Verified at 375 x 812. What Stage
+   07 additionally asked for and has not been done: bottom navigation, a
+   step-by-step Analyze wizard, and pinch-zoom full-screen diagrams. This is a
+   refinement, not the blocker the previous handoff called it.
 
-8. ~~**Zenodo DOI.**~~ Done. Concept DOI `10.5281/zenodo.22875578`
-   (always latest), version DOI `10.5281/zenodo.22875579` for v2.4.0. Wired
-   into `CITATION.cff`, the README, the in-app Cite tab and the PDF manual.
-   **One thing still to fix:** the Zenodo deposit records the licence as
-   CC-BY-4.0, but the repository ships under MIT. Edit the deposit metadata on
-   Zenodo so the archived record matches.
+4. **APK signing.** Regenerate the SHA-256 fingerprint in
+   `public/.well-known/assetlinks.json` from your real release keystore before
+   publishing, or Android App Links fail silently. Note that the app offers no
+   APK download — the Mobile App modal gives build instructions — so nothing is
+   currently broken by this.
 
-9. **APK signing.** Regenerate the SHA-256 fingerprint in
-   `public/.well-known/assetlinks.json` from your real release keystore
-   before publishing, or Android App Links fail silently.
+5. **Zenodo licence mismatch.** The deposit records CC-BY-4.0; the repository
+   ships under MIT. Edit the deposit metadata on Zenodo so the archived record
+   matches. Not fixable from the repo.
 
----
+6. **Firebase App Check is not enabled.** Feedback documents can be created
+   without authentication, by design, so a bug can be reported without signing
+   in. Firestore rules validate every field but cannot rate-limit. If spam
+   appears, App Check is the supported control and needs no rule change.
+
+7. **The AI backend is undeployed.** `server.ts` is hardened (rate limiting,
+   input allowlisting, prompt-injection containment, no error leakage) but
+   nothing runs it. The browser uses its deterministic rule engine instead,
+   which is a legitimate end state rather than a gap. If you do deploy it,
+   verify `GEMINI_MODEL` against the current model list first.
+
+8. **Two ternary projections remain proxies.** The basalt tetrahedron's
+   silica-saturation apex is a composite index rather than a strict Yoder &
+   Tilley projection, and the ultramafic Ol-Opx-Cpx partition is approximate.
+   Both are disclosed in manual section 22. The rigorous alternative for
+   saturation already exists: the Ne'-Ol'-Q' projection of Irvine & Baragar
+   Fig. 4.
 
 ## 9. Post-launch checklist
 
