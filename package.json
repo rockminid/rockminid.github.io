@@ -1,7 +1,7 @@
 {
   "name": "rockmin-id",
   "private": false,
-  "version": "2.0.0",
+  "version": "2.4.0",
   "description": "RockMin ID - Automated geochemical classifier and petrological analysis platform. TAS, AFM, QAPF, pyroxene/feldspar/ultramafic projections, CIPW norm, and rock/mineral matching from oxide or element compositions.",
   "license": "MIT",
   "author": "Kishan Tiwari",

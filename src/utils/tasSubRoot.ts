@@ -117,6 +117,9 @@ export function refineTASName(
   const q = pct(norm, 'Q');
   const an = pct(norm, 'An');
   const or = pct(norm, 'Or');
+  const cs = pct(norm, 'Cs');
+  const kp = pct(norm, 'Kp');
+  const lc = pct(norm, 'Lc');
 
   switch (code) {
     case 'B': {
@@ -194,6 +197,26 @@ export function refineTASName(
     }
 
     case 'F': {
+      // Le Maitre (2002) p.38: within the foidite field, "if normative cs
+      // (larnite) is greater than 10% the rock is a melilitite". The test
+      // comes first because it takes precedence over the nephelinite split
+      // below — a melilitite can carry more than 20% normative nepheline.
+      if (cs > 10) {
+        result.name = 'Melilitite';
+        reasons.push(
+          `Normative larnite ${cs.toFixed(1)}% (> 10%), so melilitite rather than foidite (Le Maitre 2002, p.38).`
+        );
+        // Kalsilite-bearing melilitites are the kamafugite series. Normative
+        // kalsilite only forms once leucite itself has been desilicated, so
+        // its presence is a strong indicator of that association.
+        if (kp > 0) {
+          result.name = 'Kalsilite-bearing Melilitite';
+          reasons.push(
+            `Normative kalsilite ${kp.toFixed(1)}% is present, indicating the kamafugite association (katungite, mafurite, ugandite).`
+          );
+        }
+        break;
+      }
       // Le Bas (1989), quoted in Le Maitre (2002) p.36.
       if (ne > 20) {
         result.name = 'Nephelinite';
@@ -202,6 +225,14 @@ export function refineTASName(
         result.name = 'Melanephelinite';
         reasons.push(
           `Normative nepheline ${ne.toFixed(1)}% (< 20%) with albite ${ab.toFixed(1)}% (< 5%), so melanephelinite.`
+        );
+      }
+      // Leucitite: a potassic foidite in which leucite, not nepheline, is the
+      // dominant feldspathoid.
+      if (lc > ne && lc > 10) {
+        result.name = kp > 0 ? 'Kalsilite-bearing Leucitite' : 'Leucitite';
+        reasons.push(
+          `Normative leucite ${lc.toFixed(1)}% exceeds nepheline ${ne.toFixed(1)}%, so the dominant feldspathoid is leucite.`
         );
       }
       break;

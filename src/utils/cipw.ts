@@ -253,15 +253,28 @@ export function calculateCIPWNorm(
 
   // --- 9. Silica budget --------------------------------------------------
   // SiO2 per unit: Or 6, Ab 6, An 2, Ac 4, Ns 1, Ks 1, Di 2, Wo 1, Hy 1,
-  //                Ne 2, Lc 4, Ol 0.5 per mafic mole.
+  //                Ne 2, Lc 4, Kp 2, Ol 0.5 per mafic mole.
   let hy = mafic.moles - di;
   if (hy < 0) hy = 0;
   let ol = 0;
   let ne = 0;
   let lc = 0;
+  let kp = 0;
 
   const siFor = () =>
-    or_ * 6 + ab * 6 + an * 2 + ac * 4 + ns + ks + di * 2 + wo + hy + ol * 0.5 + ne * 2 + lc * 4;
+    or_ * 6 +
+    ab * 6 +
+    an * 2 +
+    ac * 4 +
+    ns +
+    ks +
+    di * 2 +
+    wo +
+    hy +
+    ol * 0.5 +
+    ne * 2 +
+    lc * 4 +
+    kp * 2;
 
   let deficit = siFor() - Si;
 
@@ -311,12 +324,25 @@ export function calculateCIPWNorm(
     deficit -= conv / 2;
   }
 
+  if (deficit > 1e-12 && lc > 0) {
+    // (f) Leucite -> kalsilite. 2 KAlSi2O6 -> 2 KAlSiO4 + 2 SiO2, so one
+    // unit (one K2O) releases 2 SiO2. This is the last step of the classic
+    // cascade and only reaches compositions as undersaturated as the
+    // kamafugites. Without it, normative Kp could never appear, even though
+    // the Thornton & Tuttle differentiation index is defined to include it.
+    const conv = Math.min(lc, deficit / 2);
+    lc -= conv;
+    kp += conv;
+    deficit -= conv * 2;
+  }
+
   const quartz = deficit < 0 ? -deficit : 0;
   const silicaBalance = deficit > 1e-9 ? deficit : 0;
 
   // --- 10. Accumulate silicate masses -----------------------------------
   if (or_ > 0) { add('Or', or_ * (FW.K2O + FW.Al2O3 + 6 * FW.SiO2)); addMol('Or', 2 * or_); }
   if (lc > 0) { add('Lc', lc * (FW.K2O + FW.Al2O3 + 4 * FW.SiO2)); addMol('Lc', 2 * lc); }
+  if (kp > 0) { add('Kp', kp * (FW.K2O + FW.Al2O3 + 2 * FW.SiO2)); addMol('Kp', 2 * kp); }
   if (ks > 0) { add('Ks', ks * (FW.K2O + FW.SiO2)); addMol('Ks', ks); }
   if (ab > 0) { add('Ab', ab * (FW.Na2O + FW.Al2O3 + 6 * FW.SiO2)); addMol('Ab', 2 * ab); }
   if (ne > 0) { add('Ne', ne * (FW.Na2O + FW.Al2O3 + 2 * FW.SiO2)); addMol('Ne', 2 * ne); }
@@ -371,6 +397,7 @@ const CATIONS_PER_FORMULA: Record<string, number> = {
   Ab: 5,     // NaAlSi3O8
   An: 5,     // CaAl2Si2O8
   Lc: 4,     // KAlSi2O6
+  Kp: 3,     // KAlSiO4 (kalsilite)
   Ne: 3,     // NaAlSiO4
   Ac: 4,     // NaFe3+Si2O6
   Ns: 3,     // Na2SiO3
@@ -473,6 +500,7 @@ export const CIPW_PHASE_ORDER: Array<[string, string]> = [
   ['An', 'Anorthite'],
   ['Lc', 'Leucite'],
   ['Ne', 'Nepheline'],
+  ['Kp', 'Kalsilite'],
   ['Ac', 'Acmite'],
   ['Ns', 'Sodium metasilicate'],
   ['Ks', 'Potassium metasilicate'],
@@ -490,7 +518,13 @@ export const CIPW_PHASE_ORDER: Array<[string, string]> = [
   ['Cc', 'Calcite'],
 ];
 
-/** Differentiation index (Thornton & Tuttle 1960): Q + Or + Ab + Ne + Lc. */
+/**
+ * Differentiation index (Thornton & Tuttle 1960): the sum of the salic
+ * normative minerals, Q + Or + Ab + Ne + Lc + Kp.
+ *
+ * Kalsilite belongs in the sum by the original definition. It was absent here
+ * only because the norm could not produce it.
+ */
 export function differentiationIndex(norm: CIPWNorm): number {
   return Number(
     (
@@ -498,7 +532,8 @@ export function differentiationIndex(norm: CIPWNorm): number {
       (norm.Or || 0) +
       (norm.Ab || 0) +
       (norm.Ne || 0) +
-      (norm.Lc || 0)
+      (norm.Lc || 0) +
+      (norm.Kp || 0)
     ).toFixed(2)
   );
 }

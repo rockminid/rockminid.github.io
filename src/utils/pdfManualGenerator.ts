@@ -736,7 +736,8 @@ export async function generateRockMinManualPDF(): Promise<void> {
       ['S2 (Basaltic Trachyandesite)', 'Same sodic test', 'Mugearite (sodic) / Shoshonite'],
       ['S3 (Trachyandesite)', 'Same sodic test', 'Benmoreite (sodic) / Latite'],
       ['T (Trachyte field)', '100 x Q / (Q + an + ab + or), normative', 'Trachyte (< 20%) / Trachydacite (> 20%)'],
-      ['F (Foidite)', 'Le Bas (1989), quoted in Le Maitre (2002) p.36', 'Nephelinite (ne > 20%); Melanephelinite (ne < 20% with ab < 5%)'],
+      ['F (Foidite)', 'Normative larnite above 10% (Le Maitre 2002, p.38), tested first', 'Melilitite; Kalsilite-bearing Melilitite when normative Kp is present (the kamafugite association)'],
+      ['F (Foidite)', 'Le Bas (1989), quoted in Le Maitre (2002) p.36', 'Nephelinite (ne > 20%); Melanephelinite (ne < 20% with ab < 5%); Leucitite where normative Lc exceeds Ne'],
       ['R, T, Ph', 'Peralkaline index PI = molar (Na2O + K2O) / Al2O3 > 1', 'Peralkaline Rhyolite / Trachyte / Phonolite'],
       ['R and T, peralkaline', 'Macdonald (1974), Le Maitre (2002) Fig. 2.18: Al2O3 versus 1.33 x FeO* + 4.4', 'Comenditic (Al2O3 above the line) / Pantelleritic (below)']
     ],
@@ -766,7 +767,7 @@ export async function generateRockMinManualPDF(): Promise<void> {
   // ==================== SECTION 08: CIPW NORM ====================
   renderSectionHeader('08', 'CIPW Normative Mineralogy', 'Idealized anhydrous crystallization allocation, mass-conserving by construction');
   renderParagraph(
-    'The CIPW norm (Cross, Iddings, Pirsson & Washington 1902) converts a bulk chemical analysis into an idealized 1-atm anhydrous mineral assemblage, in the modern form described by Kelsey (1965) and Le Maitre (2002). RockMin ID implements 22 normative phases in a strict allocation order.'
+    'The CIPW norm (Cross, Iddings, Pirsson & Washington 1902) converts a bulk chemical analysis into an idealized 1-atm anhydrous mineral assemblage, in the modern form described by Kelsey (1965) and Le Maitre (2002). RockMin ID implements 23 normative phases in a strict allocation order.'
   );
 
   renderCallout(
@@ -814,7 +815,8 @@ export async function generateRockMinManualPDF(): Promise<void> {
       ['19', 'Nepheline', 'Ne', 'From albite during desilication, NaAlSiO4, 2 SiO2 per Na2O unit'],
       ['20', 'Leucite', 'Lc', 'From orthoclase during desilication, KAlSi2O6, 4 SiO2 per K2O unit'],
       ['21', 'Larnite', 'Cs', 'From wollastonite in strongly undersaturated rocks, Ca2SiO4'],
-      ['22', 'Quartz', 'Q', 'Free silica remaining after every silicate demand has been satisfied']
+      ['22', 'Kalsilite', 'Kp', 'From leucite at the extreme undersaturated end, KAlSiO4. Reached only by kamafugite-like compositions.'],
+      ['23', 'Quartz', 'Q', 'Free silica remaining after every silicate demand has been satisfied']
     ],
     [8, 32, 12, 122]
   );
@@ -836,7 +838,8 @@ export async function generateRockMinManualPDF(): Promise<void> {
       ['b', 'Albite -> nepheline, NaAlSi3O8 -> NaAlSiO4 + 2 SiO2', '4 SiO2 per Na2O unit'],
       ['c', 'Orthoclase -> leucite, KAlSi3O8 -> KAlSi2O6 + SiO2', '2 SiO2 per K2O unit'],
       ['d', 'Diopside -> wollastonite + olivine', '0.5 SiO2 per unit'],
-      ['e', 'Wollastonite -> larnite, 2 CaSiO3 -> Ca2SiO4 + SiO2', '1 SiO2 per 2 Wo units']
+      ['e', 'Wollastonite -> larnite, 2 CaSiO3 -> Ca2SiO4 + SiO2', '1 SiO2 per 2 Wo units'],
+      ['f', 'Leucite -> kalsilite, 2 KAlSi2O6 -> 2 KAlSiO4 + 2 SiO2', '2 SiO2 per K2O unit']
     ],
     [14, 106, 54]
   );
@@ -845,7 +848,7 @@ export async function generateRockMinManualPDF(): Promise<void> {
   );
 
   renderSubheader('8.4 Normative Indices');
-  renderBullet('Differentiation Index (DI)', 'Thornton & Tuttle (1960): DI = Q + Or + Ab + Ne + Lc, in normative wt%. Measures differentiation from primitive basalt (DI around 20) to evolved rhyolite (DI above 85).');
+  renderBullet('Differentiation Index (DI)', 'Thornton & Tuttle (1960): DI = Q + Or + Ab + Ne + Lc + Kp, in normative wt%. Measures differentiation from primitive basalt (DI around 20) to evolved rhyolite (DI above 85).');
   renderBullet('Normative plagioclase An#', '100 x An / (Ab + An) in the weight norm. Bytownite-anorthite in basalts (> 70), andesine-labradorite in andesites (30-70), oligoclase-albite in granites (< 30).');
   renderBullet('normSum', 'The true sum of all normative phase masses. It is reported, not forced to 100. A normSum far from the analytical total means something was not allocated.');
   renderBullet('silicaBalance', 'The residual silica deficit after the full desilication cascade. Non-zero values indicate a composition the norm cannot fully accommodate.');
@@ -1391,7 +1394,6 @@ export async function generateRockMinManualPDF(): Promise<void> {
       ['The basalt tetrahedron is a visualization proxy', 'The silica-saturation apex is a composite index built from normative Q, Ne, Hy and Ab, not a strict projection of the Yoder & Tilley tetrahedron. Use the Ne\'-Ol\'-Q\' projection of Section 10.4 for a rigorous normative discriminant.'],
       ['The ultramafic Ol-Opx-Cpx partition is approximate', 'It is derived from molar CaO, MgO, FeO and SiO2 for orientation on the peridotite triangle. Prefer modal or measured pyroxene data where available.'],
       ['APFU is computed for whole rocks but marked not applicable', 'A structural formula is only meaningful for a single mineral analysis. The number is available but the interface suppresses it.'],
-      ['Melilitite and kalsilite rules are not yet implemented', 'Normative larnite is computed, so the remaining Le Maitre (2002) p.38 rules are implementable but not yet in place.'],
       ['Coverage is engine-level', 'The deterministic calculation layer is unit-tested; there are no component or end-to-end interface tests.']
     ],
     [50, 124]

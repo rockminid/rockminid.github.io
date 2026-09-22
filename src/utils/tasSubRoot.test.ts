@@ -7,7 +7,8 @@ import {
   potassiumSeries,
   isPicrite,
 } from './tasSubRoot';
-import { calculateCIPWNorm } from './cipw';
+import { calculateCIPWNorm, differentiationIndex } from './cipw';
+import { OxideComposition } from '../types/geochem';
 import { N_MORB, PERALKALINE_RHYOLITE } from './__fixtures__/endmembers';
 
 /**
@@ -182,5 +183,118 @@ describe('peralkaline index and picrite', () => {
     expect(isPicrite({ SiO2: 45, MgO: 18, Na2O: 1.2, K2O: 0.3 })).toBe(true);
     expect(isPicrite({ SiO2: 45, MgO: 10, Na2O: 1.2, K2O: 0.3 })).toBe(false);
     expect(isPicrite({ SiO2: 45, MgO: 18, Na2O: 2.5, K2O: 1.0 })).toBe(false);
+  });
+});
+
+describe('melilitite and kalsilite (Le Maitre 2002 p.38)', () => {
+  // A melilititic composition: very low silica, high CaO and MgO, low Al2O3.
+  // Ca in large excess over the alumina available for feldspar drives Wo and
+  // then larnite once the silica budget runs out.
+  const MELILITITE: OxideComposition = {
+    SiO2: 38.0,
+    TiO2: 2.6,
+    Al2O3: 7.0,
+    FeO: 10.5,
+    MgO: 12.0,
+    CaO: 22.0,
+    Na2O: 3.2,
+    K2O: 1.5,
+    P2O5: 1.0,
+  };
+
+  it('produces normative larnite for a strongly undersaturated calcic rock', () => {
+    const norm = calculateCIPWNorm(MELILITITE);
+    expect((norm.Cs as number) ?? 0).toBeGreaterThan(0);
+    expect((norm.Q as number) ?? 0).toBe(0);
+  });
+
+  it('names a foidite with larnite above 10% a melilitite', () => {
+    const norm = calculateCIPWNorm(MELILITITE);
+    const csPct = (100 * ((norm.Cs as number) || 0)) / (norm.normSum as number);
+    expect(csPct).toBeGreaterThan(10);
+    expect(refineTASName('F', 'Foidite', MELILITITE, norm).name).toBe('Melilitite');
+  });
+
+  it('does not call an ordinary nephelinite a melilitite', () => {
+    // Guards the threshold from the other side: plenty of normative nepheline
+    // but no larnite at all must still give a nephelinite.
+    const NEPHELINITE: OxideComposition = {
+      SiO2: 40.0,
+      TiO2: 2.6,
+      Al2O3: 12.5,
+      FeO: 11.0,
+      MgO: 8.0,
+      CaO: 12.0,
+      Na2O: 5.5,
+      K2O: 2.0,
+    };
+    const norm = calculateCIPWNorm(NEPHELINITE);
+    const name = refineTASName('F', 'Foidite', NEPHELINITE, norm).name;
+    expect(name).not.toContain('Melilitite');
+  });
+
+  it('flags the kamafugite association when normative kalsilite appears', () => {
+    // Kalsilite only forms once leucite itself has been desilicated, which
+    // needs a strongly undersaturated, strongly potassic composition.
+    const KAMAFUGITE: OxideComposition = {
+      SiO2: 36.0,
+      TiO2: 3.0,
+      Al2O3: 6.0,
+      FeO: 11.0,
+      MgO: 14.0,
+      CaO: 13.0,
+      Na2O: 1.0,
+      K2O: 7.0,
+      P2O5: 1.2,
+    };
+    const norm = calculateCIPWNorm(KAMAFUGITE);
+    expect((norm.Kp as number) ?? 0).toBeGreaterThan(0);
+    expect(refineTASName('F', 'Foidite', KAMAFUGITE, norm).name).toBe(
+      'Kalsilite-bearing Melilitite'
+    );
+  });
+
+  it('keeps the differentiation index inclusive of kalsilite', () => {
+    // Thornton & Tuttle define DI as Q + Or + Ab + Ne + Lc + Kp. Kp was
+    // missing from the sum only because the norm could not produce it.
+    const KAMAFUGITE: OxideComposition = {
+      SiO2: 36.0,
+      TiO2: 3.0,
+      Al2O3: 6.0,
+      FeO: 11.0,
+      MgO: 14.0,
+      CaO: 13.0,
+      Na2O: 1.0,
+      K2O: 7.0,
+      P2O5: 1.2,
+    };
+    const norm = calculateCIPWNorm(KAMAFUGITE);
+    const di = differentiationIndex(norm);
+    const manual =
+      ((norm.Q as number) || 0) +
+      ((norm.Or as number) || 0) +
+      ((norm.Ab as number) || 0) +
+      ((norm.Ne as number) || 0) +
+      ((norm.Lc as number) || 0) +
+      ((norm.Kp as number) || 0);
+    expect(di).toBeCloseTo(manual, 2);
+  });
+
+  it('conserves mass when kalsilite forms', () => {
+    const KAMAFUGITE: OxideComposition = {
+      SiO2: 34.0,
+      Al2O3: 6.0,
+      FeO: 11.0,
+      MgO: 14.0,
+      CaO: 12.0,
+      K2O: 9.0,
+      Na2O: 0.5,
+    };
+    const norm = calculateCIPWNorm(KAMAFUGITE);
+    const inputSum = Object.values(KAMAFUGITE).reduce<number>((a, v) => a + (v ?? 0), 0);
+    // The norm is mass-conserving by construction: phase masses come from the
+    // oxide masses consumed, so the total must track the input.
+    expect(norm.normSum as number).toBeGreaterThan(inputSum * 0.97);
+    expect(norm.normSum as number).toBeLessThan(inputSum * 1.03);
   });
 });

@@ -350,7 +350,7 @@ export default function App() {
                   onClick={() => setIsMobileModalOpen(true)}
                   className="hover:text-emerald-400 transition-colors font-medium cursor-pointer"
                 >
-                  Download APK / App
+                  Mobile App
                 </button>
                 <span>&bull;</span>
                 <button

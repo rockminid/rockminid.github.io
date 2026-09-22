@@ -7,7 +7,11 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Healthcheck / test connection document
+    // Healthcheck / test connection document.
+    //
+    // Left readable without authentication so a deployment can be probed, but
+    // it must stay empty of anything meaningful: "readable by anyone" is
+    // exactly what it says. Nothing in the application writes here.
     match /test/{docId} {
       allow read: if true;
       allow write: if false;
@@ -69,7 +73,17 @@ service cloud.firestore {
              data.createdAt is string && data.createdAt.size() <= 40;
     }
 
-    // Public feedback submissions
+    // Public feedback submissions.
+    //
+    // Create-only and unauthenticated by design: a user hitting a bug should
+    // not have to sign in to report it. Write-only means a submission cannot
+    // be read back or edited by anyone through the client, including its
+    // author, which the privacy policy states explicitly.
+    //
+    // Rules cannot rate-limit, so this is spammable by anyone who reads the
+    // bundle. The validation below bounds the damage per document; if abuse
+    // becomes real, enable Firebase App Check, which is the supported control
+    // for this and needs no rule change.
     match /feedback/{feedbackId} {
       allow create: if isValidId(feedbackId) && isValidFeedback(incoming());
       allow read, update, delete: if false;

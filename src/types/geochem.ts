@@ -224,6 +224,7 @@ export interface CIPWNorm {
   An?: number; // Anorthite
   Lc?: number; // Leucite
   Ne?: number; // Nepheline
+  Kp?: number; // Kalsilite (kamafugite indicator)
   Ac?: number; // Acmite (peralkaline indicator)
   Ns?: number; // Sodium metasilicate
   Ks?: number; // Potassium metasilicate
