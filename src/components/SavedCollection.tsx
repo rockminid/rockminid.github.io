@@ -95,7 +95,7 @@ export const SavedCollection: React.FC<SavedCollectionProps> = ({ onLoadSampleTo
   const handleExportCSV = () => {
     if (collection.length === 0) return;
 
-    const headers = ['Name', 'Type', 'IdentifiedAs', 'Confidence', 'SiO2', 'TiO2', 'Al2O3', 'FeO', 'Fe2O3', 'MnO', 'MgO', 'CaO', 'Na2O', 'K2O', 'P2O5', 'LOI', 'Notes', 'SavedAt'];
+    const headers = ['Name', 'Type', 'IdentifiedAs', 'Similarity', 'SiO2', 'TiO2', 'Al2O3', 'FeO', 'Fe2O3', 'MnO', 'MgO', 'CaO', 'Na2O', 'K2O', 'P2O5', 'LOI', 'Notes', 'SavedAt'];
     const rows = collection.map((item) => [
       `"${item.name.replace(/"/g, '""')}"`,
       item.type || item.sampleType || 'custom',

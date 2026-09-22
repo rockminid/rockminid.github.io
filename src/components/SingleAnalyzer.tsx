@@ -909,7 +909,7 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
         <div className="lg:col-span-7 space-y-4">
           {/* Primary Match Highlight Card */}
           <div className="bg-gradient-to-br from-stone-900 via-stone-900 to-amber-950/40 border border-stone-800 rounded-xl p-5 shadow-lg relative overflow-hidden space-y-4">
-            {/* Header & Confidence */}
+            {/* Header & similarity score */}
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <div className="flex flex-wrap items-center gap-2 mb-1.5">

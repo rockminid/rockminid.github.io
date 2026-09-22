@@ -205,7 +205,9 @@ export const SaveToCollectionModal: React.FC<SaveToCollectionModalProps> = ({
             />
           </div>
 
-          {/* Classification & Confidence Preview */}
+          {/* Classification preview. The score is labelled "Similarity",
+              never "confidence": it ranks candidates by weighted compositional
+              distance and carries no probabilistic meaning. */}
           <div className="grid grid-cols-2 gap-3 p-3 bg-stone-950/60 rounded-xl border border-stone-850 text-xs">
             <div>
               <span className="text-[10px] text-stone-500 uppercase tracking-wider block font-semibold">
@@ -217,7 +219,7 @@ export const SaveToCollectionModal: React.FC<SaveToCollectionModalProps> = ({
             </div>
             <div>
               <span className="text-[10px] text-stone-500 uppercase tracking-wider block font-semibold">
-                Match Confidence
+                Match Similarity
               </span>
               <span className="font-bold text-amber-400 font-mono block mt-0.5">
                 Similarity {confidence}/100
