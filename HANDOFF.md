@@ -315,54 +315,53 @@ records the exact ingestion parameters.
 
 ## 8. What is still open
 
-Reviewed end to end on 22 September 2026, before going public. Items 1-4,
-6 and the Zenodo DOI from the previous list are done; what follows is what
-genuinely remains.
+Reviewed end to end on 22 September 2026 before going public, and worked
+through again afterwards. What follows is what genuinely remains.
 
-1. **`vendor-firebase` (~528 kB) loads eagerly.** Could be dynamically
-   imported when `isFirebaseConfigured` is true. Non-trivial because the
-   module exports are consumed synchronously. This is the single biggest
-   remaining win on first-load weight.
-
-2. **No component or end-to-end tests.** Coverage is the engine only — 271
-   tests, all of them calculation-layer. The UI has now grown panels with real
-   logic in them (data-quality severities, the match breakdown, the sample-type
-   override), and none of it is tested.
-
-3. **Mobile refinement.** The layout IS responsive and usable on a phone —
+1. **Mobile refinement.** The layout IS responsive and usable on a phone —
    cards stack, the oxide grid reflows to two columns, the nav is a horizontal
-   scroll strip, touch targets are adequate. Verified at 375 x 812. What Stage
-   07 additionally asked for and has not been done: bottom navigation, a
-   step-by-step Analyze wizard, and pinch-zoom full-screen diagrams. This is a
-   refinement, not the blocker the previous handoff called it.
+   scroll strip, touch targets are adequate. Verified at 375 x 812. What
+   improvement-pack Stage 07 additionally asked for and has not been done:
+   bottom navigation, a step-by-step Analyze wizard, and pinch-zoom full-screen
+   diagrams. A refinement, not a blocker.
 
-4. **APK signing.** Regenerate the SHA-256 fingerprint in
-   `public/.well-known/assetlinks.json` from your real release keystore before
-   publishing, or Android App Links fail silently. Note that the app offers no
-   APK download — the Mobile App modal gives build instructions — so nothing is
-   currently broken by this.
-
-5. **Zenodo licence mismatch.** The deposit records CC-BY-4.0; the repository
-   ships under MIT. Edit the deposit metadata on Zenodo so the archived record
-   matches. Not fixable from the repo.
-
-6. **Firebase App Check is not enabled.** Feedback documents can be created
+2. **Firebase App Check is not enabled.** Feedback documents can be created
    without authentication, by design, so a bug can be reported without signing
    in. Firestore rules validate every field but cannot rate-limit. If spam
    appears, App Check is the supported control and needs no rule change.
 
-7. **The AI backend is undeployed.** `server.ts` is hardened (rate limiting,
-   input allowlisting, prompt-injection containment, no error leakage) but
-   nothing runs it. The browser uses its deterministic rule engine instead,
-   which is a legitimate end state rather than a gap. If you do deploy it,
-   verify `GEMINI_MODEL` against the current model list first.
+3. **The AI backend is undeployed.** `server.ts` is hardened — per-IP rate
+   limiting, input allowlisting, prompt-injection containment, no error
+   leakage — but nothing runs it, and the browser uses its deterministic rule
+   engine instead. That is a legitimate end state rather than a gap. If you do
+   deploy it, verify `GEMINI_MODEL` against the current model list first.
 
-8. **Two ternary projections remain proxies.** The basalt tetrahedron's
+4. **APK signing.** Regenerate the SHA-256 fingerprint in
+   `public/.well-known/assetlinks.json` from your real release keystore before
+   publishing to Play. Nothing is currently broken by this: the app offers no
+   APK download, the Mobile App modal gives build instructions.
+
+5. **Two ternary projections remain proxies.** The basalt tetrahedron's
    silica-saturation apex is a composite index rather than a strict Yoder &
    Tilley projection, and the ultramafic Ol-Opx-Cpx partition is approximate.
    Both are disclosed in manual section 22. The rigorous alternative for
    saturation already exists: the Ne'-Ol'-Q' projection of Irvine & Baragar
    Fig. 4.
+
+6. **Component test coverage is a start, not a suite.** 296 tests now, of
+   which 22 are component tests covering the error boundary, the data-quality
+   panel and the match explanation. The analyzer itself, the batch processor
+   and the diagrams have no component tests, and there is no end-to-end test.
+
+### Closed since the first handoff
+
+Zenodo DOI and `CITATION.cff`; the sloping dacite/rhyolite divide; the
+feldspar ternary An bias; Firebase sign-in (an API-key referrer restriction
+omitted the authDomain); `qualityFlags` and the per-oxide match breakdown now
+rendered; sample-type selector; melilitite, kalsilite and leucitite rules;
+CSP; privacy policy rewritten to match what the deployment actually does;
+API server hardened; error boundary added; Firebase SDK removed from the
+critical path.
 
 ## 9. Post-launch checklist
 

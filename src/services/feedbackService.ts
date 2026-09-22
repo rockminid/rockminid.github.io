@@ -1,6 +1,5 @@
-import { doc, setDoc } from 'firebase/firestore';
-import { User } from 'firebase/auth';
-import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import type { User } from 'firebase/auth';
+import { loadFirebase } from '../lib/firebase';
 
 export interface FeedbackSubmission {
   id?: string;
@@ -61,8 +60,10 @@ export async function submitUserFeedback(
   // Attempt Firestore sync
   let cloudSynced = false;
   try {
-    if (!db) throw new Error('Cloud feedback is not configured for this deployment.');
-    const feedbackDocRef = doc(db, 'feedback', id);
+    const fb = await loadFirebase();
+    if (!fb) throw new Error('Cloud feedback is not configured for this deployment.');
+    const { doc, setDoc } = await import('firebase/firestore');
+    const feedbackDocRef = doc(fb.db, 'feedback', id);
     await setDoc(feedbackDocRef, feedbackRecord);
     cloudSynced = true;
   } catch (err) {

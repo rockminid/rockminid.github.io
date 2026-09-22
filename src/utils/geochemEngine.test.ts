@@ -465,3 +465,40 @@ describe('similarity score bounds', () => {
     }
   });
 });
+
+describe('data quality flags', () => {
+  it('raises iron-split-estimated for an FeOT-only analysis', () => {
+    // The GEOROC norm. The flag guarded `iron.isSplitEstimated`, which is only
+    // true when a ratio was passed in, and assessDataQuality passes none — so
+    // the most common caveat in compiled data could never be shown.
+    const report = identifyGeochemicalSample(
+      { SiO2: 50.4, Al2O3: 15.3, FeOT: 10.2, MgO: 7.8, CaO: 11.6, Na2O: 2.6, K2O: 0.14, TiO2: 1.5 },
+      'FeOT only',
+      'oxide'
+    );
+    const codes = (report.qualityFlags ?? []).map((f) => f.code);
+    expect(codes).toContain('iron-split-estimated');
+  });
+
+  it('does not raise it when both iron components were measured', () => {
+    const report = identifyGeochemicalSample(
+      {
+        SiO2: 50.4, Al2O3: 15.3, FeO: 8.85, Fe2O3: 1.45, MgO: 7.8,
+        CaO: 11.6, Na2O: 2.6, K2O: 0.14, TiO2: 1.5,
+      },
+      'Measured split',
+      'oxide'
+    );
+    const codes = (report.qualityFlags ?? []).map((f) => f.code);
+    expect(codes).not.toContain('iron-split-estimated');
+  });
+
+  it('raises iron-missing when no iron is reported at all', () => {
+    const report = identifyGeochemicalSample(
+      { SiO2: 60, Al2O3: 18, CaO: 8, Na2O: 4, K2O: 2, MgO: 3 },
+      'No iron',
+      'oxide'
+    );
+    expect((report.qualityFlags ?? []).map((f) => f.code)).toContain('iron-missing');
+  });
+});

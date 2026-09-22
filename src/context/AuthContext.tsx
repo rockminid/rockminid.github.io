@@ -1,14 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User } from 'firebase/auth';
+import type { User } from 'firebase/auth';
 import {
-  auth,
   signInWithGoogle,
   logOut,
   onAuthStateChanged,
   isCloudEnabled,
-  db,
+  loadFirebase,
 } from '../lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { syncLocalCollectionToCloud } from '../services/collectionService';
 
 interface AuthContextType {
@@ -47,15 +45,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    // Subscribing pulls in the Firebase SDK. That chunk is no longer part of
+    // the entry graph, so the fetch no longer blocks first paint — which was
+    // the actual cost. Subscribing is NOT deferred any further: `loading`
+    // gates the sign-in button, so delaying this leaves a dead button on
+    // screen, and a returning user would see "Sign In" flip to their avatar.
+    // Saving a little more bandwidth is not worth either.
+    const unsubscribe = onAuthStateChanged(async (currentUser) => {
       setUser(currentUser);
       setLoading(false);
 
       if (currentUser) {
         // Upsert user profile in firestore safely obeying security rules
         try {
-          if (!db) return;
-          const userDocRef = doc(db, 'users', currentUser.uid);
+          const fb = await loadFirebase();
+          if (!fb) return;
+          const { doc, getDoc, setDoc } = await import('firebase/firestore');
+          const userDocRef = doc(fb.db, 'users', currentUser.uid);
           const existingSnap = await getDoc(userDocRef);
           
           if (!existingSnap.exists()) {

@@ -203,7 +203,12 @@ the exact ingestion parameters and record counts.
 npm test
 ```
 
-242 tests. The geochemistry is anchored on exact stoichiometric end-members: a
+296 tests, of which 274 cover the deterministic engine and 22 cover components
+(the error boundary, the data-quality panel, the match explanation). Engine
+tests run in the same jsdom environment as the component tests; the whole suite
+finishes in about three seconds.
+
+The geochemistry is anchored on exact stoichiometric end-members: a
 CIPW norm of pure albite must return ~100% normative albite, pure anorthite must
 give ASI exactly 1.00, and so on. The suite also asserts mass balance and silica
 closure for every norm, checks the published Le Bas TAS field boundaries, and

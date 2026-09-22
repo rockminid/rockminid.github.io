@@ -1,14 +1,18 @@
-import {
-  collection,
-  doc,
-  setDoc,
-  deleteDoc,
-  onSnapshot,
-  getDocs,
-  serverTimestamp,
-} from 'firebase/firestore';
-import { User } from 'firebase/auth';
-import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+/**
+ * Saved specimen collection.
+ *
+ * Local-first: every write hits localStorage synchronously, so the collection
+ * works with no account and no network. Cloud mirroring is a best-effort
+ * addition on top.
+ *
+ * The Firestore SDK is imported dynamically at each call site rather than at
+ * the top of the module. A static import here pulled all ~528 kB of Firebase
+ * into the entry chunk, so every visitor paid for it — including the majority
+ * who never sign in.
+ */
+
+import type { User } from 'firebase/auth';
+import { loadFirebase, handleFirestoreError, OperationType } from '../lib/firebase';
 import { SavedSample } from '../types/geochem';
 
 const LOCAL_STORAGE_KEY = 'geochem_saved_collection_v1';
@@ -69,10 +73,12 @@ export async function saveSampleToCollection(
   saveLocalCollection(updatedList);
 
   // If signed in and cloud is configured, mirror to Firestore.
-  if (user && db) {
+  const fb = user ? await loadFirebase() : null;
+  if (user && fb) {
     const path = `users/${user.uid}/savedSamples`;
     try {
-      const docRef = doc(db, path, id);
+      const { doc, setDoc } = await import('firebase/firestore');
+      const docRef = doc(fb.db, path, id);
       // Clean undefined values for Firestore compatibility
       const firestorePayload = JSON.parse(JSON.stringify({
         ...fullSample,
@@ -99,10 +105,12 @@ export async function deleteSampleFromCollection(
   saveLocalCollection(updatedList);
 
   // If signed in and cloud is configured, delete the mirrored copy too.
-  if (user && db) {
+  const fb = user ? await loadFirebase() : null;
+  if (user && fb) {
     const path = `users/${user.uid}/savedSamples`;
     try {
-      const docRef = doc(db, path, sampleId);
+      const { doc, deleteDoc } = await import('firebase/firestore');
+      const docRef = doc(fb.db, path, sampleId);
       await deleteDoc(docRef);
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, `${path}/${sampleId}`);
@@ -112,15 +120,20 @@ export async function deleteSampleFromCollection(
 
 // Sync local samples to Firestore on login
 export async function syncLocalCollectionToCloud(user: User): Promise<void> {
-  if (!db) return;
   const localItems = getLocalCollection();
+  // Checked before loading the SDK: an empty collection needs no network and
+  // no 528 kB download.
   if (localItems.length === 0) return;
+
+  const fb = await loadFirebase();
+  if (!fb) return;
+  const { doc, setDoc } = await import('firebase/firestore');
 
   const path = `users/${user.uid}/savedSamples`;
   for (const item of localItems) {
     if (!item.isSynced || item.userId !== user.uid) {
       try {
-        const docRef = doc(db, path, item.id);
+        const docRef = doc(fb.db, path, item.id);
         const syncedItem: SavedSample = {
           ...item,
           userId: user.uid,
@@ -139,16 +152,23 @@ export function subscribeToUserCollection(
   user: User,
   onUpdate: (samples: SavedSample[]) => void
 ): () => void {
-  if (!db) {
-    // Local-only deployment: serve the local collection once and do not
-    // pretend to hold a live subscription.
-    onUpdate(getLocalCollection());
-    return () => {};
-  }
-  const path = `users/${user.uid}/savedSamples`;
-  const colRef = collection(db, path);
+  // Serve what is already on the device immediately, so the list is never
+  // empty while the SDK loads, and so a local-only deployment still works.
+  onUpdate(getLocalCollection());
 
-  const unsubscribe = onSnapshot(
+  let cancelled = false;
+  let detach: (() => void) | null = null;
+
+  void (async () => {
+    const fb = await loadFirebase();
+    if (cancelled || !fb) return;
+    const { collection, onSnapshot } = await import('firebase/firestore');
+    if (cancelled) return;
+
+    const path = `users/${user.uid}/savedSamples`;
+    const colRef = collection(fb.db, path);
+
+    detach = onSnapshot(
     colRef,
     (snapshot) => {
       const cloudSamples: SavedSample[] = [];
@@ -166,7 +186,11 @@ export function subscribeToUserCollection(
     (error) => {
       handleFirestoreError(error, OperationType.LIST, path);
     }
-  );
+    );
+  })();
 
-  return unsubscribe;
+  return () => {
+    cancelled = true;
+    if (detach) detach();
+  };
 }

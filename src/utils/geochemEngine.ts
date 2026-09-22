@@ -183,12 +183,23 @@ export function assessDataQuality(
     });
   }
 
-  if (iron.isSplitEstimated) {
+  // A total-only iron basis means the norm WILL estimate a ferric/ferrous
+  // split, because it cannot produce magnetite otherwise.
+  //
+  // This used to test `iron.isSplitEstimated`, which is only ever true when a
+  // ratio was passed in — and `assessDataQuality` calls `resolveIron` without
+  // one. The flag could therefore never fire, so the single most common
+  // caveat in compiled data (the GEOROC norm is FeOT-only) was documented,
+  // tested for, and silently never shown.
+  if (iron.basis === 'FeOT' || iron.basis === 'Fe2O3T') {
+    const ratio = suggestedFe2O3FeORatio(oxides.SiO2);
     flags.push({
       code: 'iron-split-estimated',
       severity: 'info',
       message:
-        'Only total iron was reported. Fe2O3/FeO was estimated from silica content (Middlemost 1989) for the norm calculation.',
+        `Only total iron was reported (as ${iron.basis}). Fe2O3/FeO was estimated as ` +
+        `${ratio.toFixed(2)} from the silica content (Middlemost 1989) so the norm can ` +
+        `allocate magnetite. The oxidation state is assumed, not measured.`,
     });
   }
 
