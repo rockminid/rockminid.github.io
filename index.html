@@ -2,20 +2,32 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- maximum-scale=5 rather than 1: pinch-zoom must stay available. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
-    <title>RockMin ID - Geochemical &amp; Mineral Classifier</title>
-    <meta name="description" content="Identify minerals and rocks from oxide wt% and element wt% compositions with GEOROC/USGS reference datasets, interactive TAS diagram, D3 ternary diagrams (AFM, QAPF, Pyroxene Quad), petrographic reference dataset with stoichiometric formulas, and bulk CSV batch processing." />
-    <meta property="og:title" content="RockMin ID - Geochemical &amp; Mineral Classifier" />
-    <meta property="og:description" content="Identify minerals and rocks from oxide wt% and element wt% compositions with GEOROC/USGS reference datasets, interactive TAS diagram, D3 ternary diagrams (AFM, QAPF, Pyroxene Quad), petrographic reference dataset with stoichiometric formulas, and bulk CSV batch processing." />
+    <title>RockMin ID — Geochemical &amp; Mineral Classifier</title>
+    <meta name="description" content="Identify rocks and minerals from major-element compositions. Full CIPW norm, IUGS TAS classification with sub-root names, Irvine &amp; Baragar discriminants, ten ternary projections and structural-formula mineral identification. Deterministic, offline-capable, free." />
+    <meta name="author" content="Kishan Tiwari" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href="https://rockminid.github.io/" />
+
+    <!-- Open Graph. Absolute URLs are required here: a relative og:image is
+         not resolved by most crawlers and the card renders without a
+         picture. -->
+    <meta property="og:title" content="RockMin ID — Geochemical &amp; Mineral Classifier" />
+    <meta property="og:description" content="Identify rocks and minerals from major-element compositions. Full CIPW norm, IUGS TAS classification, Irvine &amp; Baragar discriminants, ten ternary projections and structural-formula mineral identification." />
     <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
     <meta property="og:url" content="https://rockminid.github.io/" />
     <meta property="og:site_name" content="RockMin ID" />
-    <link rel="canonical" href="https://rockminid.github.io/" />
-    <meta property="og:image" content="./og-image.png" />
-    <meta name="twitter:image" content="./og-image.png" />
+    <meta property="og:locale" content="en" />
+    <meta property="og:image" content="https://rockminid.github.io/og-image.png" />
+    <meta property="og:image:alt" content="RockMin ID — a TAS diagram and geochemical classification report" />
 
-    <!-- Mobile & PWA App Store Readiness -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="RockMin ID — Geochemical &amp; Mineral Classifier" />
+    <meta name="twitter:description" content="Deterministic rock and mineral classification from major-element chemistry. CIPW norm, TAS, AFM, QAPF and more, entirely in the browser." />
+    <meta name="twitter:image" content="https://rockminid.github.io/og-image.png" />
+
+    <!-- Mobile & PWA -->
     <meta name="theme-color" content="#1c1917" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -29,9 +41,64 @@
     <link rel="icon" href="./favicon.ico" sizes="any" />
     <link rel="icon" type="image/png" sizes="192x192" href="./pwa-192x192.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
+
+    <!-- Structured data. Declares the software, its licence and its DOI so
+         the citation is machine-readable, and states the price explicitly so
+         the listing is not treated as a paid product. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "RockMin ID",
+        "alternateName": "RockMin ID — Geochemical & Mineral Classifier",
+        "applicationCategory": "EducationalApplication",
+        "applicationSubCategory": "Geochemistry",
+        "operatingSystem": "Any modern web browser",
+        "url": "https://rockminid.github.io/",
+        "softwareVersion": "2.4.0",
+        "license": "https://opensource.org/licenses/MIT",
+        "identifier": "https://doi.org/10.5281/zenodo.22875578",
+        "description": "A deterministic geochemical classifier and petrological analysis platform. Rocks and minerals are identified from major-element compositions using a full CIPW weight and cation norm, the IUGS total alkali-silica classification with its sub-root naming rules, the published Irvine & Baragar (1971) discriminant equations, ten ternary projections, and structural-formula mineral identification. Reference distributions are derived from the GEOROC archives.",
+        "featureList": [
+          "CIPW normative mineralogy (weight and cation norm)",
+          "IUGS TAS classification with sub-root names",
+          "Irvine & Baragar alkaline and tholeiitic discriminants",
+          "AFM, QAPF, APF, pyroxene, feldspar and ultramafic ternary projections",
+          "Structural-formula (APFU) mineral identification",
+          "CSV batch processing",
+          "Offline use as an installable PWA"
+        ],
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "author": {
+          "@type": "Person",
+          "name": "Kishan Tiwari",
+          "url": "https://kishangeo.github.io",
+          "affiliation": {
+            "@type": "Organization",
+            "name": "Indian Institute of Technology Kharagpur"
+          }
+        },
+        "codeRepository": "https://github.com/rockminid/rockminid.github.io",
+        "isAccessibleForFree": true
+      }
+    </script>
   </head>
   <body class="bg-stone-950 text-stone-100 antialiased selection:bg-amber-600 selection:text-white">
     <div id="root"></div>
+    <noscript>
+      <div style="max-width:40rem;margin:4rem auto;padding:0 1.5rem;font-family:system-ui,sans-serif;color:#e7e5e4">
+        <h1 style="color:#fbbf24">RockMin ID needs JavaScript</h1>
+        <p>
+          Every calculation in RockMin ID — the CIPW norm, the TAS and ternary
+          projections, the mineral identification — runs in your browser rather
+          than on a server. Please enable JavaScript to use it.
+        </p>
+      </div>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

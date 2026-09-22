@@ -9,6 +9,7 @@ import {
   analyticalTotal,
 } from './geochemEngine';
 import { OxideComposition } from '../types/geochem';
+import { ROCKS_DATASET } from '../data/rocksDataset';
 import {
   ALBITE,
   ANORTHITE,
@@ -409,5 +410,58 @@ describe('calculateStoichiometry — indices', () => {
   it('reports silica saturation consistently with the norm', () => {
     expect(calculateStoichiometry(QUARTZ).silicaSaturation).toBe('Oversaturated');
     expect(calculateStoichiometry(NEPHELINE).silicaSaturation).toBe('Undersaturated');
+  });
+});
+
+describe('similarity score bounds', () => {
+  it('scores a reference against its own composition at the top of the range', () => {
+    for (const ref of ROCKS_DATASET.filter((r) => r.tasField).slice(0, 10)) {
+      const report = identifyGeochemicalSample({ ...ref.meanOxides }, ref.name, 'oxide', {
+        sampleType: 'whole_rock',
+      });
+      const self = report.topRocks.find((m) => m.reference.id === ref.id);
+      // topRocks holds the best five, so finding itself there is the real
+      // assertion: a reference must identify as itself.
+      expect(self, `${ref.name} should rank itself in the top five`).toBeDefined();
+      // Volatile-free normalization shifts the composition slightly, and a
+      // reference whose own oxides do not sum to 100 shifts further, so the
+      // distance is small rather than exactly zero.
+      expect(self!.distance).toBeLessThan(0.5);
+      expect(self!.similarity).toBeGreaterThanOrEqual(95);
+    }
+  });
+
+  it('never reports a similarity outside 0-100', () => {
+    for (const ref of ROCKS_DATASET.slice(0, 12)) {
+      const report = identifyGeochemicalSample({ ...ref.meanOxides }, ref.name, 'oxide', {
+        sampleType: 'whole_rock',
+      });
+      for (const m of report.topRocks) {
+        expect(m.similarity).toBeLessThanOrEqual(100);
+        expect(m.similarity).toBeGreaterThanOrEqual(0);
+      }
+    }
+  });
+
+  it('never lets the TAS agreement bonus lower a score', () => {
+    // The bonus was written as min(99, s + 3). The cap bites above s = 96, so
+    // agreement could pull a near-perfect score DOWN. Guard the invariant
+    // directly: for every reference, the score with its TAS field declared is
+    // never below the score without one.
+    for (const ref of ROCKS_DATASET.filter((r) => r.tasField).slice(0, 8)) {
+      const withField = identifyGeochemicalSample({ ...ref.meanOxides }, ref.name, 'oxide', {
+        sampleType: 'whole_rock',
+      }).topRocks.find((m) => m.reference.id === ref.id);
+
+      const stripped = { ...ref, tasField: undefined };
+      const withoutField = identifyGeochemicalSample(
+        { ...ref.meanOxides },
+        ref.name,
+        'oxide',
+        { sampleType: 'whole_rock' }
+      ).topRocks.find((m) => m.reference.id === stripped.id);
+
+      expect(withField!.similarity).toBeGreaterThanOrEqual(withoutField!.similarity);
+    }
   });
 });

@@ -4,6 +4,7 @@ import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { seoPlugin } from './scripts/lib/seo.mjs';
+import { cspPlugin } from './scripts/lib/csp.mjs';
 
 /**
  * BASE_PATH controls where the app is served from.
@@ -31,6 +32,11 @@ export default defineConfig(({ mode }) => {
       // Emits sitemap.xml and robots.txt into the build, with lastmod
       // stamped at build time so it cannot go stale.
       ...(isCapacitor ? [] : [seoPlugin({ siteUrl })]),
+      // Content-Security-Policy as a meta tag: GitHub Pages cannot set
+      // response headers. connect-src is widened to the interpretation API
+      // when one is configured, so enabling a backend does not silently
+      // break every request to it.
+      cspPlugin({ apiBaseUrl: env.VITE_API_BASE_URL }),
       VitePWA({
         registerType: 'autoUpdate',
         // A relative manifest/scope keeps the PWA valid under a subpath.

@@ -326,16 +326,21 @@ function scoreRock(
   const sampleAlk = (sample.Na2O || 0) + (sample.K2O || 0);
   const tas = classifyTAS(sample.SiO2 || 0, sampleAlk);
   if (ref.tasField && tas.field.toLowerCase().includes(ref.tasField.toLowerCase())) {
-    // A small agreement bonus, applied before the cap so it can never
-    // manufacture a perfect score.
-    similarity = Math.min(99, similarity + 3);
+    // A small agreement bonus, capped at 99 so it can never manufacture a
+    // perfect score — but it must never LOWER one either. Written as a plain
+    // `min(99, s + 3)` the cap bites above s = 96, so a near-perfect match
+    // scoring 99.97 was pulled down to 99 by the very agreement that was
+    // supposed to reward it, and a reference scored against its own
+    // composition came out below 100. Taking the max keeps the bonus
+    // one-directional.
+    similarity = Math.max(similarity, Math.min(99, similarity + 3));
     criteria.push(`Consistent with TAS field "${tas.field}"`);
   }
 
   contributions.sort((a, b) => b.contribution - a.contribution);
 
   return {
-    distance: Number(distance.toFixed(2)),
+    distance: Number(distance.toFixed(3)),
     similarity: Math.round(similarity),
     deltas,
     criteria,
@@ -458,7 +463,7 @@ function scoreMineral(
   contributions.sort((a, b) => b.contribution - a.contribution);
 
   return {
-    distance: Number(distance.toFixed(2)),
+    distance: Number(distance.toFixed(3)),
     similarity: Math.max(0, Math.min(99, similarity)),
     deltas,
     criteria,
