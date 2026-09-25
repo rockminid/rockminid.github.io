@@ -502,3 +502,31 @@ describe('data quality flags', () => {
     expect((report.qualityFlags ?? []).map((f) => f.code)).toContain('iron-missing');
   });
 });
+
+describe('alteration and silica-deficit flags', () => {
+  const BASALT = { SiO2: 50.4, TiO2: 1.5, Al2O3: 15.3, FeO: 8.9, Fe2O3: 1.4, MnO: 0.17, MgO: 7.8, CaO: 11.6, Na2O: 2.6, K2O: 0.14, P2O5: 0.12 };
+  const codes = (ox: Record<string, number>) =>
+    (identifyGeochemicalSample(ox, 'x', 'oxide', { sampleType: 'whole_rock' }).qualityFlags ?? []).map((f) => f.code);
+
+  it('flags alteration from LOI above 3 wt%', () => {
+    expect(codes({ ...BASALT, LOI: 3.5 })).toContain('high-loi');
+  });
+
+  it('flags alteration from separately reported H2O+ and CO2 when there is no LOI', () => {
+    expect(codes({ ...BASALT, 'H2O+': 2.2, CO2: 1.1 })).toContain('high-loi');
+  });
+
+  it('does not add H2O+ to LOI, which already includes it', () => {
+    // LOI 2.5 with H2O+ 1.5: the true volatile content is 2.5, not 4.0.
+    expect(codes({ ...BASALT, LOI: 2.5, 'H2O+': 1.5 })).not.toContain('high-loi');
+  });
+
+  it('raises silica-deficit when silica runs out after full desilication', () => {
+    // Far too little silica even to make olivine from the magnesia.
+    expect(codes({ SiO2: 10, MgO: 60, FeO: 10, CaO: 2 })).toContain('silica-deficit');
+  });
+
+  it('does not raise silica-deficit for an ordinary basalt', () => {
+    expect(codes(BASALT)).not.toContain('silica-deficit');
+  });
+});

@@ -222,12 +222,21 @@ export function assessDataQuality(
     });
   }
 
+  // Volatile content as a proxy for alteration. LOI already includes H2O+ and
+  // CO2 when a laboratory reports it, so it is used on its own when present;
+  // otherwise the separately determined volatiles are summed. Summing LOI
+  // with them would count the same water twice.
+  const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : 0);
   const loi = oxides.LOI;
-  if (typeof loi === 'number' && loi > 3) {
+  const separateVolatiles = num(oxides['H2O+']) + num(oxides.H2O) + num(oxides.CO2);
+  const volatiles = typeof loi === 'number' && Number.isFinite(loi) ? loi : separateVolatiles;
+  const volatileLabel =
+    typeof loi === 'number' && Number.isFinite(loi) ? 'LOI' : 'Reported H2O and CO2';
+  if (volatiles > 3) {
     flags.push({
       code: 'high-loi',
       severity: 'warning',
-      message: `LOI is ${loi.toFixed(2)} wt%. Alteration may have mobilized alkalis, affecting TAS and normative results.`,
+      message: `${volatileLabel} is ${volatiles.toFixed(2)} wt%. Alteration or hydration may have mobilized alkalis, affecting TAS and normative results.`,
     });
   }
 
@@ -608,6 +617,20 @@ export function identifyGeochemicalSample(
     pool.length > 1 ? Number((pool[0].similarity - pool[1].similarity).toFixed(1)) : undefined;
 
   const qualityFlags = assessDataQuality(input, inferredType);
+
+  // A silica deficit that survives the whole desilication sequence means the
+  // norm could not accommodate the composition: the phases it reports are
+  // short of silica and the allocation is incomplete. The residual was always
+  // reported as a number (silicaBalance); it is now also raised as a flag so
+  // it cannot go unnoticed. Units: moles SiO2 per 100 g, shown as wt% SiO2.
+  const deficitWt = ((cipwNorm.silicaBalance as number) || 0) * 60.084;
+  if (inferredType !== 'mineral' && deficitWt > 0.05) {
+    qualityFlags.push({
+      code: 'silica-deficit',
+      severity: deficitWt > 1 ? 'error' : 'warning',
+      message: `The CIPW norm is short of ${deficitWt.toFixed(2)} wt% SiO2 even after full desilication, so the normative assemblage is incomplete. Check SiO2 and the alkalis for transcription errors, or whether the sample is a carbonatite or other non-silicate rock for which the norm is not designed.`,
+    });
+  }
   const applicability = tasApplicability({
     sampleType: inferredType,
     loi: input.LOI,

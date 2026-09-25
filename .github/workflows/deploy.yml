@@ -3,6 +3,10 @@ name: Build and deploy to GitHub Pages
 on:
   push:
     branches: [main]
+  # Pull requests run the full typecheck, test and build gate, but never
+  # deploy: see the `if:` conditions on the upload and deploy steps.
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -12,8 +16,8 @@ permissions:
 
 # Never run two deployments at once; don't cancel one already in flight.
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.ref) || 'pages' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:
@@ -84,12 +88,14 @@ jobs:
         run: touch dist/.nojekyll
 
       - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
         with:
           path: dist
 
   deploy:
     name: Deploy
     needs: build
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

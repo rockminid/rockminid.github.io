@@ -114,11 +114,21 @@ export function mapHeaderToGeochem(rawHeader: string): { key: string; isElement:
   if (clean.startsWith('sio2')) return { key: 'SiO2', isElement: false };
   if (clean.startsWith('tio2')) return { key: 'TiO2', isElement: false };
   if (clean.startsWith('al2o3')) return { key: 'Al2O3', isElement: false };
-  if (clean.startsWith('fe2o3')) return { key: 'Fe2O3', isElement: false };
-  if (clean === 'feo' || clean.startsWith('feowt')) return { key: 'FeO', isElement: false };
-  if (clean === 'feot' || clean === 'feotot' || clean === 'totalfe' || clean === 'fetotal') {
+  // Total iron is tested BEFORE the FeO / Fe2O3 prefixes. Otherwise
+  // "Fe2O3T" and "Fe2O3(T)" start with "fe2o3" and are read as MEASURED
+  // ferric iron, making every sample appear fully oxidized, while GEOROC's
+  // own "FEOT(WT%)" header matched nothing and its iron was silently dropped.
+  if (/^fe2o3(t|tot|total|\*)/.test(clean)) return { key: 'Fe2O3T', isElement: false };
+  if (
+    /^feo(t|tot|total|\*)/.test(clean) ||
+    clean === 'totalfe' ||
+    clean === 'fetotal' ||
+    clean === 'fet'
+  ) {
     return { key: 'FeOT', isElement: false };
   }
+  if (clean.startsWith('fe2o3')) return { key: 'Fe2O3', isElement: false };
+  if (clean === 'feo' || clean.startsWith('feowt')) return { key: 'FeO', isElement: false };
   if (clean.startsWith('mno')) return { key: 'MnO', isElement: false };
   if (clean.startsWith('mgo')) return { key: 'MgO', isElement: false };
   if (clean.startsWith('cao')) return { key: 'CaO', isElement: false };
@@ -127,9 +137,18 @@ export function mapHeaderToGeochem(rawHeader: string): { key: string; isElement:
   if (clean.startsWith('p2o5')) return { key: 'P2O5', isElement: false };
   if (clean.startsWith('cr2o3')) return { key: 'Cr2O3', isElement: false };
   if (clean.startsWith('nio')) return { key: 'NiO', isElement: false };
-  if (clean.startsWith('loi') || clean === 'h2o' || clean === 'h2oplus' || clean === 'lossonignition') {
+  if (clean.startsWith('loi') || clean === 'lossonignition') {
     return { key: 'LOI', isElement: false };
   }
+  // Volatiles keep their own identity: the engine excludes all of them from
+  // the volatile-free basis, but CO2 also drives normative calcite, and
+  // H2O+ / H2O- feed the alteration check. Previously H2O+ and CO2 were
+  // dropped and bare H2O was relabelled as LOI.
+  // The cleaner above strips hyphens, so "H2O-" arrives as "h2o" and is kept
+  // as generic H2O; "+" survives, so H2O+ is distinguishable.
+  if (clean === 'h2oplus' || clean.startsWith('h2o+')) return { key: 'H2O+', isElement: false };
+  if (clean === 'h2o' || clean.startsWith('h2owt') || clean === 'h2ot') return { key: 'H2O', isElement: false };
+  if (clean === 'co2' || clean.startsWith('co2wt')) return { key: 'CO2', isElement: false };
 
   // Elements (pure wt%)
   if (clean === 'si' || clean === 'silicon') return { key: 'Si', isElement: true };

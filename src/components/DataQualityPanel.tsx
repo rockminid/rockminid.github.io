@@ -55,6 +55,7 @@ const FLAG_REFERENCE: Record<string, string> = {
   'iron-missing': 'Manual §4.1. The norm, Mg# and the AFM projection all depend on iron.',
   'sparse-analysis': 'Manual §4.4. Fewer analytes means less to discriminate candidates with.',
   'high-loi': 'Manual §6.3. Alteration mobilizes alkalis, and alkalis are half of TAS.',
+  'silica-deficit': 'Manual §8.3. Silica ran out even after the full desilication sequence.',
   'sample-type-mineral':
     'Manual §12.5. TAS, the CIPW norm and the whole-rock ternaries are undefined here.',
 };
