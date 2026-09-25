@@ -107,17 +107,16 @@ are inlined into the browser bundle.
 
 ---
 
-## Android app
+## Installing as an app
 
-```bash
-npm run build:apk
-```
+RockMin ID is a Progressive Web App. There is no app-store build: install it
+straight from the browser on a phone, tablet or desktop.
 
-This builds the web assets and syncs them into a Capacitor Android project.
-See [MOBILE_BUILD_GUIDE.md](MOBILE_BUILD_GUIDE.md) for signing and Play Store
-submission. Regenerate the SHA-256 fingerprint in
-`public/.well-known/assetlinks.json` from your actual release keystore before
-publishing, or Android App Links will silently fail.
+- **Android** (Chrome, Edge, Samsung Internet): menu (⋮) → *Install app*.
+- **iPhone / iPad** (Safari): Share → *Add to Home Screen*.
+- **Desktop** (Chrome, Edge): the install icon at the end of the address bar.
+
+Once installed and opened online once, it works fully offline.
 
 ---
 

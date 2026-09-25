@@ -154,7 +154,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             })}
           </nav>
 
-          {/* Right-Side Actions: Share, Feedback, APK, Documentation, Theme Toggle, & User Auth */}
+          {/* Right-Side Actions: Share, Feedback, Install, Documentation, Theme Toggle, & User Auth */}
           {/* CRITICAL: Always immediately visible on mobile without horizontal scroll! */}
           <div className="shrink-0 flex items-center gap-1 sm:gap-1.5">
             {/* Share App / Specimen Button */}
@@ -179,15 +179,15 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="hidden md:inline">Feedback</span>
             </button>
 
-            {/* APK / Mobile Install Package */}
+            {/* Install the web app */}
             <button
-              id="btn-nav-apk"
+              id="btn-nav-install"
               onClick={onOpenMobileApp}
               className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-750 text-stone-200 hover:text-emerald-300 border border-stone-700 text-xs font-medium transition-colors shadow-sm"
-              title="Package APK for Android / Install PWA / Play Store"
+              title="Install RockMin ID as a web app"
             >
               <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden xl:inline">APK &amp; App</span>
+              <span className="hidden xl:inline">Install App</span>
             </button>
 
             {/* Documentation & Glossary Button */}
@@ -297,7 +297,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       className="w-full text-left px-3 py-2 text-xs text-stone-300 hover:bg-stone-800 flex items-center gap-2"
                     >
                       <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>APK &amp; Mobile Setup</span>
+                      <span>Install App</span>
                     </button>
 
                     <div className="my-1 border-t border-stone-800" />
@@ -392,10 +392,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={onOpenMobileApp}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-stone-850 hover:bg-stone-800 text-emerald-400 border border-stone-800 shadow-sm shrink-0"
-              title="Download Android APK / App"
+              title="Install RockMin ID as a web app"
             >
               <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
-              <span>APK App</span>
+              <span>Install App</span>
             </button>
 
             <button

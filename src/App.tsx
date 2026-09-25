@@ -104,7 +104,7 @@ export default function App() {
   const [isDocModalOpen, setIsDocModalOpen] = useState<boolean>(false);
   const [docInitialTab, setDocInitialTab] = useState<'manual' | 'glossary' | 'cite'>('manual');
 
-  // Share, Feedback, Privacy, and Mobile APK Modal states
+  // Share, Feedback, Privacy, and Install modal states
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
   const [shareSampleDetail, setShareSampleDetail] = useState<{ name?: string; summary?: string }>({});
 
@@ -323,7 +323,7 @@ export default function App() {
                 </span>
               </div>
 
-              {/* Quick documentation, privacy, feedback, APK shortcuts */}
+              {/* Quick documentation, privacy, feedback, install shortcuts */}
               <div className="flex flex-wrap items-center gap-3 text-stone-400">
                 <button
                   onClick={() => setIsPrivacyModalOpen(true)}
@@ -350,7 +350,7 @@ export default function App() {
                   onClick={() => setIsMobileModalOpen(true)}
                   className="hover:text-emerald-400 transition-colors font-medium cursor-pointer"
                 >
-                  Mobile App
+                  Install App
                 </button>
                 <span>&bull;</span>
                 <button
