@@ -1,8 +1,7 @@
 /**
  * Firebase configuration, read from build-time environment variables.
  *
- * Previously this was a committed `firebase-applet-config.json` pointing at a
- * disposable AI Studio project. Web API keys are not secrets (they are visible
+ * Web API keys are not secrets (they are visible
  * in any client bundle), but the project must be one you control and the key
  * must be domain-restricted in the Google Cloud console.
  *

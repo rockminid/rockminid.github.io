@@ -30,7 +30,6 @@
     "preview": "vite preview",
     "start": "node dist-server/server.cjs",
     "clean": "rimraf dist dist-server",
-    "build:apk": "bash ./build-apk.sh",
     "ingest:georoc": "node --max-old-space-size=8192 scripts/ingest-georoc-raw.mjs",
     "ingest:georoc:staged": "node scripts/ingest-georoc.mjs",
     "lint": "tsc --noEmit",

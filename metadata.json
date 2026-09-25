@@ -1,6 +1,0 @@
-{
-  "name": "RockMin ID",
-  "description": "Identify minerals and rocks from oxide wt% and element wt% compositions with GEOROC/USGS reference datasets, interactive TAS diagram, D3 ternary diagrams (AFM, QAPF, Pyroxene Quad), petrographic reference dataset with stoichiometric formulas, and bulk CSV batch processing.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

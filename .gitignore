@@ -29,3 +29,8 @@ RockMin_GEOROC_*Staged*.csv
 # Local Firebase / secrets
 firebase-applet-config.json
 .firebase/
+
+# Local tooling and working notes
+.claude/
+HANDOFF.md
+ROADMAP.md
