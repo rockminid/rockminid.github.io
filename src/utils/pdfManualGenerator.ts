@@ -1,5 +1,49 @@
 import type { jsPDF as JsPdfType } from 'jspdf';
 import { PETROLOGICAL_GLOSSARY } from '../data/petrologicalGlossary';
+
+/** Characters outside WinAnsi, mapped to the closest printable equivalent. */
+const PDF_CHAR_MAP: Record<string, string> = {
+  '₀': '0', '₁': '1', '₂': '2', '₃': '3', '₄': '4',
+  '₅': '5', '₆': '6', '₇': '7', '₈': '8', '₉': '9',
+  '⁰': '0', '⁴': '4', '⁵': '5', '⁶': '6', '⁷': '7',
+  '⁸': '8', '⁹': '9', '⁺': '+', '⁻': '-',
+  '−': '-', // minus sign
+  '′': "'", '″': '"', // prime, double prime
+  '≤': '<=', '≥': '>=', '≈': '~', '≠': '!=',
+  '→': '->', '←': '<-', '↔': '<->',
+  '∑': 'Sum', 'Δ': 'Delta', 'Σ': 'Sum',
+  'α': 'alpha', 'β': 'beta', 'γ': 'gamma', 'δ': 'delta',
+  'λ': 'lambda', 'σ': 'sigma', 'ρ': 'rho',
+  ' ': ' ', ' ': ' ', ' ': ' ', ' ': ' ',
+  '‑': '-', // non-breaking hyphen
+};
+
+/** The characters WinAnsi (cp1252) adds beyond Latin-1 in 0x80-0x9F. */
+const WINANSI_EXTRA = new Set(
+  '€‚ƒ„…†‡ˆ‰Š‹ŒŽ' +
+    '‘’“”•–—˜™š›œžŸ'
+);
+
+/**
+ * Makes a string drawable with jsPDF's built-in Helvetica. Characters it can
+ * encode are kept; known symbols are spelled out; accents outside the set are
+ * stripped; anything left is replaced rather than corrupting the whole line.
+ */
+export function pdfSafe(input: string): string {
+  let out = '';
+  for (const ch of input) {
+    const code = ch.codePointAt(0)!;
+    if (code < 0x80 || (code >= 0xa0 && code <= 0xff) || WINANSI_EXTRA.has(ch)) {
+      out += ch;
+    } else if (PDF_CHAR_MAP[ch] !== undefined) {
+      out += PDF_CHAR_MAP[ch];
+    } else {
+      const base = ch.normalize('NFKD').replace(/[̀-ͯ]/g, '');
+      out += base && [...base].every((c) => c.codePointAt(0)! < 0x100) ? base : '?';
+    }
+  }
+  return out;
+}
 import { APP_VERSION, CONCEPT_DOI, CITATION_APA } from '../version';
 
 /**
@@ -26,6 +70,33 @@ export async function generateRockMinManualPDF(): Promise<void> {
     unit: 'mm',
     format: 'a4',
   });
+
+  // jsPDF's built-in Helvetica only encodes the WinAnsi (cp1252) character
+  // set. Anything outside it, such as the Unicode subscripts in "Al₂O₃", the
+  // minus sign or "≥", makes jsPDF fall back to a two-byte encoding that the
+  // font cannot render: the text prints as garbage, and its width is measured
+  // wrongly, so wrapped lines ran past the right margin and even off the page.
+  // Every string is therefore made WinAnsi-safe before it is measured or
+  // drawn, and lines are wrapped 1 mm short of the nominal width so rounding
+  // in the font metrics can never push a line over the margin.
+  const _text = doc.text.bind(doc);
+  const _split = doc.splitTextToSize.bind(doc);
+  const WRAP_SAFETY_MM = 1;
+  (doc as unknown as { text: unknown }).text = (txt: string | string[], ...rest: unknown[]) =>
+    (_text as (...a: unknown[]) => JsPdfType)(
+      Array.isArray(txt) ? txt.map(pdfSafe) : pdfSafe(String(txt)),
+      ...rest
+    );
+  (doc as unknown as { splitTextToSize: unknown }).splitTextToSize = (
+    txt: string,
+    width: number,
+    opts?: unknown
+  ) => _split(pdfSafe(String(txt)), width - WRAP_SAFETY_MM, opts as never);
+  // Measure exactly what will be drawn, or a label width and its drawn text
+  // can disagree.
+  const _width = doc.getTextWidth.bind(doc);
+  (doc as unknown as { getTextWidth: unknown }).getTextWidth = (txt: string) =>
+    _width(pdfSafe(String(txt)));
 
   const pageWidth = doc.internal.pageSize.getWidth(); // 210mm
   const pageHeight = doc.internal.pageSize.getHeight(); // 297mm
@@ -142,6 +213,10 @@ export async function generateRockMinManualPDF(): Promise<void> {
 
   // Render highlighted callout note box
   const renderCallout = (title: string, message: string, variant: 'amber' | 'blue' | 'emerald' = 'amber'): void => {
+    // Set the body font BEFORE wrapping: the wrap is measured in the current
+    // font, which used to be whatever the previous element had left behind.
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
     const lines = doc.splitTextToSize(message, contentWidth - 10);
     const boxHeight = lines.length * 3.8 + (title ? 11 : 7);
     checkPageBreak(boxHeight + 4);
@@ -437,7 +512,7 @@ export async function generateRockMinManualPDF(): Promise<void> {
       ['geochemEngine', 'Orchestrator. identifyGeochemicalSample() is the single entry point for the whole pipeline.', '-'],
       ['georocReference', 'Lazy runtime loader for the GEOROC-derived reference library.', 'GEOROC / DIGIS, Georg-August-Universitaet Goettingen']
     ],
-    [30, 78, 66]
+    [37, 73, 64]
   );
 
   renderCallout(
@@ -823,7 +898,7 @@ export async function generateRockMinManualPDF(): Promise<void> {
       ['22', 'Kalsilite', 'Kp', 'From leucite at the extreme undersaturated end, KAlSiO4. Reached only by kamafugite-like compositions.'],
       ['23', 'Quartz', 'Q', 'Free silica remaining after every silicate demand has been satisfied']
     ],
-    [8, 32, 12, 122]
+    [10, 32, 12, 120]
   );
 
   renderCallout(
