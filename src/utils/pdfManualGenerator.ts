@@ -446,7 +446,7 @@ export async function generateRockMinManualPDF(): Promise<void> {
     ['08', 'CIPW Normative Mineralogy', 'Full 22-phase allocation order, desilication cascade, and mass balance'],
     ['09', 'The Cation Norm', 'Cations per formula unit, normative plagioclase P, and colour index CI'],
     ['10', 'Irvine & Baragar (1971) Classification', 'Appendix III equations for Figs. 2, 3, 4, 6 and 7, implemented verbatim'],
-    ['11', 'Ternary Systems & Projections', 'Ten projections: AFM, QAPF, APF, pyroxene, feldspar, basalt, ultramafic'],
+    ['11', 'Ternary Systems & Projections', 'Eleven projections: AFM, ACF, QAPF, APF, pyroxene, feldspar, basalt, ultramafic'],
     ['12', 'Mineral Identification by Structural Formula', 'APFU recasting, oxygen bases, site requirements, and end-members'],
     ['13', 'The GEOROC Reference Library', 'Provenance, percentile distributions, grouping rules, and citation duty'],
     ['14', 'Batch Geochemical Processor', 'CSV ingestion, header aliases, 100-row limit, and range filters'],
@@ -530,7 +530,7 @@ export async function generateRockMinManualPDF(): Promise<void> {
       ['Single', 'Single Sample Analyzer', 'Detailed geochemical evaluation of one unknown spot or whole-rock analysis'],
       ['Batch', 'Bulk CSV Processor', 'Process up to 1,000 EPMA spots or XRF analyses with global range filters'],
       ['TAS', 'Total Alkali-Silica Projection', 'Volcanic classification, rock suite comparison, and alkaline discrimination'],
-      ['Ternary', 'Ten Compositional Projections', 'AFM (igneous and metamorphic), QAPF, APF, feldspar, pyroxene, basalt tetrahedron, Ol-Opx-Cpx'],
+      ['Ternary', 'Eleven Compositional Projections', 'AFM (igneous and metamorphic), ACF, QAPF, APF, feldspar, pyroxene, basalt tetrahedron, Ol-Opx-Cpx'],
       ['Dataset', 'Reference Specimen Database', 'Explore benchmark records, view occurrence facts, and load chemistry'],
       ['Collection', 'Saved Specimen Archive', 'Search, tag, export, and synchronize user analyses across devices'],
       ['Documentation', 'Manual / Glossary / Citation', 'Searchable glossary, academic citations, BibTeX, and this PDF export']
@@ -1064,13 +1064,14 @@ export async function generateRockMinManualPDF(): Promise<void> {
   );
 
   // ==================== SECTION 11: TERNARY SYSTEMS ====================
-  renderSectionHeader('11', 'Ternary Systems & Projections', 'Ten compositional projections and the formula each applies');
+  renderSectionHeader('11', 'Ternary Systems & Projections', 'Eleven compositional projections and the formula each applies');
 
   renderTable(
     ['System', 'Apices', 'Reference'],
     [
       ['AFM Igneous', 'F = FeO*, A = Na2O + K2O, M = MgO', 'Irvine & Baragar (1971) Fig. 2; Wager & Deer (1939)'],
       ['AFM Metamorphic', 'A = Al2O3, F = FeO*, M = MgO', 'Thompson (1957); Spear (1993)'],
+      ['ACF', 'A = Al2O3 + Fe2O3 - Na2O - K2O, C = CaO - 10/3 P2O5 - CO2, F = FeO + MgO + MnO', 'Eskola (1915); Winter (2010); Spear (1993)'],
       ['QAPF Plutonic', 'Q = quartz, A = alkali feldspar, P = plagioclase', 'Streckeisen (1974, 1976) / IUGS'],
       ['QAPF Volcanic', 'Q, A, P from the CIPW norm', 'Streckeisen (1978, 1979); Le Maitre (2002)'],
       ['APF Plutonic', 'F = feldspathoids, A = alkali feldspar, P = plagioclase', 'Streckeisen (1974, 1976); Le Maitre (2002)'],
@@ -1089,6 +1090,7 @@ export async function generateRockMinManualPDF(): Promise<void> {
     [
       ['AFM Igneous', 'Delegates to the published Irvine & Baragar procedure, which also applies their P < 40 precondition and the Fig. 6 fallback. F = FeO + 0.8998 Fe2O3, A = Na2O + K2O, M = MgO, rescaled so F + A + M = 100.'],
       ['AFM Metamorphic', 'A = Al2O3, F = FeO + 0.8998 Fe2O3, M = MgO, rescaled to 100. A projection for pelitic assemblages, not a classifier.'],
+      ['ACF', 'Molar proportions. A = Al2O3 + Fe2O3 - Na2O - K2O removes the Al held in albite, K-feldspar and muscovite; Fe3+ joins A because it replaces Al in epidote and garnet. C = CaO - 10/3 P2O5 - CO2 removes the Ca in apatite and calcite. CO2 left over after calcite is given to MgO (dolomite, magnesite) and then FeO (siderite) before F = FeO + MgO + MnO is formed. Measured FeO and Fe2O3 are used as given; a reported total is carried as FeO, which moves the point toward F. A negative A (alkalis exceed Al) is set to zero and the point is flagged as outside the diagram.'],
       ['QAPF Plutonic', 'Q, Or, Ab and An are taken from the shared CIPW norm. The IUGS rule that plagioclase more sodic than An05 counts as alkali feldspar is applied by splitting albite on the normative anorthite content: if 100 An/(An+Ab) < 5 the albite goes to A, otherwise to P.'],
       ['QAPF Volcanic', 'Same normative source, with a fixed split of A = Or + 0.1 Ab and P = An + 0.9 Ab.'],
       ['APF Plutonic / Volcanic', 'F = Ne + Lc, A = Or + 0.1 Ab, P = An + 0.9 Ab, from the norm. In the volcanic variant normative olivine above 10% distinguishes basanitic from tephritic names.'],
@@ -1111,6 +1113,8 @@ export async function generateRockMinManualPDF(): Promise<void> {
   renderBullet('Pyroxene quadrilateral', 'Wo >= 45 diopside or hedenbergite by Mg/(Mg+Fe); Wo 20-45 augite; Wo 15-20 subcalcic augite; Wo 5-15 pigeonite; Wo < 5 orthopyroxene, named enstatite through ferrosilite by Mg ratio.');
   renderBullet('Feldspar', 'Or > 50 alkali feldspar; otherwise the plagioclase series by An content: albite An0-10, oligoclase An10-30, andesine An30-50, labradorite An50-70, bytownite An70-90, anorthite An90-100.');
   renderBullet('Ultramafic', 'Dunite above 90% olivine, then harzburgite, lherzolite and wehrlite, passing into the pyroxenites.');
+  renderBullet('ACF', 'Seven three-phase fields of a schematic medium-pressure amphibolite-facies topology with quartz in excess, joining ideal phase positions: Ky/Sil (A100), plagioclase (A50 C50), zoisite (A43 C57), calcite (C100), diopside (C50 F50), hornblende (A14 C29 F57), garnet (A25 F75) and Ath/Cum/Opx (F100). Fields: Ky/Sil + Pl + Grt; Pl + Grt + Hbl; Grt + Hbl + Ath/Cum; Hbl + Ath/Cum + Di; Pl + Hbl + Di; Pl + Zo/Ep + Di; Zo/Ep + Cal + Di. Grossular, tremolite and chlorite are drawn as markers only. Tie-lines change with grade, so the field gives the expected assemblage in the amphibolite facies and not at other grades; use it to compare rocks, not to assign facies.');
+  renderParagraph('Use the ACF diagram for metabasites, mafic igneous rocks, marls and impure limestones. Basalts, gabbros and amphibolites plot close to hornblende, between the Pl + Hbl + Di and Pl + Grt + Hbl fields; shales and S-type granites plot on the aluminous side. Pelites are better shown on the AFM (Thompson) projection, which keeps Fe and Mg apart.');
 
   // ==================== SECTION 12: MINERAL IDENTIFICATION ====================
   renderSectionHeader('12', 'Mineral Identification by Structural Formula', 'Why oxide distance is the wrong test, and what replaces it');
@@ -1532,6 +1536,7 @@ export async function generateRockMinManualPDF(): Promise<void> {
     'Morse, S. A. (1980). Basalts and Phase Diagrams. Springer-Verlag.',
     'Noble, D. C. (1968). Systematic variation of major elements in comendite and pantellerite glasses. Earth and Planetary Science Letters, 4(2), 167-172.',
     'Shand, S. J. (1943). Eruptive Rocks: Their Genesis, Composition and Classification (2nd ed.). John Wiley & Sons. [The alumina saturation index]',
+    'Eskola, P. (1915). Om sambandet mellan kemisk och mineralogisk sammansattning hos Orijarvitraktens metamorfa bergarter. Bulletin de la Commission Geologique de Finlande, 44, 1-145. [ACF diagram]',
     'Spear, F. S. (1993). Metamorphic Phase Equilibria and Pressure-Temperature-Time Paths. Mineralogical Society of America.',
     'Streckeisen, A. (1974). Classification and nomenclature of plutonic rocks. Geologische Rundschau, 63(2), 773-786.',
     'Streckeisen, A. (1976). To each plutonic rock its proper name. Earth-Science Reviews, 12(1), 1-33. [QAPF field limits, p.10]',
@@ -1539,6 +1544,7 @@ export async function generateRockMinManualPDF(): Promise<void> {
     'Thompson, J. B. (1957). The graphical analysis of mineral assemblages in pelitic schists. American Mineralogist, 42(11-12), 842-858. [Metamorphic AFM]',
     'Thornton, C. P., & Tuttle, O. F. (1960). Chemistry of the igneous rocks; I, Differentiation index. American Journal of Science, 258(9), 664-684.',
     'Wager, L. R., & Deer, W. A. (1939). Geological investigations in East Greenland, Part III: The petrology of the Skaergaard intrusion. Meddelelser om Gronland, 105(4), 1-352. [Origin of the AFM diagram]',
+    'Winter, J. D. (2010). Principles of Igneous and Metamorphic Petrology (2nd ed.). Prentice Hall. [ACF projection]',
     'Yoder, H. S., & Tilley, C. E. (1962). Origin of basalt magmas: an experimental study of natural and synthetic rock systems. Journal of Petrology, 3(3), 342-532. [Basalt tetrahedron]',
     'GEOROC (DIGIS, Georg-August-Universitaet Goettingen). Geochemistry of Rocks of the Oceans and Continents. https://georoc.eu [Reference library source; cite alongside the original publications]'
   ];

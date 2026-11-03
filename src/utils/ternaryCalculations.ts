@@ -2,7 +2,8 @@ import { OxideComposition } from '../types/geochem';
 // Import the calculators directly rather than through the engine barrel, to
 // keep the module graph acyclic.
 import { calculateCIPWNorm } from './cipw';
-import { totalIronAsFeO } from './iron';
+import { resolveIron, totalIronAsFeO } from './iron';
+import { pointInPolygon } from './tas';
 import { afmBoundaryCurve, afmBoundaryXF, classifyAFM } from './irvineBaragar';
 
 export type TernarySystemId =
@@ -15,7 +16,8 @@ export type TernarySystemId =
   | 'basalt-tetrahedron'
   | 'pyroxene-quad'
   | 'feldspar'
-  | 'ultramafic';
+  | 'ultramafic'
+  | 'acf';
 
 export interface TernaryApex {
   id: string;
@@ -2017,6 +2019,151 @@ export const ULTRAMAFIC_CONFIG: TernarySystemConfig = {
   },
 };
 
+// =============================================================
+// SYSTEM 11: ACF Diagram for Ca- and Al-rich metamorphic rocks
+// Eskola (1915); Winter (2010); Spear (1993)
+// A = Al2O3 + Fe2O3 - Na2O - K2O
+// C = CaO - 10/3 P2O5 - CO2
+// F = FeO + MgO + MnO            (all molar)
+// =============================================================
+
+// Ideal phase positions as [A, C, F]. These are drawn as fixed markers rather
+// than projected, because calcite projects to nothing once CO2 is removed.
+const ACF_PHASE = {
+  Als: [100, 0, 0], // kyanite / sillimanite / andalusite; muscovite after the K correction
+  An: [50, 50, 0], // plagioclase (anorthite component)
+  Zo: [42.86, 57.14, 0], // zoisite / clinozoisite, Ca2Al3Si3O12(OH)
+  Grs: [25, 75, 0],
+  Cal: [0, 100, 0], // calcite / wollastonite
+  Di: [0, 50, 50],
+  Tr: [0, 28.57, 71.43], // tremolite-actinolite, Ca2(Mg,Fe)5
+  Hbl: [14.29, 28.57, 57.14], // magnesiohornblende, Ca2(Mg,Fe)4Al(Si7Al)
+  Grt: [25, 0, 75], // almandine-pyrope
+  Chl: [16.67, 0, 83.33], // clinochlore, (Mg,Fe)5Al2
+  F: [0, 0, 100], // anthophyllite / cummingtonite / orthopyroxene
+} satisfies Record<string, [number, number, number]>;
+
+export const ACF_PHASES: Array<{ id: string; name: string; acf: [number, number, number] }> = [
+  { id: 'Als', name: 'Ky / Sil / And (Ms)', acf: ACF_PHASE.Als },
+  { id: 'An', name: 'Plagioclase (An)', acf: ACF_PHASE.An },
+  { id: 'Zo', name: 'Zoisite / Clinozoisite', acf: ACF_PHASE.Zo },
+  { id: 'Grs', name: 'Grossular', acf: ACF_PHASE.Grs },
+  { id: 'Cal', name: 'Calcite / Wollastonite', acf: ACF_PHASE.Cal },
+  { id: 'Di', name: 'Diopside', acf: ACF_PHASE.Di },
+  { id: 'Tr', name: 'Tremolite-Actinolite', acf: ACF_PHASE.Tr },
+  { id: 'Hbl', name: 'Hornblende', acf: ACF_PHASE.Hbl },
+  { id: 'Grt', name: 'Garnet (Alm-Prp)', acf: ACF_PHASE.Grt },
+  { id: 'Chl', name: 'Chlorite', acf: ACF_PHASE.Chl },
+  { id: 'F', name: 'Ath / Cum / Opx', acf: ACF_PHASE.F },
+];
+
+const acfTriangle = (
+  id: string,
+  name: string,
+  color: string,
+  vertices: [number, number, number][],
+  description: string
+): TernaryFieldPolygon => ({
+  id,
+  name,
+  color,
+  fillColor: `${color}26`,
+  textColor: color,
+  vertices,
+  labelPosition: [0, 1, 2].map((k) => vertices.reduce((s, v) => s + v[k], 0) / 3) as [number, number, number],
+  description,
+});
+
+const P = ACF_PHASE;
+
+export const ACF_CONFIG: TernarySystemConfig = {
+  id: 'acf',
+  name: 'ACF Diagram',
+  subtitle: 'A (Al₂O₃ + Fe₂O₃ − Na₂O − K₂O) – C (CaO − 10/3 P₂O₅ − CO₂) – F (FeO + MgO + MnO)',
+  description:
+    'Eskola-type ACF projection for metabasites, mafic igneous rocks and impure limestones, projected from quartz, from albite and K-feldspar or muscovite, and from H₂O and CO₂. The assemblage fields are a schematic medium-pressure amphibolite-facies topology with quartz in excess; tie-lines move with metamorphic grade, so a field gives the expected assemblage at that grade only.',
+  referenceAuthor: 'Eskola (1915); Winter (2010); Spear (1993)',
+  apices: {
+    top: {
+      id: 'A',
+      label: 'A',
+      sublabel: 'Al₂O₃ + Fe₂O₃ − Na₂O − K₂O',
+      color: '#818cf8',
+      oxideFormula: 'Al2O3 + Fe2O3 - Na2O - K2O (molar)',
+    },
+    bottomLeft: {
+      id: 'C',
+      label: 'C',
+      sublabel: 'CaO − 10/3 P₂O₅ − CO₂',
+      color: '#fbbf24',
+      oxideFormula: 'CaO - 3.33 P2O5 - CO2 (molar)',
+    },
+    bottomRight: {
+      id: 'F',
+      label: 'F',
+      sublabel: 'FeO + MgO + MnO',
+      color: '#34d399',
+      oxideFormula: 'FeO + MgO + MnO (molar)',
+    },
+  },
+  fields: [
+    acfTriangle('acf-als-pl-grt', 'Ky/Sil + Pl + Grt', '#6366f1', [P.Als, P.An, P.Grt],
+      'Aluminous metapelites and Al-rich metabasites.'),
+    acfTriangle('acf-pl-grt-hbl', 'Pl + Grt + Hbl', '#dc2626', [P.An, P.Grt, P.Hbl],
+      'Garnet amphibolite: the usual assemblage of metabasalts at middle to upper amphibolite grade.'),
+    acfTriangle('acf-grt-hbl-cum', 'Grt + Hbl + Ath/Cum', '#a855f7', [P.Grt, P.Hbl, P.F],
+      'Ca-poor, Fe-Mg-rich metabasites, such as basalts leached of Ca by sea-floor alteration.'),
+    acfTriangle('acf-hbl-cum-di', 'Hbl + Ath/Cum + Di', '#10b981', [P.Hbl, P.F, P.Di],
+      'Mg-rich metabasites and metamorphosed mafic-ultramafic cumulates.'),
+    acfTriangle('acf-pl-hbl-di', 'Pl + Hbl + Di', '#0ea5e9', [P.An, P.Hbl, P.Di],
+      'Ca-rich amphibolites and calc-silicate-bearing metabasites.'),
+    acfTriangle('acf-pl-zo-di', 'Pl + Zo/Ep + Di', '#f59e0b', [P.An, P.Zo, P.Di],
+      'Calc-silicate rocks from marls and calcareous shales.'),
+    acfTriangle('acf-zo-cal-di', 'Zo/Ep + Cal + Di (± Grs)', '#eab308', [P.Zo, P.Cal, P.Di],
+      'Impure marbles and calc-silicate rocks; grossular joins this field in Al-bearing marbles.'),
+  ],
+  projectOxides: (oxides: OxideComposition) => {
+    // Measured FeO and Fe2O3 are used as given. A reported total is carried as
+    // FeO, because the igneous ferric/ferrous rules do not apply to metamorphic rocks.
+    const iron = resolveIron(oxides);
+    const mol = (v: number | undefined, mw: number) => (v || 0) / mw;
+    const rawA =
+      mol(oxides.Al2O3, 101.961) + mol(iron.Fe2O3, 159.688) - mol(oxides.Na2O, 61.979) - mol(oxides.K2O, 94.196);
+    // CO2 is taken by calcite first; what is left goes to dolomite/magnesite
+    // (MgO), then siderite (FeO), so dolomitic limestones keep their silicate part.
+    let co2 = mol(oxides.CO2, 44.01);
+    const rawC = mol(oxides.CaO, 56.077) - (10 / 3) * mol(oxides.P2O5, 141.945) - co2;
+    co2 = Math.max(0, -rawC);
+    let mg = mol(oxides.MgO, 40.304);
+    let fe = mol(iron.FeO, 71.844);
+    const takeMg = Math.min(mg, co2);
+    mg -= takeMg;
+    co2 -= takeMg;
+    const takeFe = Math.min(fe, co2);
+    fe -= takeFe;
+    co2 -= takeFe;
+    const f = fe + mg + mol(oxides.MnO, 70.937);
+    // Peralkaline rocks (alkalis > Al) give a negative A: clamp and say so.
+    const a = Math.max(0, rawA);
+    const c = Math.max(0, rawC);
+    const total = a + c + f;
+
+    if (total <= 1e-6) return { a: 33.3, b: 33.3, c: 33.3, fieldName: 'Undetermined' };
+
+    const pt = { a: (a / total) * 100, b: (c / total) * 100, c: (f / total) * 100 };
+    let fieldName = 'Undetermined';
+    if (rawA < 0) fieldName = 'Outside ACF: alkalis exceed Al (A set to 0)';
+    else if (co2 > 1e-9) fieldName = 'Outside ACF: CO₂ exceeds Ca + Mg + Fe';
+    else {
+      const hit = ACF_CONFIG.fields.find((fd) =>
+        pointInPolygon(pt.b, pt.c, fd.vertices.map((v) => [v[1], v[2]] as [number, number]))
+      );
+      if (hit) fieldName = hit.name;
+    }
+    return { ...pt, fieldName };
+  },
+};
+
 // Map of all available ternary systems
 export const TERNARY_SYSTEMS_MAP: Record<TernarySystemId, TernarySystemConfig> = {
   'afm-igneous': AFM_IGNEOUS_CONFIG,
@@ -2029,4 +2176,5 @@ export const TERNARY_SYSTEMS_MAP: Record<TernarySystemId, TernarySystemConfig> =
   'pyroxene-quad': PYROXENE_QUAD_CONFIG,
   feldspar: FELDSPAR_CONFIG,
   ultramafic: ULTRAMAFIC_CONFIG,
+  acf: ACF_CONFIG,
 };

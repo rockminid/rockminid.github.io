@@ -506,7 +506,7 @@ export const DocumentationModal: React.FC<DocumentationModalProps> = ({
                   <h3>07. Ternary Systems &amp; Projections</h3>
                 </div>
                 <p className="text-xs">
-                  RockMin ID converts bulk chemistry to ten specialized ternary and quadrilateral coordinate projections:
+                  RockMin ID converts bulk chemistry to eleven specialized ternary and quadrilateral coordinate projections:
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                   {[
@@ -520,6 +520,7 @@ export const DocumentationModal: React.FC<DocumentationModalProps> = ({
                     { name: '8. Pyroxene Quad', comps: 'Wo, En, Fs', desc: 'Pyroxene solid solutions' },
                     { name: '9. Feldspar Ternary', comps: 'Or, Ab, An', desc: 'Feldspar solvus compositions' },
                     { name: '10. Ultramafic Ol-Opx-Cpx', comps: 'Ol, Opx, Cpx', desc: 'Peridotite & pyroxenite' },
+                    { name: '11. ACF (Eskola)', comps: 'A = Al2O3 + Fe2O3 - Na2O - K2O, C = CaO - 10/3 P2O5 - CO2, F = FeO + MgO + MnO (molar)', desc: 'Metabasites, mafic rocks & impure limestones' },
                   ].map((t) => (
                     <div key={t.name} className="p-2.5 bg-stone-950 rounded-lg border border-stone-800">
                       <div className="font-bold text-amber-300">{t.name}</div>
@@ -527,6 +528,15 @@ export const DocumentationModal: React.FC<DocumentationModalProps> = ({
                       <div className="text-[10px] text-stone-500">{t.desc}</div>
                     </div>
                   ))}
+                </div>
+                <div className="p-3 bg-stone-950 rounded-xl border border-stone-800 text-xs space-y-1">
+                  <div className="font-bold text-stone-200">ACF diagram notes:</div>
+                  <ul className="list-disc list-inside text-stone-400 space-y-1">
+                    <li>Alkalis are subtracted from A to remove the Al held in feldspars and micas; Fe2O3 is added to A because Fe3+ replaces Al in epidote and garnet.</li>
+                    <li>10/3 P2O5 removes apatite and CO2 removes calcite from C. CO2 beyond the calcite is given to MgO (dolomite) and then FeO (siderite).</li>
+                    <li>Use measured FeO and Fe2O3. A total iron value is carried as FeO, which moves the point toward F.</li>
+                    <li>The fields are a schematic amphibolite-facies topology with quartz in excess. At other grades the tie-lines change, so read a field as the expected assemblage in the amphibolite facies only.</li>
+                  </ul>
                 </div>
               </section>
 

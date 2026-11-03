@@ -17,7 +17,7 @@ Everything runs in the browser. It installs as a PWA and works offline.
 | **IUGS naming** | TAS root name refined to the sub-root name — alkali vs subalkali basalt, basanite vs tephrite, hawaiite vs shoshonite, trachyte vs trachydacite, peralkaline comendite/pantellerite — plus low-K/medium-K/high-K |
 | **Batch processor** | CSV in, classified CSV out, for hundreds of analyses at a time |
 | **TAS diagram** | Le Bas et al. (1986) volcanic fields, Middlemost (1994) plutonic equivalents |
-| **Ternary diagrams** | AFM (igneous and metamorphic), QAPF and APF (plutonic and volcanic), pyroxene quadrilateral, feldspar, ultramafic, basalt tetrahedron |
+| **Ternary diagrams** | AFM (igneous and metamorphic), ACF (metabasites and calc-silicates), QAPF and APF (plutonic and volcanic), pyroxene quadrilateral, feldspar, ultramafic, basalt tetrahedron |
 | **CIPW norm** | Full normative mineralogy with mass-balance and silica-closure diagnostics |
 | **Reference dataset explorer** | Rock and mineral reference compositions with external database cross-links |
 | **Specimen collection** | Saved locally; synced to the cloud when signed in |
@@ -202,7 +202,7 @@ the exact ingestion parameters and record counts.
 npm test
 ```
 
-338 tests, of which 311 cover the deterministic engine and 27 cover components
+345 tests, of which 318 cover the deterministic engine and 27 cover components
 (the error boundary, the data-quality panel, the match explanation). Engine
 tests run in the same jsdom environment as the component tests; the whole suite
 finishes in a few seconds.
@@ -268,7 +268,7 @@ npx vite-node scripts/classify-csv.ts -- input.csv output.csv
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22875578.svg)](https://doi.org/10.5281/zenodo.22875578)
 
 > Tiwari, K. (2026). *RockMin ID: Automated Geochemical Classifier and
-> Petrological Analysis Platform* (Version 2.5.1) [Computer software]. Zenodo.
+> Petrological Analysis Platform* (Version 2.5.2) [Computer software]. Zenodo.
 > <https://doi.org/10.5281/zenodo.22875578>
 
 `10.5281/zenodo.22875578` is the **concept DOI** and always resolves to the

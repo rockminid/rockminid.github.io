@@ -34,3 +34,4 @@ firebase-applet-config.json
 .claude/
 HANDOFF.md
 ROADMAP.md
+*.tsbuildinfo

@@ -27,6 +27,7 @@ import {
   TernarySystemId,
   TERNARY_SYSTEMS_MAP,
   TernaryPoint,
+  ACF_PHASES,
 } from '../utils/ternaryCalculations';
 import { ROCKS_DATASET } from '../data/rocksDataset';
 import { MINERALS_DATASET } from '../data/mineralsDataset';
@@ -141,6 +142,37 @@ export const TernaryView: React.FC<TernaryViewProps> = ({
           oxides: m.idealOxides,
         };
       });
+    }
+
+    if (selectedSystemId === 'acf') {
+      // Phases sit at fixed ideal positions; mafic reference rocks are projected.
+      const phases: TernaryPoint[] = ACF_PHASES.map((ph) => ({
+        id: `ref-acf-${ph.id}`,
+        name: `Phase: ${ph.name}`,
+        a: ph.acf[0],
+        b: ph.acf[1],
+        c: ph.acf[2],
+        category: 'ACF Phase',
+        field: ph.name,
+        color: '#818cf8',
+      }));
+      const rocks = ROCKS_DATASET.filter(
+        (r) => r.meanOxides.SiO2 && /basalt|gabbro|andesite|amphibolite|marble|limestone/i.test(r.name)
+      ).map((r) => {
+        const proj = currentSystem.projectOxides(r.meanOxides);
+        return {
+          id: `ref-rock-${r.id}`,
+          name: `Ref: ${r.name}`,
+          a: proj.a,
+          b: proj.b,
+          c: proj.c,
+          category: r.category,
+          field: proj.fieldName,
+          color: '#64748b',
+          oxides: r.meanOxides,
+        };
+      });
+      return [...phases, ...rocks];
     }
 
     if (selectedSystemId === 'apf-plutonic') {
@@ -632,6 +664,18 @@ export const TernaryView: React.FC<TernaryViewProps> = ({
             <Layers className="w-3.5 h-3.5 text-lime-400" />
             <span>Ultramafic (Ol-Opx-Cpx)</span>
           </button>
+
+          <button
+            onClick={() => setSelectedSystemId('acf')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+              selectedSystemId === 'acf'
+                ? 'bg-amber-600 text-white shadow-md'
+                : 'bg-stone-800/80 hover:bg-stone-700 text-stone-300 border border-stone-700/60'
+            }`}
+          >
+            <Flame className="w-3.5 h-3.5 text-indigo-400" />
+            <span>ACF (Metabasite / Calc-silicate)</span>
+          </button>
           </div>
 
           {/* View Mode Switcher: Diagram vs Table vs Split */}
@@ -874,6 +918,15 @@ export const TernaryView: React.FC<TernaryViewProps> = ({
                   <span>
                     Mantle and cumulate ultramafic rocks classified by relative modal abundance of Olivine (Ol), Orthopyroxene (Opx), and Clinopyroxene (Cpx).
                     Differentiates mantle lherzolite, harzburgite, dunite, and pyroxenites.
+                  </span>
+                )}
+                {selectedSystemId === 'acf' && (
+                  <span>
+                    Eskola&apos;s ACF diagram shows the assemblages of Ca- and Al-rich rocks: metabasites, mafic igneous rocks, marls and
+                    impure limestones. Molar A = Al₂O₃ + Fe₂O₃ − Na₂O − K₂O, C = CaO − 10/3 P₂O₅ − CO₂ and F = FeO + MgO + MnO, so
+                    feldspar alkalis, apatite and carbonate are removed first. The fields are a schematic amphibolite-facies topology with
+                    quartz in excess (plagioclase, garnet, hornblende, diopside, epidote, calcite); at other grades the tie-lines change.
+                    Report FeO and Fe₂O₃ separately where possible: a total is carried as FeO, which moves the point toward F.
                   </span>
                 )}
               </div>

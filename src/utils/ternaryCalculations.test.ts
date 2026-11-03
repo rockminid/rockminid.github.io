@@ -313,3 +313,63 @@ describe('QAPF subdivision limits (Streckeisen 1976)', () => {
     expect(nameAt(2, 95)).toMatch(/Diorite|Gabbro/);
   });
 });
+
+describe('ACF projection', () => {
+  const acf = TERNARY_SYSTEMS_MAP.acf;
+
+  it('places anorthite at A50 C50', () => {
+    const p = acf.projectOxides(ANORTHITE);
+    expect(p.a).toBeCloseTo(50, 1);
+    expect(p.b).toBeCloseTo(50, 1);
+    expect(p.c).toBeCloseTo(0, 1);
+  });
+
+  it('removes albite completely, since its Na2O balances its Al2O3', () => {
+    const p = acf.projectOxides({ ...ANORTHITE, ...ALBITE, CaO: ANORTHITE.CaO, Al2O3: (ANORTHITE.Al2O3 ?? 0) + (ALBITE.Al2O3 ?? 0) });
+    expect(p.a).toBeCloseTo(50, 1);
+  });
+
+  it('subtracts apatite and calcite from C', () => {
+    // 1 mol CaO + 0.3 mol P2O5 + 0 CO2 leaves no C; F only
+    const p = acf.projectOxides({ CaO: 56.077, P2O5: 0.3 * 141.945, MgO: 40.304 });
+    expect(p.b).toBeCloseTo(0, 6);
+    expect(p.c).toBeCloseTo(100, 6);
+    const q = acf.projectOxides({ CaO: 2 * 56.077, CO2: 44.01, MgO: 40.304 });
+    expect(q.b).toBeCloseTo(50, 6);
+  });
+
+  it('gives CO2 beyond calcite to dolomite (MgO) before it touches F otherwise', () => {
+    // 1 CaO + 1 MgO + 2 CO2 (pure dolomite) + 1 Al2O3: only A remains
+    const p = acf.projectOxides({ CaO: 56.077, MgO: 40.304, CO2: 2 * 44.01, Al2O3: 101.961 });
+    expect(p.a).toBeCloseTo(100, 6);
+    expect(p.fieldName).not.toMatch(/Outside/);
+  });
+
+  it('flags peralkaline compositions instead of plotting a negative A', () => {
+    const p = acf.projectOxides({ Al2O3: 10, Na2O: 10, CaO: 5, MgO: 2 });
+    expect(p.a).toBe(0);
+    expect(p.fieldName).toMatch(/alkalis exceed Al/);
+  });
+
+  it('puts a MORB in a hornblende-bearing amphibolite field', () => {
+    expect(acf.projectOxides(N_MORB).fieldName).toMatch(/Hbl/);
+  });
+
+  it('tiles the triangle: every interior point falls in exactly one field', () => {
+    for (let a = 1; a < 99; a += 7) {
+      for (let b = 1; a + b < 99; b += 7) {
+        const c = 100 - a - b;
+        const inside = acf.fields.filter((f) => {
+          const [p0, p1, p2] = f.vertices.map((v) => [v[1], v[2]]);
+          const cross = (o: number[], u: number[], w: number[]) =>
+            (u[0] - o[0]) * (w[1] - o[1]) - (u[1] - o[1]) * (w[0] - o[0]);
+          const d1 = cross(p0, p1, [b, c]);
+          const d2 = cross(p1, p2, [b, c]);
+          const d3 = cross(p2, p0, [b, c]);
+          return !((d1 < -1e-9 || d2 < -1e-9 || d3 < -1e-9) && (d1 > 1e-9 || d2 > 1e-9 || d3 > 1e-9));
+        });
+        expect(inside.length, `A${a} C${b} F${c}`).toBeGreaterThanOrEqual(1);
+      }
+    }
+  });
+});
