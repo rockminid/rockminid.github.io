@@ -50,6 +50,7 @@ export const TernaryView: React.FC<TernaryViewProps> = ({
   const [selectedSystemId, setSelectedSystemId] = useState<TernarySystemId>('afm-igneous');
   const [includeReferences, setIncludeReferences] = useState<boolean>(true);
   const [includeBatch, setIncludeBatch] = useState<boolean>(true);
+  const [includeActive, setIncludeActive] = useState<boolean>(true);
   const [showGrid, setShowGrid] = useState<boolean>(true);
   const [showLabels, setShowLabels] = useState<boolean>(true);
   const [showFieldColors, setShowFieldColors] = useState<boolean>(true);
@@ -326,7 +327,7 @@ export const TernaryView: React.FC<TernaryViewProps> = ({
 
   // Active specimen point
   const activePoint: TernaryPoint | null = useMemo(() => {
-    if (!activeProjection) return null;
+    if (!activeProjection || !includeActive) return null;
     return {
       id: 'active-sample-point',
       name: activeSampleName || 'Active Sample',
@@ -339,7 +340,17 @@ export const TernaryView: React.FC<TernaryViewProps> = ({
       color: '#f59e0b',
       oxides: activeSampleOxides,
     };
-  }, [activeProjection, activeSampleName, activeSampleOxides]);
+  }, [activeProjection, activeSampleName, activeSampleOxides, includeActive]);
+
+  // "My data only": hide everything the user did not plot themselves, so the
+  // diagram, the table and both exports carry only the custom points.
+  const customOnly = !includeReferences && !includeBatch && !includeActive;
+  const setCustomOnly = (on: boolean) => {
+    setIncludeReferences(!on);
+    setIncludeBatch(!on);
+    setIncludeActive(!on);
+    setSelectedPointId(undefined);
+  };
 
   // All combined points
   const allPoints: TernaryPoint[] = useMemo(() => {
@@ -738,6 +749,38 @@ export const TernaryView: React.FC<TernaryViewProps> = ({
           {/* View Toggles & Overlay Options */}
           <div className="bg-stone-900 border border-stone-800 rounded-xl p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-3 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setCustomOnly(!customOnly)}
+                aria-pressed={customOnly}
+                title="Hide the active sample, reference standards and batch samples, so the diagram and its exports contain only the points you plotted"
+                className={`px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1.5 border ${
+                  customOnly
+                    ? 'bg-pink-600 text-white border-pink-500'
+                    : 'bg-stone-800 text-stone-200 border-stone-700 hover:bg-stone-700'
+                }`}
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>{customOnly ? 'Showing my data only (show all)' : 'My data only'}</span>
+              </button>
+              {customOnly && customPoints.length === 0 && (
+                <span className="text-stone-400">
+                  Nothing plotted yet: add points with Plot Custom Data above the diagram.
+                </span>
+              )}
+
+              {activeSampleOxides && (
+                <label className="flex items-center gap-2 cursor-pointer text-stone-300 hover:text-stone-100">
+                  <input
+                    type="checkbox"
+                    checked={includeActive}
+                    onChange={(e) => setIncludeActive(e.target.checked)}
+                    className="rounded border-stone-700 bg-stone-800 text-amber-500 focus:ring-amber-500"
+                  />
+                  <span>Active Sample ({activeSampleName || 'current analysis'})</span>
+                </label>
+              )}
+
               <label className="flex items-center gap-2 cursor-pointer text-stone-300 hover:text-stone-100">
                 <input
                   type="checkbox"
