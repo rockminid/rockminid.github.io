@@ -57,7 +57,10 @@ interface MaficDraw {
 
 /**
  * A pool of divalent mafic oxides (MgO, FeO, MnO, NiO) drawn on
- * proportionally, as CIPW treats them as one (Mg,Fe) component.
+ * proportionally, as CIPW treats them as one (Mg,Fe) component in the
+ * silicates. The oxide phases (chromite, ilmenite, magnetite) take only the
+ * ferrous part, FeO with MnO and NiO, as in Kelsey (1965): drawing MgO into
+ * them made magnesioferrite "magnetite" whenever FeO was scarce.
  */
 class MaficPool {
   private pools: Partial<Record<OxideKey, number>> = {};
@@ -70,21 +73,29 @@ class MaficPool {
     return Object.values(this.pools).reduce((a, v) => a + (v || 0), 0);
   }
 
+  get ferrousMoles(): number {
+    return (this.pools.FeO || 0) + (this.pools.MnO || 0) + (this.pools.NiO || 0);
+  }
+
   get mgFraction(): number {
     const total = this.moles;
     if (total <= 0) return 0.5;
     return (this.pools.MgO || 0) / total;
   }
 
-  /** Removes `n` moles proportionally and returns the mass removed. */
-  take(n: number): MaficDraw {
-    const total = this.moles;
+  /**
+   * Removes `n` moles proportionally and returns the mass removed; with
+   * `ferrousOnly`, from FeO, MnO and NiO alone.
+   */
+  take(n: number, ferrousOnly = false): MaficDraw {
+    const total = ferrousOnly ? this.ferrousMoles : this.moles;
     if (total <= 0 || n <= 0) return { mass: 0, mgFraction: this.mgFraction };
     const draw = Math.min(n, total);
     const frac = draw / total;
     const mgFraction = this.mgFraction;
     let mass = 0;
     for (const key of Object.keys(this.pools) as OxideKey[]) {
+      if (ferrousOnly && key === 'MgO') continue;
       const removed = (this.pools[key] || 0) * frac;
       mass += removed * FW[key];
       this.pools[key] = (this.pools[key] || 0) - removed;
@@ -168,18 +179,18 @@ export function calculateCIPWNorm(
   }
 
   // --- 3. Chromite: FeCr2O4 ---------------------------------------------
-  if (Cr > 0 && mafic.moles > 0) {
-    const cm = Math.min(Cr, mafic.moles);
-    const drawn = mafic.take(cm);
+  if (Cr > 0 && mafic.ferrousMoles > 0) {
+    const cm = Math.min(Cr, mafic.ferrousMoles);
+    const drawn = mafic.take(cm, true);
     Cr -= cm;
     add('Cm', cm * FW.Cr2O3 + drawn.mass);
     addMol('Cm', cm);
   }
 
   // --- 4. Ilmenite: FeTiO3; leftover TiO2 -> rutile ----------------------
-  if (Ti > 0 && mafic.moles > 0) {
-    const il = Math.min(Ti, mafic.moles);
-    const drawn = mafic.take(il);
+  if (Ti > 0 && mafic.ferrousMoles > 0) {
+    const il = Math.min(Ti, mafic.ferrousMoles);
+    const drawn = mafic.take(il, true);
     Ti -= il;
     add('Il', il * FW.TiO2 + drawn.mass);
     addMol('Il', il);
@@ -223,8 +234,8 @@ export function calculateCIPWNorm(
 
   // --- 6. Magnetite from remaining Fe2O3; leftover -> hematite -----------
   let mt = 0;
-  if (Fe3 > 0 && mafic.moles > 0) {
-    mt = Math.min(Fe3, mafic.moles);
+  if (Fe3 > 0 && mafic.ferrousMoles > 0) {
+    mt = Math.min(Fe3, mafic.ferrousMoles);
     Fe3 -= mt;
   }
   // (mass accounted below, after the mafic pool is drawn on)
@@ -238,7 +249,7 @@ export function calculateCIPWNorm(
 
   // --- 8. Diopside and hypersthene --------------------------------------
   // Magnetite draws from the mafic pool before the silicates.
-  const mtDraw = mafic.take(mt);
+  const mtDraw = mafic.take(mt, true);
   add('Mt', mt * FW.Fe2O3 + mtDraw.mass);
   addMol('Mt', mt);
   if (Fe3 > 0) {

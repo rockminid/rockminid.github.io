@@ -528,7 +528,7 @@ export async function generateRockMinManualPDF(): Promise<void> {
     ['Module', 'Purpose', 'Typical Laboratory Use Case'],
     [
       ['Single', 'Single Sample Analyzer', 'Detailed geochemical evaluation of one unknown spot or whole-rock analysis'],
-      ['Batch', 'Bulk CSV Processor', 'Process up to 100 EPMA spots or XRF analyses with global range filters'],
+      ['Batch', 'Bulk CSV Processor', 'Process up to 1,000 EPMA spots or XRF analyses with global range filters'],
       ['TAS', 'Total Alkali-Silica Projection', 'Volcanic classification, rock suite comparison, and alkaline discrimination'],
       ['Ternary', 'Ten Compositional Projections', 'AFM (igneous and metamorphic), QAPF, APF, feldspar, pyroxene, basalt tetrahedron, Ol-Opx-Cpx'],
       ['Dataset', 'Reference Specimen Database', 'Explore benchmark records, view occurrence facts, and load chemistry'],
@@ -561,7 +561,7 @@ export async function generateRockMinManualPDF(): Promise<void> {
     ['Group', 'Typical Oxides', 'Analytical Purpose & Function'],
     [
       ['Core Majors', 'SiO2, Al2O3, FeO, Fe2O3, FeOT, MgO, CaO, Na2O, K2O', 'Primary classification chemistry, TAS coordinates, feldspar and mafic allocation in the norm'],
-      ['Additional Oxides', 'TiO2, MnO, P2O5, Cr2O3, NiO', 'Ilmenite, rutile, apatite and chromite allocation; MnO and NiO join the divalent mafic pool'],
+      ['Additional Oxides', 'TiO2, MnO, P2O5, Cr2O3, NiO', 'Ilmenite, rutile, apatite and chromite allocation; MnO and NiO are added to FeO for the oxide phases and join MgO and FeO in the silicates'],
       ['Volatiles / Loss', 'LOI, H2O+, H2O-, CO2, SO3, F, Cl, S', 'Excluded from the volatile-free denominator; CO2 additionally drives normative calcite']
     ],
     [32, 60, 82]
@@ -613,7 +613,7 @@ export async function generateRockMinManualPDF(): Promise<void> {
     [
       ['FeO and Fe2O3', 'FeO+Fe2O3', 'FeO* = FeO + 0.8998 x Fe2O3. Both values pass through unchanged to the norm.'],
       ['FeO only', 'FeO', 'All iron treated as ferrous. No normative magnetite unless a split is requested.'],
-      ['Fe2O3 only', 'Fe2O3', 'All iron treated as ferric.'],
+      ['Fe2O3 only', 'Fe2O3T', 'Read as total iron, the way XRF reports it: converted to FeO* by x 0.8998, then split as for FeOT and flagged as estimated.'],
       ['FeOT only', 'FeOT', 'Split into FeO and Fe2O3 using the Middlemost (1989) silica-dependent ratio, flagged as estimated.'],
       ['Fe2O3T only', 'Fe2O3T', 'Converted to FeO* by x 0.8998, then split as above.'],
       ['Components AND a total', 'component basis', 'The total is used to CHECK the components, not to add to them. A disagreement over 2% raises the iron-ambiguous flag.'],
@@ -876,15 +876,15 @@ export async function generateRockMinManualPDF(): Promise<void> {
     [
       ['1', 'Calcite', 'Cc', 'CO2 + equimolar CaO, taken first so carbonate Ca never enters a silicate'],
       ['2', 'Apatite', 'Ap', 'All P2O5 with 3.3333 molar CaO, i.e. Ca5(PO4)3(OH); limited by available Ca'],
-      ['3', 'Chromite', 'Cm', 'Cr2O3 with equimolar divalent mafic, FeCr2O4'],
-      ['4', 'Ilmenite', 'Il', 'TiO2 with equimolar divalent mafic, FeTiO3'],
+      ['3', 'Chromite', 'Cm', 'Cr2O3 with equimolar FeO (+MnO, NiO), FeCr2O4'],
+      ['4', 'Ilmenite', 'Il', 'TiO2 with equimolar FeO (+MnO, NiO), FeTiO3; TiO2 left over is rutile'],
       ['5', 'Rutile', 'Ru', 'Any TiO2 left after ilmenite'],
       ['6', 'Orthoclase', 'Or', '1 K2O + 1 Al2O3 + 6 SiO2 (= 2 KAlSi3O8)'],
       ['7', 'Albite', 'Ab', '1 Na2O + 1 Al2O3 + 6 SiO2 (= 2 NaAlSi3O8)'],
       ['8', 'Acmite', 'Ac', 'Excess Na2O beyond available Al2O3, taken with Fe2O3: NaFe3+Si2O6, 4 SiO2 per unit'],
       ['9', 'Na metasilicate', 'Ns', 'Na2O still in excess after acmite, Na2SiO3'],
       ['10', 'K metasilicate', 'Ks', 'K2O in excess of Al2O3 (very rare), K2SiO3'],
-      ['11', 'Magnetite', 'Mt', 'Remaining Fe2O3 with equimolar divalent mafic, Fe3O4'],
+      ['11', 'Magnetite', 'Mt', 'Remaining Fe2O3 with equimolar FeO (+MnO, NiO), Fe3O4; Fe2O3 left over is hematite'],
       ['12', 'Hematite', 'Hm', 'Any Fe2O3 left after magnetite'],
       ['13', 'Anorthite', 'An', 'Remaining Al2O3 with equimolar CaO and 2 SiO2, CaAl2Si2O8'],
       ['14', 'Corundum', 'C', 'Al2O3 still in excess after all feldspar, the peraluminous indicator'],
@@ -1125,7 +1125,7 @@ export async function generateRockMinManualPDF(): Promise<void> {
 
   renderSubheader('12.1 The Structural Test');
   renderParagraph(
-    'Total oxygen is computed from the analysis, the composition is rescaled so that oxygen equals the species basis, and the resulting cation sum is compared to the ideal. Iron is split into Fe2+ and Fe3+ only if the analysis reports both; otherwise all iron is carried as Fe2+, which is the usual EPMA convention.'
+    'Total oxygen is computed from the analysis, the composition is rescaled so that oxygen equals the species basis, and the resulting cation sum is compared to the ideal. Iron is split into Fe2+ and Fe3+ as reported when the analysis gives both; otherwise all iron is first carried as Fe2+, the usual EPMA convention. For the spinel group, ilmenite and hematite, a cation excess on that basis is then converted to Fe3+ by charge balance (Droop 1987): Fe3+ = 2X(1 - T/S) on a formula of T cations, where X is the oxygen basis and S the cation sum, applied only when the iron present can account for the whole excess. In garnet the tetrahedral test counts Si alone, because Al occupies the octahedral site. Apatite is normalized to 12.5 O, the oxide-only basis of Ca5(PO4)3X.'
   );
   renderCallout(
     'Fit function',
@@ -1182,7 +1182,7 @@ export async function generateRockMinManualPDF(): Promise<void> {
 
   renderSubheader('12.5 Rock or Mineral? How the Engine Decides');
   renderParagraph(
-    'When the user declares the sample type, that decides. Otherwise the STRUCTURAL test decides, which is exactly what it is good for: a single mineral normalizes cleanly to its formula while a whole rock normalizes to no mineral formula at all. Compositional similarity cannot make this call, because a pure olivine analysis is compositionally almost identical to a dunite. The engine treats a sample as a mineral grain when the best mineral candidate has a structural fit of at least 0.75 and is within 12 similarity points of the best rock candidate, and it reports that the type was inferred rather than declared.'
+    'When the user declares the sample type, that decides. Otherwise the STRUCTURAL test decides, which is exactly what it is good for: a single mineral normalizes cleanly to its formula while a whole rock normalizes to no mineral formula at all. Compositional similarity cannot make this call, because a pure olivine analysis is compositionally almost identical to a dunite. The engine treats a sample as a mineral grain when the best mineral candidate has a structural fit of at least 0.75 and scores at least as high as the best rock candidate, and it reports that the type was inferred rather than declared.'
   );
 
   // ==================== SECTION 13: GEOROC LIBRARY ====================
@@ -1228,7 +1228,7 @@ export async function generateRockMinManualPDF(): Promise<void> {
   // ==================== SECTION 14: BATCH CSV PROCESSOR ====================
   renderSectionHeader('14', 'Batch Geochemical Processor', 'High-throughput laboratory screening');
   renderParagraph(
-    'The Batch Processor runs up to 100 analyses at once through the same engine as the Single Analyzer: header alias matching, iron resolution, anhydrous normalization, quality screening, TAS assignment and CIPW allocation. Rows beyond the hundredth are ignored rather than silently truncated mid-file.'
+    'The Batch Processor runs up to 1,000 analyses at once through the same engine as the Single Analyzer: header alias matching, iron resolution, anhydrous normalization, quality screening, TAS assignment and CIPW allocation. The limit is set by the interface, not by the calculation: the engine runs in the page at about 4-5 ms per analysis. Rows beyond the thousandth are not processed and the user is told so; larger files can be classified with scripts/classify-csv.ts, which runs the same engine in Node.js without a limit.'
   );
 
   renderSubheader('14.1 Recommended CSV Header Convention');
@@ -1403,14 +1403,14 @@ export async function generateRockMinManualPDF(): Promise<void> {
       ['FeO', 'wt%', 'Ferrous iron as measured; magnetite, ilmenite, chromite, diopside, hypersthene, olivine'],
       ['Fe2O3', 'wt%', 'Ferric iron as measured; magnetite, acmite, then hematite'],
       ['FeOT / Fe2O3T', 'wt%', 'Total iron. Used only when components are absent; never added to them.'],
-      ['MnO', 'wt%', 'Joins the divalent mafic pool with MgO, FeO and NiO'],
+      ['MnO', 'wt%', 'Added to FeO for the oxide phases; joins MgO and FeO in the silicates'],
       ['MgO', 'wt%', 'Mg#, the AFM M apex, and the mafic silicate budget'],
       ['CaO', 'wt%', 'Calcite, apatite, anorthite, diopside, wollastonite, larnite'],
       ['Na2O', 'wt%', 'TAS y-axis; albite, then acmite and sodium metasilicate; nepheline on desilication'],
       ['K2O', 'wt%', 'TAS y-axis; orthoclase; the K-series qualifier; leucite on desilication'],
       ['P2O5', 'wt%', 'Apatite, and the 1.67 apatite correction in ASI'],
       ['Cr2O3', 'wt%', 'Chromite; Cr# for spinel-group minerals'],
-      ['NiO', 'wt%', 'Joins the divalent mafic pool'],
+      ['NiO', 'wt%', 'Added to FeO for the oxide phases; joins MgO and FeO in the silicates'],
       ['CO2', 'wt%', 'Volatile, excluded from the normalization denominator, but drives normative calcite'],
       ['LOI', 'wt%', 'Volatile; excluded from the denominator; above 3 wt% raises the high-loi flag']
     ],
@@ -1517,6 +1517,7 @@ export async function generateRockMinManualPDF(): Promise<void> {
   const bibliography = [
     'Cross, C. W., Iddings, J. P., Pirsson, L. V., & Washington, H. S. (1902). A quantitative chemico-mineralogical classification and nomenclature of igneous rocks. The Journal of Geology, 10(6), 555-690. [The CIPW norm]',
     'Deer, W. A., Howie, R. A., & Zussman, J. (1992). An Introduction to the Rock-Forming Minerals (2nd ed.). Longman Scientific & Technical. [Oxygen bases and structural formulae]',
+    'Droop, G. T. R. (1987). A general equation for estimating Fe3+ concentrations in ferromagnesian silicates and oxides from microprobe analyses, using stoichiometric criteria. Mineralogical Magazine, 51(361), 431-435. [Fe3+ by charge balance in structural formulae]',
     'Frost, B. R., Barnes, C. G., Collins, W. J., Arculus, R. J., Ellis, D. J., & Frost, C. D. (2001). A geochemical classification for granitic rocks. Journal of Petrology, 42(11), 2033-2048. [Fe-index]',
     'Irvine, T. N., & Baragar, W. R. A. (1971). A guide to the chemical classification of the common volcanic rocks. Canadian Journal of Earth Sciences, 8(5), 523-548. [Appendix III equations for Figs. 2, 3, 4, 6 and 7]',
     'Kelsey, C. H. (1965). Calculation of the CIPW norm. Mineralogical Magazine, 34(268), 276-282. [Modern algorithmic form of the norm]',

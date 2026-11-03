@@ -202,10 +202,10 @@ the exact ingestion parameters and record counts.
 npm test
 ```
 
-296 tests, of which 274 cover the deterministic engine and 22 cover components
+338 tests, of which 311 cover the deterministic engine and 27 cover components
 (the error boundary, the data-quality panel, the match explanation). Engine
 tests run in the same jsdom environment as the component tests; the whole suite
-finishes in about three seconds.
+finishes in a few seconds.
 
 The geochemistry is anchored on exact stoichiometric end-members: a
 CIPW norm of pure albite must return ~100% normative albite, pure anorthite must
@@ -233,12 +233,42 @@ feeds each group's own median back through the engine.
 
 ---
 
+### Validation on real analyses
+
+Two scripts test the engine on GEOROC analyses that the reference library has
+never seen, and compare it with an independent implementation:
+
+```bash
+npm run ingest:georoc -- --src ../georoc-raw --holdout 50 --out ../holdout
+npx vite-node scripts/benchmark-georoc.ts -- --src ../georoc-raw --lib ../holdout --out ../bench
+python scripts/compare-pyrolite.py ../bench/rocks-rockminid.csv   # needs pip install pyrolite
+```
+
+`--holdout 50` leaves every 50th analysis out of the library; the benchmark
+draws its test set (up to 100 author-labelled mineral analyses per mineral
+family, and 1,000 whole-rock analyses) from exactly those rows, with a fixed
+random seed. It reports mineral identification with and without the GEOROC
+distributions, and how often a whole rock is mistaken for a mineral when the
+sample type is not declared. The second script compares TAS fields and CIPW
+norms with pyrolite on the same 1,000 whole rocks.
+
+### Large datasets
+
+The browser's Batch Processor handles up to 1,000 rows per file. For larger
+compilations the same engine runs in Node.js without a limit:
+
+```bash
+npx vite-node scripts/classify-csv.ts -- input.csv output.csv
+```
+
+---
+
 ## Citing
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22875578.svg)](https://doi.org/10.5281/zenodo.22875578)
 
 > Tiwari, K. (2026). *RockMin ID: Automated Geochemical Classifier and
-> Petrological Analysis Platform* (Version 2.5.0) [Computer software]. Zenodo.
+> Petrological Analysis Platform* (Version 2.5.1) [Computer software]. Zenodo.
 > <https://doi.org/10.5281/zenodo.22875578>
 
 `10.5281/zenodo.22875578` is the **concept DOI** and always resolves to the

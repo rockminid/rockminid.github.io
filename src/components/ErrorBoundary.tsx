@@ -34,7 +34,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo): void {
-    // No telemetry is sent anywhere: this application collects no analytics,
+    // No telemetry is sent anywhere: this application sends no error reports,
     // and an unhandled exception can contain the user's own sample data.
     console.error('RockMin ID encountered an unrecoverable error:', error, info);
     this.setState({ componentStack: info.componentStack ?? null });

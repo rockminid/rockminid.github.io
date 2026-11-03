@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   structuralFormula,
   structureSpecFor,
@@ -8,9 +10,14 @@ import {
 import { identifyGeochemicalSample } from './geochemEngine';
 import { OxideComposition } from '../types/geochem';
 import {
-  ALBITE, ANORTHITE, DIOPSIDE, ENSTATITE, FAYALITE, FORSTERITE,
-  ILMENITE, N_MORB, ORTHOCLASE, QUARTZ,
+  ALBITE, ANORTHITE, APATITE_OXIDES, DIOPSIDE, ENSTATITE, FAYALITE, FORSTERITE,
+  ILMENITE, N_MORB, ORTHOCLASE, PYROPE, QUARTZ,
 } from './__fixtures__/endmembers';
+import {
+  __setGeorocLibraryForTests,
+  toMineralReference,
+  toRockReference,
+} from '../data/georocReference';
 
 /**
  * Structural formulae are exact by stoichiometry, so these are hard checks:
@@ -169,10 +176,48 @@ describe('end-to-end mineral identification', () => {
   });
 });
 
+describe('structures the GEOROC benchmark exposed', () => {
+  it('fits pyrope as a garnet: Si alone fills the tetrahedral site', () => {
+    const f = structuralFormula(PYROPE, STRUCTURE_SPECS.garnet);
+    expect(f.cationSum).toBeCloseTo(8, 2);
+    expect(f.tetrahedral).toBeCloseTo(3, 2);
+    expect(f.fit).toBeGreaterThan(0.99);
+    const r = identifyGeochemicalSample(PYROPE, 'Prp', 'oxide', { sampleType: 'mineral' });
+    expect(r.bestOverall.reference.name).toMatch(/Pyrope/);
+  });
+
+  it('gives apatite 8 cations on its 12.5 O oxide basis', () => {
+    const f = structuralFormula(APATITE_OXIDES, STRUCTURE_SPECS.apatite);
+    expect(f.cationSum).toBeCloseTo(8, 2);
+    expect(f.fit).toBeGreaterThan(0.99);
+  });
+
+  it('recovers Fe3+ by charge balance for a magnetite reported as FeOT', () => {
+    // Fe3O4 with all iron reported as FeO: 3 x 71.844 / 215.532 = 100%,
+    // so the analysis is FeOT alone; Droop (1987) must give Fe2+1 Fe3+2.
+    const f = structuralFormula({ FeOT: 100 }, STRUCTURE_SPECS.magnetite);
+    expect(f.cationSum).toBeCloseTo(3, 3);
+    expect(f.apfu.Fe3).toBeCloseTo(2, 2);
+    expect(f.apfu.Fe2).toBeCloseTo(1, 2);
+    expect(f.fit).toBeGreaterThan(0.99);
+  });
+});
+
 describe('sample-type inference from the structural fit', () => {
+  afterAll(() => __setGeorocLibraryForTests([], []));
+
   it('treats a clean olivine analysis as a mineral, not a dunite', () => {
     // Compositionally a pure olivine and a dunite are nearly identical; only
-    // the structural test separates them.
+    // the structural test separates them. The mineral must score at least as
+    // well as the best rock, which it does once the GEOROC olivine
+    // distributions are loaded (the curated Fo80 reference alone is too far
+    // from Fo90 to outscore the dunite).
+    const dir = path.resolve(__dirname, '../../public/data');
+    const lib = (f: string) => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')).entries;
+    __setGeorocLibraryForTests(
+      lib('georoc-rocks.json').map(toRockReference),
+      lib('georoc-minerals.json').map(toMineralReference)
+    );
     const r = identifyGeochemicalSample({ SiO2: 41.5, MgO: 49.5, FeO: 8.8, MnO: 0.15, NiO: 0.35 }, 'Fo90');
     expect(r.bestOverall.type).toBe('mineral');
     expect(r.sampleType).toBe('mineral');

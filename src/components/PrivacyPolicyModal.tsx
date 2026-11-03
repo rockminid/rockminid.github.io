@@ -98,7 +98,8 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({ isOpen, 
               <div>
                 <span className="font-semibold text-emerald-100">The short version:</span> your
                 geochemical data is processed in your browser and is not sent anywhere. There are
-                no analytics, no advertising trackers and no third-party scripts of any kind.
+                no advertising trackers, and the only third-party script is GoatCounter, a
+                cookie-free visit counter that never sees your data.
               </div>
               <div className="text-emerald-300/90">
                 Data leaves your device only if you sign in and sync a collection, or if you
@@ -137,10 +138,13 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({ isOpen, 
             </p>
             <p>
               <strong className="text-stone-200">
-                No analytics, no cookies for tracking.
+                Visit counting without cookies.
               </strong>{' '}
-              This application loads no analytics SDK, no advertising pixel and no third-party
-              fonts or scripts. The storage it does use is functional: your preferences, your local
+              Page views are counted with GoatCounter (goatcounter.com), an open-source, privacy-
+              friendly counter. It records the page path, referrer, browser, screen size and
+              approximate country, sets no cookies and does not identify you; no composition or
+              result is ever sent to it. There is no advertising pixel and no third-party font.
+              The storage this application uses is functional: your preferences, your local
               collection, the offline cache, and — only when signed in — Firebase&apos;s own
               authentication tokens.
             </p>

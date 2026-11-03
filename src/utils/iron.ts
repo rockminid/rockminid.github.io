@@ -78,6 +78,10 @@ export function suggestedFe2O3FeORatio(sio2: number | undefined): number {
  * Precedence: measured components (FeO + Fe2O3) win over a reported total,
  * because they carry the oxidation state. A reported total is used only when
  * no components are present. The two are never added together.
+ *
+ * Fe2O3 reported on its own, with no FeO and no total, is read as total
+ * iron: that is how XRF reports it, and taking it as measured ferric iron
+ * turned such basalts into hematite-normative rocks.
  */
 export function resolveIron(
   oxides: OxideComposition,
@@ -88,9 +92,11 @@ export function resolveIron(
   const feo = num(oxides.FeO);
   const fe2o3 = num(oxides.Fe2O3);
   const feot = num(oxides.FeOT);
-  const fe2o3t = num(oxides.Fe2O3T);
+  const loneFe2O3 =
+    num(oxides.Fe2O3) !== undefined && feo === undefined && feot === undefined && num(oxides.Fe2O3T) === undefined;
+  const fe2o3t = loneFe2O3 ? num(oxides.Fe2O3) : num(oxides.Fe2O3T);
 
-  const hasComponents = feo !== undefined || fe2o3 !== undefined;
+  const hasComponents = !loneFe2O3 && (feo !== undefined || fe2o3 !== undefined);
   const hasTotal = feot !== undefined || fe2o3t !== undefined;
 
   let FeOT: number;

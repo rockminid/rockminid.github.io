@@ -32,6 +32,24 @@ import {
 // ---------------------------------------------------------------------------
 
 describe('resolveIron', () => {
+  it('reads Fe2O3 reported alone as total iron, the way XRF reports it', () => {
+    const fe = resolveIron({ Fe2O3: 12.0 }, { fe2o3FeoRatio: 0.2 });
+    expect(fe.basis).toBe('Fe2O3T');
+    expect(fe.FeOT).toBeCloseTo(10.7976, 3);
+    expect(fe.isSplitEstimated).toBe(true);
+    expect(fe.Fe2O3 / fe.FeO).toBeCloseTo(0.2, 6);
+  });
+
+  it('keeps the CIPW oxide phases on ferrous iron, never MgO', () => {
+    // All-ferric input with abundant MgO: magnetite needs FeO and there is
+    // none, so the Fe2O3 is hematite rather than Mg-bearing "magnetite".
+    const norm = calculateCIPWNorm({ SiO2: 50, Al2O3: 15, Fe2O3: 10, FeO: 0, MgO: 10, CaO: 10, Na2O: 3, K2O: 1, TiO2: 1 });
+    expect(norm.Mt ?? 0).toBe(0);
+    expect(norm.Il ?? 0).toBe(0);
+    expect(norm.Hm).toBeCloseTo(10, 3);
+    expect(norm.Ru).toBeCloseTo(1, 3);
+  });
+
   it('computes FeO* = FeO + 0.8998 x Fe2O3 when both are supplied', () => {
     const fe = resolveIron({ FeO: 8.0, Fe2O3: 2.0 });
     expect(fe.FeOT).toBeCloseTo(8.0 + 0.8998 * 2.0, 4);

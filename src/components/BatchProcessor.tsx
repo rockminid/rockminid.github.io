@@ -22,7 +22,7 @@ import {
   Plus,
 } from 'lucide-react';
 import { BatchRowResult, OxideComposition, RockReference, MineralReference } from '../types/geochem';
-import { parseCSV, processBatchCSV, exportBatchToCSV, exportBatchComprehensiveCSV, SAMPLE_BENCHMARK_CSVS } from '../utils/csv';
+import { BATCH_LIMIT, parseCSV, processBatchCSV, exportBatchToCSV, exportBatchComprehensiveCSV, SAMPLE_BENCHMARK_CSVS } from '../utils/csv';
 import { identifyGeochemicalSample } from '../utils/geochemEngine';
 import { TasDiagram, TASPoint } from './TasDiagram';
 import { SpecimenModal } from './SpecimenModal';
@@ -231,6 +231,12 @@ export const BatchProcessor: React.FC<BatchProcessorProps> = ({
     if (rows.length === 0) {
       alert('The CSV file does not contain valid data rows.');
       return;
+    }
+    if (rows.length > BATCH_LIMIT) {
+      alert(
+        `The file has ${rows.length.toLocaleString()} rows; the first ${BATCH_LIMIT.toLocaleString()} are processed. ` +
+          'Split the file, or use scripts/classify-csv.ts from the repository for larger datasets.'
+      );
     }
     recordHistory();
     const results = processBatchCSV(rows);
@@ -466,11 +472,11 @@ SAMPLE_03,41.50,0.02,0.05,0.00,8.80,0.15,49.20,0.20,0.01,0.00,0.00,0.12,0.35,0.0
               <FileSpreadsheet className="w-5 h-5 text-amber-400" />
               Bulk CSV Geochemical Batch Processor
               <span className="px-2 py-0.5 text-[10px] font-semibold bg-amber-950/60 text-amber-300 border border-amber-800/60 rounded-full">
-                Up to 100 Samples
+                Up to {BATCH_LIMIT.toLocaleString()} Samples
               </span>
             </h2>
             <p className="text-xs text-stone-400 mt-0.5">
-              Upload multi-sample XRF, ICP-MS, or EPMA microprobe assays in oxide wt% or element wt% (processes up to 100 samples per batch)
+              Upload multi-sample XRF, ICP-MS, or EPMA microprobe assays in oxide wt% or element wt% (processes up to {BATCH_LIMIT.toLocaleString()} samples per batch)
             </p>
           </div>
 
@@ -510,7 +516,7 @@ SAMPLE_03,41.50,0.02,0.05,0.00,8.80,0.15,49.20,0.20,0.01,0.00,0.00,0.12,0.35,0.0
               Click to select or drag and drop your CSV file here
             </div>
             <p className="text-xs text-stone-500 max-w-md">
-              Supports up to 100 samples per CSV with standard column headers (e.g. SiO2, TiO2, Al2O3, FeOT, MgO, CaO, Na2O, K2O, LOI or elemental Si, Ti, Al, Fe, Mg, Ca)
+              Supports up to {BATCH_LIMIT.toLocaleString()} samples per CSV with standard column headers (e.g. SiO2, TiO2, Al2O3, FeOT, MgO, CaO, Na2O, K2O, LOI or elemental Si, Ti, Al, Fe, Mg, Ca)
             </p>
           </div>
         </div>

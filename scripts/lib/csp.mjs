@@ -14,6 +14,12 @@
  */
 
 /** Origins Firebase Auth and Firestore talk to. */
+/** GoatCounter: count.js is loaded from gc.zgo.at and reports page views
+ * (path, referrer, screen size; no cookies, no sample data) to this site's
+ * counter. */
+const GOATCOUNTER_SCRIPT = 'https://gc.zgo.at';
+const GOATCOUNTER_ENDPOINT = 'https://rockminid.goatcounter.com';
+
 const FIREBASE_CONNECT = [
   'https://*.googleapis.com',
   'https://*.firebaseio.com',
@@ -30,7 +36,7 @@ const FIREBASE_CONNECT = [
  * @returns {string}
  */
 export function buildCsp({ apiBaseUrl } = {}) {
-  const connect = new Set(["'self'", ...FIREBASE_CONNECT]);
+  const connect = new Set(["'self'", ...FIREBASE_CONNECT, GOATCOUNTER_ENDPOINT]);
 
   if (apiBaseUrl) {
     try {
@@ -44,14 +50,15 @@ export function buildCsp({ apiBaseUrl } = {}) {
   return [
     "default-src 'self'",
     // No inline scripts are emitted: index.html references the entry module
-    // by src, and the JSON-LD block is not executable.
-    "script-src 'self'",
+    // and the GoatCounter script by src, and the JSON-LD block is not executable.
+    `script-src 'self' ${GOATCOUNTER_SCRIPT}`,
     // Tailwind ships a stylesheet, but React writes inline style attributes
     // for diagram geometry, which style-src-attr governs.
     "style-src 'self' 'unsafe-inline'",
     // data: and blob: cover generated diagram exports and jsPDF output;
     // googleusercontent.com covers a signed-in user's avatar.
-    "img-src 'self' data: blob: https://*.googleusercontent.com",
+    // GoatCounter falls back to an image request when sendBeacon is unavailable.
+    `img-src 'self' data: blob: https://*.googleusercontent.com ${GOATCOUNTER_ENDPOINT}`,
     "font-src 'self' data:",
     `connect-src ${[...connect].join(' ')}`,
     // Firebase Auth uses an iframe on the authDomain for some flows.

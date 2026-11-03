@@ -168,13 +168,21 @@ export function mapHeaderToGeochem(rawHeader: string): { key: string; isElement:
 }
 
 /**
+ * Rows processed per batch in the browser. This is an interface limit, not a
+ * computational one: the engine runs on the page's main thread at about 4-5 ms
+ * per analysis, so 1,000 rows keep the page blocked for a few seconds at most.
+ * scripts/classify-csv.ts runs the same engine in Node.js with no limit.
+ */
+export const BATCH_LIMIT = 1000;
+
+/**
  * Processes parsed CSV rows in batch through the geochemical identification engine
  */
 export function processBatchCSV(
-  rows: Record<string, string>[]
+  rows: Record<string, string>[],
+  limit: number = BATCH_LIMIT
 ): BatchRowResult[] {
-  // Support up to 100 samples per batch import
-  const targetRows = rows.slice(0, 100);
+  const targetRows = rows.slice(0, limit);
 
   return targetRows.map((row, index) => {
     const rawOxides: OxideComposition = {};

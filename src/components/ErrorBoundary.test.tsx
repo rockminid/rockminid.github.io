@@ -95,7 +95,7 @@ describe('ErrorBoundary', () => {
   });
 
   it('sends no telemetry anywhere', () => {
-    // The app collects no analytics and a stack can contain the user's own
+    // The app sends no error reports and a stack can contain the user's own
     // sample data, so the boundary must not phone home.
     const fetchSpy = vi.fn();
     vi.stubGlobal('fetch', fetchSpy);

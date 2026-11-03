@@ -362,7 +362,7 @@ export const DocumentationModal: React.FC<DocumentationModalProps> = ({
                     </thead>
                     <tbody className="divide-y divide-stone-850 text-stone-400">
                       <tr><td className="p-2.5 font-bold text-amber-300">Single</td><td className="p-2.5 text-stone-300">Single Sample Analyzer</td><td className="p-2.5">Detailed analysis of one composition with dual rock/mineral ranking</td></tr>
-                      <tr><td className="p-2.5 font-bold text-amber-300">Batch</td><td className="p-2.5 text-stone-300">Bulk CSV Processor</td><td className="p-2.5">Process up to 100 imported analyses with global oxide range filters</td></tr>
+                      <tr><td className="p-2.5 font-bold text-amber-300">Batch</td><td className="p-2.5 text-stone-300">Bulk CSV Processor</td><td className="p-2.5">Process up to 1,000 imported analyses with global oxide range filters</td></tr>
                       <tr><td className="p-2.5 font-bold text-amber-300">TAS</td><td className="p-2.5 text-stone-300">Total Alkali–Silica Projection</td><td className="p-2.5">Volcanic classification, rock comparison and alkaline/subalkaline dividers</td></tr>
                       <tr><td className="p-2.5 font-bold text-amber-300">Ternary</td><td className="p-2.5 text-stone-300">Ten Compositional Systems</td><td className="p-2.5">AFM, QAPF, feldspar, pyroxene, and ultramafic Ol-Opx-Cpx projections</td></tr>
                       <tr><td className="p-2.5 font-bold text-amber-300">Dataset</td><td className="p-2.5 text-stone-300">Reference Mineral &amp; Rock Database</td><td className="p-2.5">Explore benchmark records, petrogenesis facts and external database links</td></tr>
@@ -557,7 +557,7 @@ export const DocumentationModal: React.FC<DocumentationModalProps> = ({
                   <h3>09. Batch Geochemical Processor</h3>
                 </div>
                 <p className="text-xs">
-                  The Batch Processor processes suites of analyses from CSV files, supporting up to 100 rows per batch.
+                  The Batch Processor processes suites of analyses from CSV files, supporting up to 1,000 rows per batch; larger files can be classified with the command-line script scripts/classify-csv.ts.
                 </p>
                 <div className="p-3 bg-stone-950 rounded-xl border border-stone-800 text-xs space-y-1.5">
                   <div className="font-bold text-amber-300">Recommended CSV Header Format:</div>

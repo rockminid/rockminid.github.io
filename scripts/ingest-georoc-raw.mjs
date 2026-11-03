@@ -46,6 +46,10 @@ const OUT = path.resolve(ROOT, arg('out', 'public/data'));
 const MIN_N = Number(arg('min-n', 30));
 // 'rocks', 'minerals', or 'both' (default). Lets a long run be resumed.
 const ONLY = arg('only', 'both');
+// Every Nth data row of each file is left out of the library, so that
+// scripts/benchmark-georoc.ts can test on analyses the library never saw.
+// 0 (default) keeps every row; the published library is built that way.
+const HOLDOUT = Number(arg('holdout', 0));
 
 /** Header name in the GEOROC file -> oxide key used by the app. */
 const OXIDE_HEADERS = {
@@ -198,6 +202,7 @@ async function ingest(kind) {
 
       stats.rows++;
       localRows++;
+      if (HOLDOUT && localRows % HOLDOUT === 0) continue;
       // The bibliography block after the data is not tabular.
       if (row.length !== header.length) { stats.nonTabular++; continue; }
 

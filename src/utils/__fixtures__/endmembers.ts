@@ -75,6 +75,12 @@ export const MAGNETITE = fromMoles({ FeO: 1, Fe2O3: 1 });
 /** FeTiO3 — pure ilmenite. Norm: 100% Il. */
 export const ILMENITE = fromMoles({ FeO: 1, TiO2: 1 });
 
+/** Mg3Al2Si3O12 — pure pyrope. Al is octahedral, so Si alone fills T. */
+export const PYROPE = fromMoles({ MgO: 3, Al2O3: 1, SiO2: 3 });
+
+/** Ca5(PO4)3X as oxides only — 8 cations on 12.5 O. */
+export const APATITE_OXIDES = fromMoles({ CaO: 5, P2O5: 1.5 });
+
 /**
  * A realistic N-MORB whole-rock analysis (mid-ocean ridge tholeiite).
  * Used for regression/sanity checks rather than exact-value assertions.

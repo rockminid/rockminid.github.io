@@ -604,9 +604,12 @@ export function identifyGeochemicalSample(
     bestOverall = topMineral;
   } else if (sampleType === 'whole_rock' || sampleType === 'glass' || sampleType === 'melt_inclusion') {
     bestOverall = topRock;
-  } else if (topMineral && topMineralFit >= 0.75 && topMineral.similarity >= (topRock?.similarity ?? 0) - 12) {
-    // Normalizes cleanly to a mineral formula and is compositionally
-    // competitive, so treat it as a mineral grain.
+  } else if (topMineral && topMineralFit >= 0.75 && topMineral.similarity >= (topRock?.similarity ?? 0)) {
+    // Normalizes cleanly to a mineral formula and scores at least as well as
+    // the best rock, so treat it as a mineral grain. This used to allow the
+    // mineral to trail the rock by 12 points; on held-out GEOROC data that
+    // called 19% of whole rocks minerals (mostly basalts as omphacite or
+    // mica) for a gain of under 1% in minerals recognized.
     bestOverall = topMineral;
     inferredType = 'mineral';
   }

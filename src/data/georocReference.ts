@@ -99,7 +99,7 @@ function medians(oxides: Record<string, OxideStats>, key: 'p10' | 'p50' | 'p90')
   return out;
 }
 
-function toRockReference(e: GeorocEntry): RockReference {
+export function toRockReference(e: GeorocEntry): RockReference {
   const tag = e.groupTags[0]?.value ?? '';
   const category = ROCK_CLASS_BY_TAG[tag] ?? 'Igneous Volcanic';
   const setting = e.tectonicSettings[0]?.value;
@@ -172,7 +172,7 @@ const MINERAL_GROUP_BY_TAG: Record<string, MineralGroup> = {
   chalcogenides: 'Sulfide',
 };
 
-function toMineralReference(e: GeorocEntry): MineralReference {
+export function toMineralReference(e: GeorocEntry): MineralReference {
   const tag = e.groupTags[0]?.value ?? '';
   const hosts = e.hostRocks ?? [];
   return {
