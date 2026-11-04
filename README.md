@@ -1,122 +1,56 @@
 # RockMin ID
 
-**Geochemical classifier and petrological analysis platform.** Identifies rocks and
-minerals from major-element compositions, computes a full CIPW norm, and plots
-samples on TAS, AFM, QAPF, pyroxene, feldspar and ultramafic diagrams.
+**Classify igneous rocks and identify minerals from major-element data, in your browser.**
 
-Everything runs in the browser. It installs as a PWA and works offline.
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22875578.svg)](https://doi.org/10.5281/zenodo.22875578)
+
+**Open the app: <https://rockminid.github.io>**
+
+RockMin ID names igneous rocks with the IUGS total alkali-silica (TAS) scheme,
+computes the CIPW norm, separates magma series with the Irvine-Baragar criteria,
+plots samples on eleven ternary diagrams and identifies minerals from their
+structural formula. Nothing needs to be installed, and once the page has loaded
+it also works offline.
 
 ---
 
-## What it does
+## Features
 
-| Feature | Notes |
+| | |
 | --- | --- |
-| **Mineral identification** | Structural formula (APFU) on the correct oxygen basis, with end-member proportions (Fo, An-Ab-Or, Wo-En-Fs, Cr#) — not oxide-distance matching |
-| **Single-sample analyzer** | Oxide or element input, live classification, candidate ranking, petrogenetic indices |
-| **IUGS naming** | TAS root name refined to the sub-root name — alkali vs subalkali basalt, basanite vs tephrite, hawaiite vs shoshonite, trachyte vs trachydacite, peralkaline comendite/pantellerite — plus low-K/medium-K/high-K |
-| **Batch processor** | CSV in, classified CSV out, for hundreds of analyses at a time |
-| **TAS diagram** | Le Bas et al. (1986) volcanic fields, Middlemost (1994) plutonic equivalents |
-| **Ternary diagrams** | AFM (igneous and metamorphic), ACF (metabasites and calc-silicates), QAPF and APF (plutonic and volcanic), pyroxene quadrilateral, feldspar, ultramafic, basalt tetrahedron |
-| **CIPW norm** | Full normative mineralogy with mass-balance and silica-closure diagnostics |
-| **Reference dataset explorer** | Rock and mineral reference compositions with external database cross-links |
-| **Specimen collection** | Saved locally; synced to the cloud when signed in |
-| **Google sign-in** | Optional — see [Cloud features](#cloud-features-optional) |
-| **Feedback** | In-app submission, stored locally and mirrored to Firestore when configured |
-| **SEO** | Generated `sitemap.xml` and `robots.txt`, canonical link, Open Graph card |
-| **Export** | CSV, diagram images, and a generated PDF user manual |
-| **AI interpretation** | Optional narrative petrogenesis; falls back to a deterministic rule engine |
+| **Single-sample analyzer** | Enter oxides or elements (wt%), or load a benchmark sample; results update as you type |
+| **IUGS rock names** | TAS root name refined to the sub-root name (alkali/subalkali basalt, basanite/tephrite, hawaiite, trachyte/trachydacite, comendite/pantellerite), plus the low-, medium- and high-K series |
+| **CIPW and cation norms** | 23 normative phases, mass-conserving, with the unrescaled normative total and differentiation index |
+| **Mineral identification** | Structural formula on the correct oxygen basis, end-member proportions (Fo, An-Ab-Or, Wo-En-Fs, Cr#) |
+| **Diagrams** | TAS; AFM (igneous and metamorphic), ACF, QAPF and APF (plutonic and volcanic), pyroxene quadrilateral, feldspar, ultramafic and basalt tetrahedron. Plot your own data alone and export figures (PNG, JPEG, SVG) |
+| **Batch processing** | Upload a CSV of up to 1,000 analyses and download the classified results |
+| **Data-quality checks** | Flags for low or high totals, iron reporting, sparse analyses, loss on ignition and ambiguous matches |
+| **Reference library** | 91 curated rock and mineral compositions and 143 GEOROC distributions built from 1,220,607 analyses |
+| **Saved samples** | Kept in your browser; synced across devices if you sign in with Google (optional) |
+| **User manual** | Full documentation of every formula and reference, downloadable as PDF from the app |
 
-### The AI never classifies anything
-
-All identification, TAS assignment, normative mineralogy and index calculation is
-done by deterministic, unit-tested code. The optional Gemini integration only
-writes prose *about* results that have already been computed. If no AI backend is
-configured, a rule-based summary is generated locally instead — so the feature
-works offline and on a static host.
+Every classification is made by deterministic, tested code. Match scores rank
+candidates and are **not probabilities**; each is shown with its distance, the
+number of oxides used and its lead over the next candidate.
 
 ---
 
-## Quick start
+## Install as an app
 
-Requires Node.js 20 or newer.
+RockMin ID is a Progressive Web App, installed straight from the browser:
 
-```bash
-npm install
-npm run dev
-```
-
-Then open http://localhost:3000.
-
-Other commands:
-
-```bash
-npm test          # run the geochemical engine test suite
-npm run lint      # typecheck
-npm run build     # production build into dist/
-npm run preview   # serve the production build locally
-npm run verify    # lint + test + build, the full gate
-```
+- **Android** (Chrome, Edge, Samsung Internet): menu (⋮) → *Install app*
+- **iPhone / iPad** (Safari): Share → *Add to Home Screen*
+- **Desktop** (Chrome, Edge): the install icon in the address bar
 
 ---
 
-## Deploying to GitHub Pages
+## Privacy
 
-The workflow in `.github/workflows/deploy.yml` builds, typechecks, tests and
-deploys on every push to `main`.
-
-1. Push this repository to GitHub.
-2. In **Settings → Pages**, set **Source** to **GitHub Actions**.
-3. Push to `main`.
-
-The base path is derived automatically: a repository named `<user>.github.io`
-is a **user site** served at the domain root (`/`), anything else is a
-**project site** served under `/<repo>/`. For a custom domain, set the
-repository variable `VITE_BASE_PATH` to `/`.
-
-This repository is `rockminid/rockminid.github.io`, so it deploys to
-**https://rockminid.github.io/** at the root.
-
-The workflow also writes `404.html` and `.nojekyll`, which GitHub Pages needs for
-a single-page app to handle deep links correctly.
-
----
-
-## Cloud features (optional)
-
-Sign-in, cloud sync and cloud feedback need your own Firebase project. Without
-one the app runs in **local-only mode**: every calculation, diagram, batch run,
-export and the local specimen collection work exactly as normal.
-
-1. Create a project at [console.firebase.google.com](https://console.firebase.google.com).
-2. Enable **Authentication → Google** and **Firestore**.
-3. Deploy the rules in `firestore.rules` to that project.
-4. Add the web app config as repository secrets (`VITE_FIREBASE_API_KEY` and the
-   rest — see `.env.example`), or put them in `.env.local` for local development.
-5. Restrict the API key to your domains in the Google Cloud console.
-
-Firebase web API keys are public by design; they are visible in any client
-bundle. Security comes from Firestore rules and key restrictions, not secrecy.
-
-### AI interpretation backend
-
-To enable Gemini-written interpretation, deploy `server.ts` somewhere that can
-hold a secret (Cloud Run, Render, Fly.io), set `GEMINI_API_KEY` there, and point
-`VITE_API_BASE_URL` at it. Never put a Gemini key in a `VITE_*` variable — those
-are inlined into the browser bundle.
-
----
-
-## Installing as an app
-
-RockMin ID is a Progressive Web App. There is no app-store build: install it
-straight from the browser on a phone, tablet or desktop.
-
-- **Android** (Chrome, Edge, Samsung Internet): menu (⋮) → *Install app*.
-- **iPhone / iPad** (Safari): Share → *Add to Home Screen*.
-- **Desktop** (Chrome, Edge): the install icon at the end of the address bar.
-
-Once installed and opened online once, it works fully offline.
+All calculations run on your own device; compositions are not sent to a server.
+Data leaves your device only if you sign in to sync saved samples or send
+feedback. Page visits are counted with GoatCounter, which sets no cookies and
+never receives sample data. See the Privacy Policy in the app for details.
 
 ---
 
@@ -124,172 +58,64 @@ Once installed and opened online once, it works fully offline.
 
 | Calculation | Reference |
 | --- | --- |
-| TAS volcanic classification | Le Bas, Le Maitre, Streckeisen & Zanettin (1986), *J. Petrol.* 27, 745–750 — all 14 published intersection coordinates verified |
-| TAS sub-root names, K-series | Le Maitre (2002), *Igneous Rocks*, 2nd edn, §2.12.2, pp.36–38 |
-| Comenditic / pantelleritic split | Macdonald (1974), via Le Maitre (2002) Fig. 2.18 |
-| TAS plutonic equivalents | Middlemost (1994), *Earth-Sci. Rev.* 37, 215–224 |
-| Alkaline / subalkaline divide | Irvine & Baragar (1971), *Can. J. Earth Sci.* 8, 523–548, Appendix III eq. for Fig. 3 |
-| Tholeiitic / calc-alkaline divide | Irvine & Baragar (1971), Appendix III eq. for Figs. 2 and 6 |
-| Cation norm, colour index, normative plagioclase | Irvine & Baragar (1971), Table 1 |
-| CIPW norm | Cross, Iddings, Pirsson & Washington (1902); Kelsey (1965); Le Maitre (2002) |
-| Fe³⁺/Fe²⁺ estimation | Middlemost (1989), *Chem. Geol.* 77, 19–26 |
-| AFM | Wager & Deer (1939); Irvine & Baragar (1971) |
-| QAPF subdivision limits | Streckeisen (1976), *Earth-Sci. Rev.* 12, 1–33 — f.r. 10/35/65/90 and Q 5/20/60, verified |
-| ASI (A/CNK) | Shand (1943); Zen (1986) |
-| Mineral structural formulae | Deer, Howie & Zussman — standard oxygen bases |
+| TAS classification | Le Bas et al. (1986), *J. Petrol.* 27, 745–750; Le Maitre (2002) |
+| TAS sub-root names, K-series | Le Maitre (2002), *Igneous Rocks*, 2nd edn |
+| Plutonic TAS equivalents | Middlemost (1994), *Earth-Sci. Rev.* 37, 215–224 |
+| Alkaline/subalkaline, tholeiitic/calc-alkaline | Irvine & Baragar (1971), *Can. J. Earth Sci.* 8, 523–548 |
+| CIPW norm | Cross et al. (1902); Kelsey (1965); Le Maitre (2002) |
+| Fe₂O₃/FeO estimation | Middlemost (1989), *Chem. Geol.* 77, 19–26 |
+| QAPF | Streckeisen (1976), *Earth-Sci. Rev.* 12, 1–33 |
+| ACF | Eskola (1915); Winter (2010) |
+| Fe³⁺ in oxides by charge balance | Droop (1987), *Mineral. Mag.* 51, 431–435 |
+| Reference distributions | GEOROC (DIGIS, University of Göttingen) |
 
-### Similarity scores are not probabilities
-
-Candidate matches are ranked by a weighted Euclidean distance in oxide space,
-mapped to a bounded 0–100 score. That score orders candidates — nothing more.
-It is not a confidence level, a probability, or a statistical significance. The
-interface shows the raw distance, the number of analytes used and the gap to the
-runner-up alongside it, and flags a match as ambiguous when that gap is small.
-
-### Reference library
-
-Matching runs against **234 reference compositions**:
-
-- **91 curated entries** — hand-written rock and mineral compositions with
-  descriptions, type localities and external database cross-links.
-- **143 GEOROC population distributions** — derived from **1,220,607 real
-  analyses**, each reduced to a median and a 10th–90th percentile band per
-  oxide, so a match reports "within the observed range of N analyses" rather
-  than proximity to one hand-picked number.
-
-| | groups | analyses |
-| --- | ---: | ---: |
-| Rocks | 69 | 266,675 |
-| Minerals | 74 | 953,932 |
-
-Rocks are grouped by GEOROC's own precompiled file name, which is an
-authoritative curation — so the library covers komatiite, boninite, adakite,
-picrite, lherzolite, harzburgite, dunite, nephelinite, lamprophyre,
-trondhjemite and the full IUGS sub-root series, not just the common types.
-Minerals keep every analysis (olivine n=244,015; plagioclase n=202,631;
-clinopyroxene n=171,414) and record the host rocks they were analysed in.
-
-The library is built offline, ships as ~180 kB of JSON in `public/data/`, is
-fetched after first paint and is precached for offline use. If it fails to
-load the app says so and falls back to the curated set.
-
-```bash
-npm run ingest:georoc -- --src ../georoc-raw
-```
-
-Expects `<src>/rocks/*.csv` and `<src>/minerals/*.csv` from the GEOROC
-precompiled downloads.
-
-> **Note on the source files.** GEOROC's rock archive uses bare CR line
-> endings while the mineral archive uses CRLF, and both contain quoted fields
-> with embedded newlines plus a trailing bibliography block. The ingester uses
-> a character-level RFC 4180 parser for exactly this reason; a line-based
-> reader silently collapses every rock file into a single row.
-
-Bulk GEOROC CSVs (~210 MB) must never be committed or bundled; `.gitignore`
-excludes them. Publish them as a GitHub Release asset or a Zenodo archive and
-point the ingest script at that.
-
-**Cite GEOROC** (DIGIS, Georg-August-Universität Göttingen) and the original
-publications for any analysis used. See `public/data/georoc-manifest.json` for
-the exact ingestion parameters and record counts.
+The engine is covered by 345 automated tests anchored on exact stoichiometry
+and the published classification boundaries. Its mineral identification and
+whole-rock results have been checked against withheld natural GEOROC analyses
+and against the independent package pyrolite.
 
 ---
 
-## Testing
+## Running locally and reproducing results
+
+Requires Node.js 20 or newer.
 
 ```bash
-npm test
+npm install
+npm run dev        # start the app at http://localhost:3000
+npm test           # run the test suite
 ```
 
-345 tests, of which 318 cover the deterministic engine and 27 cover components
-(the error boundary, the data-quality panel, the match explanation). Engine
-tests run in the same jsdom environment as the component tests; the whole suite
-finishes in a few seconds.
-
-The geochemistry is anchored on exact stoichiometric end-members: a
-CIPW norm of pure albite must return ~100% normative albite, pure anorthite must
-give ASI exactly 1.00, and so on. The suite also asserts mass balance and silica
-closure for every norm, checks the published Le Bas TAS field boundaries, and
-verifies that the AFM series label agrees with the boundary curve drawn on the
-diagram.
-
-The Irvine & Baragar equations are cross-checked against an independent
-digitization of the authors' own figures, taken from the scanned paper. The two
-agree within 0.65 wt% SiO₂ over the range the fit covers. The digitizer was
-itself validated by recovering MacDonald's (1968) line from their Fig. 3A as
-`alk = 0.3738 SiO₂ − 14.859`, against the published `0.37 SiO₂ − 14.43`.
-
-The TAS field polygons are checked against every intersection coordinate
-published in Le Maitre (2002) Fig. 2.15, and proven non-overlapping by an
-exhaustive sweep of the diagram. QAPF subdivision limits are checked against
-Streckeisen (1976).
-
-The GEOROC library is guarded by geological sanity checks — median SiO₂ in the
-accepted range for every named rock type, the volcanic series ordered by silica,
-komatiite far richer in MgO than basalt, ultramafic rocks below basalt in
-silica, orthopyroxene poorer in CaO than clinopyroxene — plus a round trip that
-feeds each group's own median back through the engine.
-
----
-
-### Validation on real analyses
-
-Two scripts test the engine on GEOROC analyses that the reference library has
-never seen, and compare it with an independent implementation:
-
-```bash
-npm run ingest:georoc -- --src ../georoc-raw --holdout 50 --out ../holdout
-npx vite-node scripts/benchmark-georoc.ts -- --src ../georoc-raw --lib ../holdout --out ../bench
-python scripts/compare-pyrolite.py ../bench/rocks-rockminid.csv   # needs pip install pyrolite
-```
-
-`--holdout 50` leaves every 50th analysis out of the library; the benchmark
-draws its test set (up to 100 author-labelled mineral analyses per mineral
-family, and 1,000 whole-rock analyses) from exactly those rows, with a fixed
-random seed. It reports mineral identification with and without the GEOROC
-distributions, and how often a whole rock is mistaken for a mineral when the
-sample type is not declared. The second script compares TAS fields and CIPW
-norms with pyrolite on the same 1,000 whole rocks.
-
-### Large datasets
-
-The browser's Batch Processor handles up to 1,000 rows per file. For larger
-compilations the same engine runs in Node.js without a limit:
+Larger CSV files can be classified without the 1,000-row limit:
 
 ```bash
 npx vite-node scripts/classify-csv.ts -- input.csv output.csv
 ```
 
+The scripts used to validate the software on natural analyses are in
+[`scripts/`](scripts): `benchmark-georoc.ts` (mineral identification on
+withheld GEOROC analyses) and `compare-pyrolite.py` (comparison with pyrolite).
+
 ---
 
 ## Citing
-
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22875578.svg)](https://doi.org/10.5281/zenodo.22875578)
 
 > Tiwari, K. (2026). *RockMin ID: Automated Geochemical Classifier and
 > Petrological Analysis Platform* (Version 2.5.2) [Computer software]. Zenodo.
 > <https://doi.org/10.5281/zenodo.22875578>
 
-`10.5281/zenodo.22875578` is the **concept DOI** and always resolves to the
-latest release — use it to cite RockMin ID in general. To pin the exact release
-your results came from, cite that release's **version DOI** instead; it is shown
-on its [Zenodo record](https://zenodo.org/doi/10.5281/zenodo.22875578).
+This concept DOI always points to the latest release. To cite the exact version
+you used, take its version DOI from the
+[Zenodo record](https://zenodo.org/doi/10.5281/zenodo.22875578). GitHub's
+"Cite this repository" button reads [`CITATION.cff`](CITATION.cff).
 
-[`CITATION.cff`](CITATION.cff) carries the same metadata, so GitHub's "Cite this
-repository" button and most reference managers can import it directly. BibTeX and
-APA forms are also in the **Cite** tab of the in-app documentation.
-
-Please cite the underlying reference datasets separately — **GEOROC** (DIGIS,
-Georg-August-Universität Göttingen) and the original publications behind any
-analysis you use, plus EarthChem/PetDB, Mindat and RRUFF where relevant.
+Please also cite GEOROC and the original publications of any analyses you use.
 
 ---
 
 ## License
 
-[MIT](LICENSE) for the source code. Geochemical reference data from GEOROC,
-EarthChem/PetDB, Mindat.org, RRUFF and the USGS remains subject to those
-providers' terms and citation requirements.
+[MIT](LICENSE). Reference data from GEOROC, EarthChem/PetDB, Mindat, RRUFF and
+the USGS remain subject to their providers' terms.
 
-Created by Kishan Tiwari — <https://rockminid.github.io>
+Created by Kishan Tiwari, Indian Institute of Technology Kharagpur.

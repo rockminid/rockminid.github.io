@@ -3,7 +3,7 @@
  *
  * The bundled curated datasets (`ROCKS_DATASET`, `MINERALS_DATASET`) are a
  * few dozen hand-written compositions. This module loads a far larger library
- * built offline from the staged GEOROC extracts by `scripts/ingest-georoc.mjs`
+ * built offline from the GEOROC precompiled files by `scripts/ingest-georoc-raw.mjs`
  * — hundreds of thousands of real analyses, reduced to a per-name
  * distribution (n, p10/p25/p50/p75/p90 per oxide).
  *
