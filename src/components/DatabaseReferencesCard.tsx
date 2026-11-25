@@ -89,11 +89,11 @@ export const DatabaseReferencesCard: React.FC<DatabaseReferencesCardProps> = ({
             <Globe className="w-3.5 h-3.5" />
           </div>
           <h4 className="text-xs font-bold text-stone-200 uppercase tracking-wider">
-            Verified External Database Cross-References
+            External Database Links
           </h4>
         </div>
         <span className="text-[10px] text-stone-500 font-mono">
-          Global Petrology &amp; Mineralogy Repositories
+          Pages and searches on public repositories
         </span>
       </div>
 
@@ -181,11 +181,11 @@ export const DatabaseReferencesCard: React.FC<DatabaseReferencesCardProps> = ({
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
                   <Database className="w-3.5 h-3.5" />
-                  GEOROC Digis Database
+                  GEOROC (DIGIS)
                 </span>
               </div>
               <p className="text-[11px] text-stone-400 leading-relaxed mb-2">
-                Max Planck Institute DIGIS geochemical database for volcanic and plutonic rocks of the oceanic and continental realms.
+                Geochemistry of Rocks of the Oceans and Continents, run by DIGIS at the University of Göttingen (previously hosted by the Max Planck Institute for Chemistry, Mainz).
               </p>
               <div className="text-[10px] text-stone-400 mb-1">
                 <span className="text-stone-500 font-medium">Domain:</span>{' '}
@@ -254,11 +254,6 @@ export const DatabaseReferencesCard: React.FC<DatabaseReferencesCardProps> = ({
                 <Compass className="w-3.5 h-3.5" />
                 EarthChem &amp; PetDB
               </span>
-              {databaseRefs?.earthChemId && (
-                <span className="px-1.5 py-0.2 bg-amber-950 text-amber-300 text-[10px] rounded font-mono border border-amber-800/50 truncate max-w-[120px]">
-                  {databaseRefs.earthChemId}
-                </span>
-              )}
             </div>
             <p className="text-[11px] text-stone-400 leading-relaxed mb-2">
               Interdisciplinary Earth Data Alliance (IEDA) global geochemical repository curated by Columbia University.

@@ -1,10 +1,11 @@
 import { MineralReference } from '../types/geochem';
+import { MINERALS_EXTENDED } from './mineralsExtended';
 
 /**
  * Comprehensive Reference Dataset of Common and Critical Minerals
  * Compiled from Mindat, Deer-Howie-Zussman, Webmineral, and GEOROC EPMA database standards.
  */
-export const MINERALS_DATASET: MineralReference[] = [
+const CORE_MINERALS: MineralReference[] = [
   // --- OLIVINE GROUP (Nesosilicates) ---
   {
     id: 'min-forsterite',
@@ -18,7 +19,7 @@ export const MINERALS_DATASET: MineralReference[] = [
       max: { SiO2: 43.5, MgO: 57.5, FeO: 10.0, NiO: 0.5 },
     },
     solidSolution: 'Fo90-Fo100 (Mg-rich endmember of Olivine series)',
-    description: 'Characteristic of mantle peridotites, dunites, komatiites, and primitive primitive basalt phenocrysts.',
+    description: 'Characteristic of mantle peridotites, dunites, komatiites, and primitive basalt phenocrysts.',
     mohsHardness: 7,
     density: 3.27,
   },
@@ -822,7 +823,11 @@ export const MINERALS_DATASET: MineralReference[] = [
     formula: 'FeS2',
     group: 'Sulfide',
     crystalSystem: 'Isometric',
-    idealOxides: { FeO: 59.90, SO3: 66.80 }, // Sulfide representation
+    // FeS2 has no oxygen: Fe 46.55 and S 53.45 wt%. Iron is written as FeO
+    // (59.88) so it lines up with oxide analyses, and S as the element; the
+    // previous FeO 59.90 + SO3 66.80 summed to 126.7 wt% and matched nothing.
+    // A sulfide is better identified from an element analysis.
+    idealOxides: { FeO: 59.88, S: 53.45 },
     typicalRange: {
       min: { Fe: 44.0, S: 50.0 },
       max: { Fe: 47.0, S: 54.0 },
@@ -832,3 +837,6 @@ export const MINERALS_DATASET: MineralReference[] = [
     density: 5.01,
   },
 ];
+
+/** All curated minerals: the original set plus the extended set. */
+export const MINERALS_DATASET: MineralReference[] = [...CORE_MINERALS, ...MINERALS_EXTENDED];

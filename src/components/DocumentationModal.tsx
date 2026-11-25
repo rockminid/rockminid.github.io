@@ -547,6 +547,30 @@ export const DocumentationModal: React.FC<DocumentationModalProps> = ({
                 </div>
               </section>
 
+              {/* Trace elements, field context, mineral totals */}
+              <section className="space-y-3 pb-6 border-b border-stone-800">
+                <div className="p-3 bg-stone-950 rounded-xl border border-stone-800 text-xs space-y-2">
+                  <div className="font-bold text-stone-200">Trace elements and spider diagrams</div>
+                  <p className="text-stone-400">
+                    Enter trace elements (ppm) under Trace Elements &amp; Spider Diagrams, or include columns such as La, Ba (ppm)
+                    or Zr_ppm in a CSV. They are plotted on a CI-chondrite REE diagram and a primitive-mantle multi-element
+                    diagram (Sun &amp; McDonough 1989), with Eu/Eu*, (La/Yb)<sub>N</sub>, Nb/La and Zr/Y. They do not enter the classification.
+                  </p>
+                  <div className="font-bold text-stone-200 pt-1">Texture / field context</div>
+                  <p className="text-stone-400">
+                    Basalt, gabbro and amphibolite can share one composition. Without a context the analyzer names chemically
+                    equivalent rocks of another kind scoring within 10 points; choosing volcanic, plutonic or metamorphic ranks
+                    that kind first without changing any score.
+                  </p>
+                  <div className="font-bold text-stone-200 pt-1">Carbonates, sulfates and hydrous minerals</div>
+                  <p className="text-stone-400">
+                    Minerals are compared volatile-free, and the analytical total (without H<sub>2</sub>O and CO<sub>2</sub>) is
+                    matched against the mineral&apos;s: a microprobe calcite totals about 56 wt%. Enter such analyses as
+                    measured, not normalized to 100%.
+                  </p>
+                </div>
+              </section>
+
               {/* 08 CIPW Normative Mineralogy */}
               <section id="sec-08" className="space-y-3 pb-6 border-b border-stone-800">
                 <div className="flex items-center gap-2 text-amber-400 font-bold text-base sm:text-lg">
@@ -574,7 +598,7 @@ export const DocumentationModal: React.FC<DocumentationModalProps> = ({
                   <h3>09. Batch Geochemical Processor</h3>
                 </div>
                 <p className="text-xs">
-                  The Batch Processor processes suites of analyses from CSV files, supporting up to 1,000 rows per batch; larger files can be classified with the command-line script scripts/classify-csv.ts.
+                  The Batch Processor processes suites of analyses from CSV files, supporting up to 1,000 rows per batch; larger files can be classified with the command-line script scripts/classify-csv.ts. A Column mapping panel shows what every column was read as and lets you reassign it; below-detection entries such as &lt;0.01, bdl or n.d. are treated as missing, never as zero.
                 </p>
                 <div className="p-3 bg-stone-950 rounded-xl border border-stone-800 text-xs space-y-1.5">
                   <div className="font-bold text-amber-300">Recommended CSV Header Format:</div>

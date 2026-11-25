@@ -63,6 +63,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       shortLabel: 'Bulk CSV',
       icon: <FileSpreadsheet className="w-3.5 h-3.5" />,
       badge: batchCount > 0 ? batchCount : undefined,
+      badgeLabel: 'analyses in the current batch',
       badgeColor: 'bg-cyan-600 text-cyan-100',
     },
     {
@@ -89,6 +90,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       shortLabel: 'Saved',
       icon: <Bookmark className="w-3.5 h-3.5" />,
       badge: collectionCount > 0 ? collectionCount : undefined,
+      badgeLabel: 'saved samples',
       badgeColor: 'bg-amber-600 text-white',
     },
   ];
@@ -122,37 +124,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               </p>
             </div>
           </div>
-
-          {/* Desktop Navigation Tabs (Hidden on mobile) */}
-          <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5 overflow-x-auto py-1">
-            {navItems.map((item) => {
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={`nav-${item.id}`}
-                  id={`nav-tab-${item.id}`}
-                  onClick={() => onTabChange(item.id)}
-                  className={`flex items-center gap-1.5 px-2.5 xl:px-3 py-1.5 rounded-lg text-xs xl:text-sm font-medium transition-all shrink-0 ${
-                    isActive
-                      ? 'bg-amber-600/20 text-amber-300 border border-amber-600/40 shadow-sm'
-                      : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/60 border border-transparent'
-                  }`}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                  {item.badge !== undefined && (
-                    <span
-                      className={`ml-1 px-1.5 py-0.2 text-[10px] rounded-full font-mono font-bold ${
-                        item.badgeColor || 'bg-stone-800 text-stone-300'
-                      }`}
-                    >
-                      {item.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </nav>
 
           {/* Right-Side Actions: Share, Feedback, Install, Documentation, Theme Toggle, & User Auth */}
           {/* CRITICAL: Always immediately visible on mobile without horizontal scroll! */}
@@ -341,16 +312,18 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Mobile / Medium-screen Navigation Tab Bar */}
-        {/* Dedicated second row on screens below lg: smoothly scrollable, never pushes Auth/Theme offscreen! */}
-        <div className="lg:hidden border-t border-stone-800/80 py-1.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <nav className="flex items-center gap-1.5 min-w-max px-0.5">
+        {/* The one tab row, under the header at every width: scrollable on phones, never squeezed by the action buttons. */}
+        <div className="border-t border-stone-800/80 py-1.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <nav aria-label="Main sections" className="flex items-center gap-1.5 lg:gap-2 min-w-max px-0.5">
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
               return (
                 <button
                   key={`mobile-nav-${item.id}`}
                   onClick={() => onTabChange(item.id)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all shrink-0 ${
+                  id={`nav-tab-${item.id}`}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`flex items-center gap-1.5 px-2.5 lg:px-3.5 py-1 lg:py-1.5 rounded-lg text-xs lg:text-sm font-medium transition-all shrink-0 ${
                     isActive
                       ? 'bg-amber-600/20 text-amber-300 border border-amber-600/40 shadow-sm font-semibold'
                       : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/60 border border-transparent'
@@ -360,52 +333,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <span>{item.label}</span>
                   {item.badge !== undefined && (
                     <span
+                      title={`${item.badge} ${item.badgeLabel ?? ''}`.trim()}
                       className={`ml-1 px-1.5 py-0.2 text-[9px] rounded-full font-mono font-bold ${
                         item.badgeColor || 'bg-stone-800 text-stone-300'
                       }`}
                     >
-                      {item.badge}
+                      <span aria-hidden="true">{item.badge}</span>
+                      <span className="sr-only"> ({item.badge} {item.badgeLabel})</span>
                     </span>
                   )}
                 </button>
               );
             })}
-
-            <button
-              onClick={onOpenShare}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-stone-850 hover:bg-stone-800 text-stone-300 border border-stone-800 shadow-sm shrink-0"
-              title="Share RockMin ID"
-            >
-              <Share2 className="w-3.5 h-3.5 text-amber-400" />
-              <span>Share</span>
-            </button>
-
-            <button
-              onClick={onOpenFeedback}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-stone-850 hover:bg-stone-800 text-stone-300 border border-stone-800 shadow-sm shrink-0"
-              title="Feedback & Suggestions"
-            >
-              <MessageSquarePlus className="w-3.5 h-3.5 text-amber-400" />
-              <span>Feedback</span>
-            </button>
-
-            <button
-              onClick={onOpenMobileApp}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-stone-850 hover:bg-stone-800 text-emerald-400 border border-stone-800 shadow-sm shrink-0"
-              title="Install RockMin ID as a web app"
-            >
-              <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Install App</span>
-            </button>
-
-            <button
-              onClick={() => onOpenDocumentation?.('manual')}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-stone-850 hover:bg-stone-800 text-amber-300 border border-amber-900/40 shadow-sm shrink-0"
-              title="Open Petrological Glossary & User Manual"
-            >
-              <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-              <span>Manual</span>
-            </button>
           </nav>
         </div>
       </div>

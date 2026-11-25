@@ -320,6 +320,17 @@ export const AFM_IGNEOUS_CONFIG: TernarySystemConfig = {
  */
 export const afmBoundaryF = afmBoundaryXF;
 
+/**
+ * IUGS rule: plagioclase more sodic than An05 counts as alkali feldspar.
+ * Albite goes to A when normative An/(An + Ab) < 5%, otherwise to P. Shared
+ * by every QAPF and APF projection so they cannot drift apart; the volcanic
+ * and APF variants previously used a fixed 10/90 split of albite.
+ */
+function feldsparAP(or: number, ab: number, an: number): { a: number; p: number } {
+  const anContent = an + ab > 0 ? (an / (an + ab)) * 100 : 0;
+  return anContent < 5 ? { a: or + ab, p: an } : { a: or, p: an + ab };
+}
+
 // =============================================================
 // SYSTEM 2: Metamorphic AFM Diagram (Al2O3 - FeO - MgO)
 // Thompson (1957) Pelitic Metamorphic Projections
@@ -446,18 +457,24 @@ export const AFM_METAMORPHIC_CONFIG: TernarySystemConfig = {
     },
   ],
   projectOxides: (oxides: OxideComposition) => {
-    const a = oxides.Al2O3 || 0;
-    const f = (oxides.FeO || 0) + 0.8998 * (oxides.Fe2O3 || 0);
-    const m = oxides.MgO || 0;
+    // Thompson (1957): molar, projected from muscovite, so A = Al2O3 - 3 K2O.
+    // Total iron as FeO from the shared resolver (FeOT, Fe2O3T or both
+    // components). Biotite and other K-rich phases have A < 0 and plot
+    // below the F-M join in the original; here A is set to 0 and named.
+    const iron = resolveIron(oxides);
+    const rawA = (oxides.Al2O3 || 0) / 101.961 - (3 * (oxides.K2O || 0)) / 94.196;
+    const a = Math.max(0, rawA);
+    const f = iron.FeOT / 71.844;
+    const m = (oxides.MgO || 0) / 40.304;
     const total = a + f + m;
 
-    if (total <= 0.001) return { a: 33.3, b: 33.3, c: 33.3, fieldName: 'Undetermined' };
+    if (total <= 1e-6) return { a: 33.3, b: 33.3, c: 33.3, fieldName: 'Undetermined' };
 
     return {
-      a: (a / total) * 100, // Top apex (Al2O3)
+      a: (a / total) * 100, // Top apex (Al2O3 - 3K2O)
       b: (f / total) * 100, // Bottom-Left (FeO)
       c: (m / total) * 100, // Bottom-Right (MgO)
-      fieldName: 'Metamorphic AFM Composition',
+      fieldName: rawA < 0 ? 'Below the F-M join (K2O exceeds Al2O3/3; A set to 0)' : 'Metamorphic AFM Composition',
     };
   },
 };
@@ -905,7 +922,9 @@ export const PYROXENE_QUAD_CONFIG: TernarySystemConfig = {
     // Fe = FeO/71.84 + Fe2O3*2/159.69 + MnO/70.94
     const ca = (oxides.CaO || 0) / 56.08;
     const mg = (oxides.MgO || 0) / 40.3;
-    const fe = (oxides.FeO || 0) / 71.84 + ((oxides.Fe2O3 || 0) * 2) / 159.69 + (oxides.MnO || 0) / 70.94;
+    // All iron from the shared resolver, so FeOT and Fe2O3T analyses
+    // (the GEOROC and EPMA norm) no longer plot with Fs = 0.
+    const fe = resolveIron(oxides).FeOT / 71.844 + (oxides.MnO || 0) / 70.94;
 
     const sum = ca + mg + fe;
     if (sum <= 0.001) return { a: 20, b: 40, c: 40, fieldName: 'Undetermined' };
@@ -1274,8 +1293,7 @@ export const QAPF_VOLCANIC_CONFIG: TernarySystemConfig = {
     const ab = cipw.Ab || 0;
     const an = cipw.An || 0;
 
-    const wtA = or + 0.1 * ab;
-    const wtP = an + 0.9 * ab;
+    const { a: wtA, p: wtP } = feldsparAP(or, ab, an);
     const wtQ = q;
     const sum = wtQ + wtA + wtP;
 
@@ -1509,8 +1527,7 @@ export const APF_PLUTONIC_CONFIG: TernarySystemConfig = {
     const lc = cipw.Lc || 0;
 
     const fVal = ne + lc;
-    const aVal = or + 0.1 * ab;
-    const pVal = an + 0.9 * ab;
+    const { a: aVal, p: pVal } = feldsparAP(or, ab, an);
     const sum = fVal + aVal + pVal;
 
     if (sum <= 0.01) return { a: 33.3, b: 33.3, c: 33.3, fieldName: 'Undetermined' };
@@ -1692,8 +1709,7 @@ export const APF_VOLCANIC_CONFIG: TernarySystemConfig = {
     const ol = cipw.Ol || 0;
 
     const fVal = ne + lc;
-    const aVal = or + 0.1 * ab;
-    const pVal = an + 0.9 * ab;
+    const { a: aVal, p: pVal } = feldsparAP(or, ab, an);
     const sum = fVal + aVal + pVal;
 
     if (sum <= 0.01) return { a: 33.3, b: 33.3, c: 33.3, fieldName: 'Undetermined' };
@@ -1997,25 +2013,22 @@ export const ULTRAMAFIC_CONFIG: TernarySystemConfig = {
     },
   ],
   projectOxides: (oxides: OxideComposition) => {
-    const mg = (oxides.MgO || 0) / 40.3;
-    const fe = (oxides.FeO || 0) / 71.84;
-    const ca = (oxides.CaO || 0) / 56.08;
-    const si = (oxides.SiO2 || 0) / 60.08;
-
-    // Approximate ultramafic partitioning
-    const cpx = Math.max(0, ca);
-    const opx = Math.max(0, si - cpx - (mg + fe) * 0.5);
-    const ol = Math.max(0, (mg + fe) * 0.5 - opx * 0.5);
+    // Normative Ol, Opx (= Hy) and Cpx (= Di) from the shared CIPW norm,
+    // which handles every iron form, instead of an ad-hoc partition of molar
+    // oxides. The field is read from this diagram's own polygons.
+    const norm = calculateCIPWNorm(oxides);
+    const ol = (norm.Ol as number) || 0;
+    const opx = (norm.Hy as number) || 0;
+    const cpx = (norm.Di as number) || 0;
 
     const sum = ol + opx + cpx;
     if (sum <= 0.001) return { a: 33.3, b: 33.3, c: 33.3, fieldName: 'Undetermined' };
 
-    return {
-      a: (ol / sum) * 100,
-      b: (opx / sum) * 100,
-      c: (cpx / sum) * 100,
-      fieldName: ol > 40 ? 'Peridotite' : 'Pyroxenite',
-    };
+    const pt = { a: (ol / sum) * 100, b: (opx / sum) * 100, c: (cpx / sum) * 100 };
+    const hit = ULTRAMAFIC_CONFIG.fields.find((fd) =>
+      pointInPolygon(pt.b, pt.c, fd.vertices.map((v) => [v[1], v[2]] as [number, number]))
+    );
+    return { ...pt, fieldName: hit ? hit.name : ol >= 40 ? 'Peridotite' : 'Pyroxenite' };
   },
 };
 

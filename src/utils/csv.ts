@@ -1,91 +1,75 @@
+import { mapHeaderToTrace } from './traceElements';
 import { BatchRowResult, OxideComposition } from '../types/geochem';
 import { elementsToOxides } from '../data/stoichiometry';
 import { identifyGeochemicalSample } from './geochemEngine';
+import { CIPW_PHASE_ORDER } from './cipw';
+
+/** Delimiter of the header line: comma unless the line has only tabs or semicolons. */
+function detectDelimiter(content: string): string {
+  const firstLine = content.slice(0, content.search(/\r|\n|$/));
+  if (firstLine.includes('\t') && !firstLine.includes(',')) return '\t';
+  if (firstLine.includes(';') && !firstLine.includes(',')) return ';';
+  return ',';
+}
 
 /**
- * Robust CSV parser that handles quotes, commas, semicolons, tabs, and multiline cells
+ * RFC 4180 CSV parser (comma, semicolon or tab), in one character-level pass.
+ *
+ * Only the double quote quotes a field; "" inside a quoted field is a
+ * literal quote. The previous two-pass version also treated the apostrophe
+ * as a quote, so a name like Devil's Tower swallowed the rest of the file,
+ * and it removed the quotes before splitting, so a quoted comma
+ * ("Etna, Sicily") still split the field.
  */
 export function parseCSV(content: string): { headers: string[]; rows: Record<string, string>[] } {
-  const lines: string[] = [];
-  let currentLine = '';
-  let insideQuotes = false;
+  const text = content.charCodeAt(0) === 0xfeff ? content.slice(1) : content;
+  const delimiter = detectDelimiter(text);
+  const records: string[][] = [];
+  let record: string[] = [];
+  let field = '';
+  let inQuotes = false;
 
-  for (let i = 0; i < content.length; i++) {
-    const char = content[i];
-    const nextChar = content[i + 1];
-
-    if (char === '"' || char === "'") {
-      if (insideQuotes && nextChar === char) {
-        currentLine += char;
-        i++; // skip escaped quote
-      } else {
-        insideQuotes = !insideQuotes;
-      }
-    } else if ((char === '\n' || char === '\r') && !insideQuotes) {
-      if (currentLine.trim()) {
-        lines.push(currentLine);
-      }
-      currentLine = '';
-      if (char === '\r' && nextChar === '\n') {
-        i++;
-      }
-    } else {
-      currentLine += char;
-    }
-  }
-
-  if (currentLine.trim()) {
-    lines.push(currentLine);
-  }
-
-  if (lines.length === 0) {
-    return { headers: [], rows: [] };
-  }
-
-  // Detect delimiter (comma, semicolon, tab)
-  const headerLine = lines[0];
-  let delimiter = ',';
-  if (headerLine.includes('\t') && !headerLine.includes(',')) {
-    delimiter = '\t';
-  } else if (headerLine.includes(';') && !headerLine.includes(',')) {
-    delimiter = ';';
-  }
-
-  const splitRow = (rowStr: string): string[] => {
-    const values: string[] = [];
-    let currentVal = '';
-    let inQuote = false;
-
-    for (let i = 0; i < rowStr.length; i++) {
-      const c = rowStr[i];
-      if (c === '"') {
-        inQuote = !inQuote;
-      } else if (c === delimiter && !inQuote) {
-        values.push(currentVal.trim().replace(/^"|"$/g, ''));
-        currentVal = '';
-      } else {
-        currentVal += c;
-      }
-    }
-    values.push(currentVal.trim().replace(/^"|"$/g, ''));
-    return values;
+  const endField = () => {
+    record.push(field.trim());
+    field = '';
+  };
+  const endRecord = () => {
+    endField();
+    if (record.some((v) => v !== '')) records.push(record);
+    record = [];
   };
 
-  const rawHeaders = splitRow(lines[0]);
-  const headers = rawHeaders.map((h) => h.trim());
-
-  const rows: Record<string, string>[] = [];
-  for (let i = 1; i < lines.length; i++) {
-    const vals = splitRow(lines[i]);
-    if (vals.length === 0 || vals.every((v) => !v)) continue;
-
-    const rowObj: Record<string, string> = {};
-    headers.forEach((hdr, idx) => {
-      rowObj[hdr] = vals[idx] !== undefined ? vals[idx] : '';
-    });
-    rows.push(rowObj);
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else inQuotes = false;
+      } else field += c;
+    } else if (c === '"') {
+      inQuotes = true;
+    } else if (c === delimiter) {
+      endField();
+    } else if (c === '\n' || c === '\r') {
+      endRecord();
+      if (c === '\r' && text[i + 1] === '\n') i++;
+    } else {
+      field += c;
+    }
   }
+  if (field !== '' || record.length) endRecord();
 
+  if (records.length === 0) return { headers: [], rows: [] };
+  const headers = records[0];
+  const rows = records.slice(1).map((vals) => {
+    const row: Record<string, string> = {};
+    headers.forEach((h, k) => {
+      row[h] = vals[k] ?? '';
+    });
+    return row;
+  });
   return { headers, rows };
 }
 
@@ -167,6 +151,45 @@ export function mapHeaderToGeochem(rawHeader: string): { key: string; isElement:
   return null;
 }
 
+/** Everything a column can be assigned to, for the column-mapping panel. */
+export const MAPPABLE_OXIDES = [
+  'SiO2', 'TiO2', 'Al2O3', 'Fe2O3', 'FeO', 'FeOT', 'Fe2O3T', 'MnO', 'MgO', 'CaO', 'Na2O', 'K2O',
+  'P2O5', 'Cr2O3', 'NiO', 'LOI', 'H2O+', 'H2O', 'CO2',
+] as const;
+export const MAPPABLE_ELEMENTS = ['Si', 'Ti', 'Al', 'Fe', 'Mn', 'Mg', 'Ca', 'Na', 'K', 'P', 'Cr', 'Ni'] as const;
+const ELEMENT_KEYS = new Set<string>(MAPPABLE_ELEMENTS);
+
+/** Header -> target key ('sample_id', an oxide, an element, 'trace:<El>' for a
+ * trace element in ppm) or null to ignore. */
+export type ColumnMap = Record<string, string | null>;
+
+/** The automatic header mapping, which the user can then correct. */
+export function autoColumnMap(headers: string[]): ColumnMap {
+  const map: ColumnMap = {};
+  for (const h of headers) {
+    const trace = mapHeaderToTrace(h);
+    map[h] = mapHeaderToGeochem(h)?.key ?? (trace ? `trace:${trace}` : null);
+  }
+  return map;
+}
+
+/**
+ * Reads one cell. Below-detection entries ("<0.01", "bdl", "b.d.l.", "n.d.",
+ * "<LOD", or a negative number, the usual "not detected" code) are returned
+ * as 'bdl' and treated as missing: setting them to zero would invent a
+ * measurement, and a negative value would be read as a real one.
+ */
+export function parseCellValue(raw: string): number | 'bdl' | undefined {
+  const v = raw.trim();
+  if (v === '') return undefined;
+  if (/^</.test(v) || /^(b\.?d\.?l?\.?|n\.?d\.?|lod|<?lod|below detection|not detected|-+)$/i.test(v)) return 'bdl';
+  // A lone comma is a decimal separator ("0,52"); thousands separators do not
+  // occur in wt% data.
+  const num = Number(v.replace(',', '.'));
+  if (!Number.isFinite(num)) return undefined;
+  return num < 0 ? 'bdl' : num;
+}
+
 /**
  * Rows processed per batch in the browser. This is an interface limit, not a
  * computational one: the engine runs on the page's main thread at about 4-5 ms
@@ -180,28 +203,47 @@ export const BATCH_LIMIT = 1000;
  */
 export function processBatchCSV(
   rows: Record<string, string>[],
-  limit: number = BATCH_LIMIT
+  limit: number = BATCH_LIMIT,
+  columnMap?: ColumnMap
 ): BatchRowResult[] {
   const targetRows = rows.slice(0, limit);
+  const mapFor = (hdr: string): { key: string; isElement: boolean } | null => {
+    const key = columnMap && hdr in columnMap ? columnMap[hdr] : autoColumnMap([hdr])[hdr];
+    return key ? { key, isElement: ELEMENT_KEYS.has(key) } : null;
+  };
 
   return targetRows.map((row, index) => {
     const rawOxides: OxideComposition = {};
     const rawElements: Record<string, number> = {};
     let sampleId = `Sample_${index + 1}`;
     let hasElements = false;
+    const belowDetection: string[] = [];
+    const trace: Record<string, number> = {};
 
     for (const [rawHdr, valStr] of Object.entries(row)) {
       if (!valStr || valStr.trim() === '') continue;
-      const num = parseFloat(valStr.replace(/,/g, '.'));
-      if (isNaN(num)) {
-        if (rawHdr.toLowerCase().includes('sample') || rawHdr.toLowerCase().includes('id') || rawHdr.toLowerCase().includes('name')) {
+      const mapping = mapFor(rawHdr);
+      if (mapping?.key === 'sample_id') {
+        sampleId = valStr.trim();
+        continue;
+      }
+      const parsed = parseCellValue(valStr);
+      if (parsed === 'bdl') {
+        if (mapping) belowDetection.push(mapping.key.replace(/^trace:/, ''));
+        continue;
+      }
+      if (parsed === undefined) {
+        if (!columnMap && (rawHdr.toLowerCase().includes('sample') || rawHdr.toLowerCase().includes('id') || rawHdr.toLowerCase().includes('name'))) {
           sampleId = valStr.trim();
         }
         continue;
       }
-
-      const mapping = mapHeaderToGeochem(rawHdr);
+      const num = parsed;
       if (!mapping) continue;
+      if (mapping.key.startsWith('trace:')) {
+        trace[mapping.key.slice(6)] = num;
+        continue;
+      }
 
       if (mapping.key === 'sample_id') {
         sampleId = valStr.trim();
@@ -266,10 +308,13 @@ export function processBatchCSV(
       rockClass: isRock ? (primary.reference as any).category : undefined,
       mineralGroup: !isRock ? (primary.reference as any).group : undefined,
       qualityStatus,
-      notes: `${report.alkaliAffinity}; ${report.dataQualityWarning || 'Good analytical fit'}`,
+      notes:
+        `${report.alkaliAffinity}; ${report.dataQualityWarning || 'Good analytical fit'}` +
+        (belowDetection.length ? `; below detection (treated as missing): ${belowDetection.join(', ')}` : ''),
       cipwNorm: report.cipwNorm,
       stoichiometry: report.stoichiometry,
       alkaliAffinity: report.alkaliAffinity,
+      traceElements: Object.keys(trace).length ? trace : undefined,
     };
   });
 }
@@ -360,12 +405,16 @@ export function exportBatchComprehensiveCSV(results: BatchRowResult[]): string {
     'Fe2O3_raw',
     'FeO_raw',
     'FeOT_raw',
+    'Fe2O3T_raw',
     'MnO_raw',
     'MgO_raw',
     'CaO_raw',
     'Na2O_raw',
     'K2O_raw',
     'P2O5_raw',
+    'Cr2O3_raw',
+    'NiO_raw',
+    'CO2_raw',
     'LOI_raw',
     // Normalized Anhydrous Oxides (100% Volatile-Free)
     'SiO2_norm',
@@ -399,17 +448,9 @@ export function exportBatchComprehensiveCSV(results: BatchRowResult[]): string {
     'Total_Alkalis_wt%',
     'Silica_Saturation',
     // CIPW Normative Minerals (wt%)
-    'CIPW_Q',
-    'CIPW_Or',
-    'CIPW_Ab',
-    'CIPW_An',
-    'CIPW_Di',
-    'CIPW_Hy',
-    'CIPW_Ol',
-    'CIPW_Ne',
-    'CIPW_Mt',
-    'CIPW_Il',
-    'CIPW_Ap',
+    // All 23 normative phases, in allocation order, and the unrescaled total.
+    ...CIPW_PHASE_ORDER.map(([key]) => `CIPW_${key}`),
+    'CIPW_Total',
     'Notes',
   ];
 
@@ -418,7 +459,9 @@ export function exportBatchComprehensiveCSV(results: BatchRowResult[]): string {
     const norm = r.normalizedOxides || {};
     const stoich = r.stoichiometry || { cations: {}, oxygenBasis: 6, totalCations: 0 };
     const cipw = r.cipwNorm || {};
-    const cats = stoich.cations || {};
+    // Atoms per formula unit mean nothing for a whole rock, so they are left
+    // blank unless the analysis is a single mineral.
+    const cats = stoich.apfuApplicable === false ? {} : stoich.cations || {};
 
     return [
       escapeCSV(r.sampleId),
@@ -438,12 +481,16 @@ export function exportBatchComprehensiveCSV(results: BatchRowResult[]): string {
       raw.Fe2O3 ?? '',
       raw.FeO ?? '',
       raw.FeOT ?? '',
+      raw.Fe2O3T ?? '',
       raw.MnO ?? '',
       raw.MgO ?? '',
       raw.CaO ?? '',
       raw.Na2O ?? '',
       raw.K2O ?? '',
       raw.P2O5 ?? '',
+      raw.Cr2O3 ?? '',
+      raw.NiO ?? '',
+      raw.CO2 ?? '',
       raw.LOI ?? '',
       // Norm Oxides
       norm.SiO2 ?? '',
@@ -457,7 +504,7 @@ export function exportBatchComprehensiveCSV(results: BatchRowResult[]): string {
       norm.K2O ?? '',
       norm.P2O5 ?? '',
       // Stoichiometry APFU
-      stoich.oxygenBasis,
+      stoich.apfuApplicable === false ? '' : stoich.oxygenBasis,
       cats.Si ?? '',
       cats.Ti ?? '',
       cats.Al ?? '',
@@ -468,7 +515,7 @@ export function exportBatchComprehensiveCSV(results: BatchRowResult[]): string {
       cats.Na ?? '',
       cats.K ?? '',
       cats.P ?? '',
-      stoich.totalCations ?? '',
+      stoich.apfuApplicable === false ? '' : stoich.totalCations ?? '',
       // Petrogenetic Indices
       stoich.mgNumber ?? '',
       stoich.asi ?? '',
@@ -477,17 +524,8 @@ export function exportBatchComprehensiveCSV(results: BatchRowResult[]): string {
       stoich.totalAlkalis ?? '',
       escapeCSV(stoich.silicaSaturation || ''),
       // CIPW Norm
-      cipw.Q ?? '',
-      cipw.Or ?? '',
-      cipw.Ab ?? '',
-      cipw.An ?? '',
-      cipw.Di ?? '',
-      cipw.Hy ?? '',
-      cipw.Ol ?? '',
-      cipw.Ne ?? '',
-      cipw.Mt ?? '',
-      cipw.Il ?? '',
-      cipw.Ap ?? '',
+      ...CIPW_PHASE_ORDER.map(([key]) => cipw[key] ?? ''),
+      cipw.normSum ?? '',
       escapeCSV(r.notes),
     ];
   });

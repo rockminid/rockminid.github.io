@@ -1,4 +1,5 @@
 import { ElementComposition, OxideComposition } from '../types/geochem';
+import { resolveIron } from '../utils/iron';
 
 /**
  * Standard IUPAC Atomic Weights and Stoichiometric conversion factors
@@ -159,19 +160,23 @@ export const STOICHIOMETRY_TABLE: Record<string, ConversionFactor> = {
 export function oxidesToElements(oxides: OxideComposition): ElementComposition {
   const elements: ElementComposition = {};
 
+  // Iron is counted once, from the shared resolver. A normalized composition
+  // carries FeO, Fe2O3 and FeOT together, and summing every iron field
+  // doubled Fe for every sample with split iron.
+  const IRON = ['FeO', 'Fe2O3', 'FeOT', 'Fe2O3T', 'FeO_equiv'];
   for (const [oxide, wt] of Object.entries(oxides)) {
     if (wt === undefined || wt === null || isNaN(wt) || wt <= 0) continue;
+    if (IRON.includes(oxide)) continue;
 
     const info = STOICHIOMETRY_TABLE[oxide];
     if (info) {
       const el = info.element;
       const elWt = wt * info.oxideToElement;
       elements[el] = (elements[el] || 0) + elWt;
-    } else if (oxide === 'FeOT') {
-      // Total iron as FeO converted to Fe
-      elements['Fe'] = (elements['Fe'] || 0) + wt * (55.845 / 71.8444);
     }
   }
+  const feot = resolveIron(oxides).FeOT;
+  if (feot > 0) elements.Fe = feot * (55.845 / 71.8444);
 
   return elements;
 }
@@ -209,27 +214,4 @@ export function elementsToOxides(elements: ElementComposition): OxideComposition
   }
 
   return oxides;
-}
-
-/**
- * Compute total iron as FeOT (FeO total) or Fe2O3T
- */
-export function computeTotalIronAsFeO(oxides: OxideComposition): number {
-  if (oxides.FeOT !== undefined && oxides.FeOT > 0) {
-    return oxides.FeOT;
-  }
-  const feO = oxides.FeO || 0;
-  const fe2O3 = oxides.Fe2O3 || 0;
-  // FeO = Fe2O3 * 0.8998 + FeO
-  return feO + fe2O3 * 0.8998;
-}
-
-export function computeTotalIronAsFe2O3(oxides: OxideComposition): number {
-  const feO = oxides.FeO || 0;
-  const fe2O3 = oxides.Fe2O3 || 0;
-  if (oxides.FeOT !== undefined && oxides.FeOT > 0) {
-    return oxides.FeOT * 1.1113;
-  }
-  // Fe2O3 = FeO * 1.1113 + Fe2O3
-  return fe2O3 + feO * 1.1113;
 }

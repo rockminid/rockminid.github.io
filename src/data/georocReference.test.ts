@@ -97,7 +97,9 @@ describe('GEOROC library — structural integrity', () => {
     for (const e of [...rocks, ...minerals]) {
       for (const [ox, s] of Object.entries(e.oxides)) {
         expect(s.p50, `${e.name}.${ox}`).toBeGreaterThanOrEqual(0);
-        expect(s.p90, `${e.name}.${ox}`).toBeLessThanOrEqual(100);
+        // A pure phase can read slightly over 100 wt% (quartz 100.02); the
+        // ingester accepts values up to 102.
+        expect(s.p90, `${e.name}.${ox}`).toBeLessThanOrEqual(102);
       }
     }
   });

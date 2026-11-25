@@ -221,10 +221,12 @@ export function refineTASName(
       if (ne > 20) {
         result.name = 'Nephelinite';
         reasons.push(`Normative nepheline ${ne.toFixed(1)}% (> 20%), so nephelinite.`);
-      } else if (ne < 20 && ab > 0 && ab < 5) {
+      } else if (ne <= 20 && ab < 5) {
+        // Ab may be zero: the most undersaturated melanephelinites have no
+        // normative albite at all, and Le Bas's rule is simply Ab < 5.
         result.name = 'Melanephelinite';
         reasons.push(
-          `Normative nepheline ${ne.toFixed(1)}% (< 20%) with albite ${ab.toFixed(1)}% (< 5%), so melanephelinite.`
+          `Normative nepheline ${ne.toFixed(1)}% (<= 20%) with albite ${ab.toFixed(1)}% (< 5%), so melanephelinite.`
         );
       }
       // Leucitite: a potassic foidite in which leucite, not nepheline, is the

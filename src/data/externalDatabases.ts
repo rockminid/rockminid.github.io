@@ -2,12 +2,12 @@ import { DatabaseReferences } from '../types/geochem';
 
 /**
  * World-Standard Mineral & Rock Database Cross-References
- * Integrates verified identifiers, URLs, structural parameters and taxonomies from:
+ * Links to pages and searches on public databases, with structural parameters and taxonomies from:
  * - Mindat.org (Hudson Institute of Mineralogy / Open Geosciences)
  * - Webmineral.com (Dana & Strunz Classifications)
  * - RRUFF Project (University of Arizona Raman & X-ray Diffraction Library)
  * - EarthChem / PetDB (Interdisciplinary Earth Data Alliance - Columbia University)
- * - GEOROC (Max Planck Institute / DIGIS Petrology Database)
+ * - GEOROC (DIGIS, University of Göttingen)
  */
 
 export const MINERAL_DATABASE_REFS: Record<string, DatabaseReferences> = {
@@ -23,7 +23,6 @@ export const MINERAL_DATABASE_REFS: Record<string, DatabaseReferences> = {
     rruffCellParameters: 'a=4.752Å, b=10.198Å, c=5.981Å, α=β=γ=90°',
     imaSymbol: 'Fo',
     typeLocality: 'Monte Somma, Somma-Vesuvius Complex, Naples, Campania, Italy',
-    earthChemId: 'MIN-OLIVINE-FO90',
     earthChemUrl: 'https://search.earthchem.org/?query=forsterite',
     earthchemSetting: 'Mantle peridotites, komatiites, primitive arc/oceanic picrites',
   },
@@ -39,7 +38,6 @@ export const MINERAL_DATABASE_REFS: Record<string, DatabaseReferences> = {
     rruffCellParameters: 'a=4.764Å, b=10.231Å, c=5.992Å',
     imaSymbol: 'Ol',
     typeLocality: 'Zabargad Island (St. John\'s Island), Red Sea, Egypt',
-    earthChemId: 'MIN-OLIVINE-FO80',
     earthChemUrl: 'https://search.earthchem.org/?query=olivine',
     earthchemSetting: 'Mid-ocean ridge basalt (MORB), oceanic crust, layered gabbro',
   },
@@ -55,7 +53,6 @@ export const MINERAL_DATABASE_REFS: Record<string, DatabaseReferences> = {
     rruffCellParameters: 'a=4.820Å, b=10.478Å, c=6.087Å',
     imaSymbol: 'Fa',
     typeLocality: 'Faial Island, Azores, Portugal',
-    earthChemId: 'MIN-OLIVINE-FA',
     earthChemUrl: 'https://search.earthchem.org/?query=fayalite',
     earthchemSetting: 'Alkaline silica-saturated granites, ferrogabbros, eulysites',
   },
@@ -71,7 +68,6 @@ export const MINERAL_DATABASE_REFS: Record<string, DatabaseReferences> = {
     rruffCellParameters: 'a=9.746Å, b=8.899Å, c=5.251Å, β=105.63°',
     imaSymbol: 'Di',
     typeLocality: 'Mussa Alp, Ala Valley, Piedmont, Italy',
-    earthChemId: 'MIN-CPX-DIOPSIDE',
     earthChemUrl: 'https://search.earthchem.org/?query=diopside',
     earthchemSetting: 'Skarns, mantle lherzolites, kimberlites, calc-silicates',
   },
@@ -87,7 +83,6 @@ export const MINERAL_DATABASE_REFS: Record<string, DatabaseReferences> = {
     rruffCellParameters: 'a=9.73Å, b=8.91Å, c=5.26Å, β=106.3°',
     imaSymbol: 'Aug',
     typeLocality: 'Bilina, Bohemia, Czech Republic',
-    earthChemId: 'MIN-CPX-AUGITE',
     earthChemUrl: 'https://search.earthchem.org/?query=augite',
     earthchemSetting: 'Mafic igneous rocks (basalts, gabbros, andesites, dolerites)',
   },
@@ -103,7 +98,6 @@ export const MINERAL_DATABASE_REFS: Record<string, DatabaseReferences> = {
     rruffCellParameters: 'a=18.225Å, b=8.813Å, c=5.180Å',
     imaSymbol: 'En',
     typeLocality: 'Zdár nad Sázavou, Moravia, Czech Republic',
-    earthChemId: 'MIN-OPX-ENSTATITE',
     earthChemUrl: 'https://search.earthchem.org/?query=enstatite',
     earthchemSetting: 'Harzburgites, lherzolites, norites, chondritic meteorites',
   },
@@ -119,7 +113,6 @@ export const MINERAL_DATABASE_REFS: Record<string, DatabaseReferences> = {
     rruffCellParameters: 'a=4.913Å, c=5.405Å, α=β=90°, γ=120°',
     imaSymbol: 'Qz',
     typeLocality: 'Worldwide (Classic: Saint-Gothard, Uri, Switzerland)',
-    earthChemId: 'MIN-SILICA-QUARTZ',
     earthChemUrl: 'https://search.earthchem.org/?query=quartz',
     earthchemSetting: 'Felsic plutonic/volcanic rocks, quartzites, hydrothermal veins',
   },
@@ -135,7 +128,6 @@ export const MINERAL_DATABASE_REFS: Record<string, DatabaseReferences> = {
     rruffCellParameters: 'a=8.144Å, b=12.787Å, c=7.160Å, α=94.2°, β=116.6°, γ=87.7°',
     imaSymbol: 'Ab',
     typeLocality: 'Finnbo, Falun, Dalarna, Sweden',
-    earthChemId: 'MIN-FELDSPAR-ALBITE',
     earthChemUrl: 'https://search.earthchem.org/?query=albite',
     earthchemSetting: 'Granitic pegmatites, albite-greenschist facies, spilites',
   },
@@ -151,7 +143,6 @@ export const MINERAL_DATABASE_REFS: Record<string, DatabaseReferences> = {
     rruffCellParameters: 'a=8.177Å, b=12.877Å, c=14.169Å, α=93.1°, β=115.8°, γ=91.2°',
     imaSymbol: 'An',
     typeLocality: 'Monte Somma, Somma-Vesuvius Complex, Naples, Italy',
-    earthChemId: 'MIN-FELDSPAR-ANORTHITE',
     earthChemUrl: 'https://search.earthchem.org/?query=anorthite',
     earthchemSetting: 'Lunar highland anorthosites, calcic skarns, island-arc picrites',
   },
@@ -167,7 +158,6 @@ export const MINERAL_DATABASE_REFS: Record<string, DatabaseReferences> = {
     rruffCellParameters: 'a=8.562Å, b=12.996Å, c=7.193Å, β=116.0°',
     imaSymbol: 'Or',
     typeLocality: 'Baveno, Piedmont, Italy',
-    earthChemId: 'MIN-KFELDSPAR-ORTHOCLASE',
     earthChemUrl: 'https://search.earthchem.org/?query=orthoclase',
     earthchemSetting: 'Granites, syenites, gneisses, potassium-rich felsic magmas',
   },
@@ -183,7 +173,6 @@ export const MINERAL_DATABASE_REFS: Record<string, DatabaseReferences> = {
     rruffCellParameters: 'a=11.459Å, α=β=γ=90°',
     imaSymbol: 'Prp',
     typeLocality: 'Trebnitz, Bohemia, Czech Republic',
-    earthChemId: 'MIN-GARNET-PYROPE',
     earthChemUrl: 'https://search.earthchem.org/?query=pyrope',
     earthchemSetting: 'Diamondiferous mantle peridotites, eclogites, high-pressure terranes',
   },
@@ -199,7 +188,6 @@ export const MINERAL_DATABASE_REFS: Record<string, DatabaseReferences> = {
     rruffCellParameters: 'a=11.526Å, α=β=γ=90°',
     imaSymbol: 'Alm',
     typeLocality: 'Alabanda, Aydin Province, Turkey',
-    earthChemId: 'MIN-GARNET-ALMANDINE',
     earthChemUrl: 'https://search.earthchem.org/?query=almandine',
     earthchemSetting: 'Regional pelitic mica schists, gneisses, peraluminous granites',
   },
@@ -215,7 +203,6 @@ export const MINERAL_DATABASE_REFS: Record<string, DatabaseReferences> = {
     rruffCellParameters: 'a=5.31Å, b=9.23Å, c=10.18Å, β=100.1°',
     imaSymbol: 'Bt',
     typeLocality: 'Monte Somma, Somma-Vesuvius Complex, Naples, Italy',
-    earthChemId: 'MIN-MICA-BIOTITE',
     earthChemUrl: 'https://search.earthchem.org/?query=biotite',
     earthchemSetting: 'Granitoids, calc-alkaline lavas, medium-to-high grade metamorphic rocks',
   },
@@ -231,7 +218,6 @@ export const MINERAL_DATABASE_REFS: Record<string, DatabaseReferences> = {
     rruffCellParameters: 'a=5.19Å, b=9.04Å, c=20.08Å, β=95.8°',
     imaSymbol: 'Ms',
     typeLocality: 'Muscovy (historic trade name, Russian Grand Duchy)',
-    earthChemId: 'MIN-MICA-MUSCOVITE',
     earthChemUrl: 'https://search.earthchem.org/?query=muscovite',
     earthchemSetting: 'Peraluminous S-type granites, pegmatites, pelitic schists',
   },
@@ -247,7 +233,6 @@ export const MINERAL_DATABASE_REFS: Record<string, DatabaseReferences> = {
     rruffCellParameters: 'a=8.396Å, α=β=γ=90°',
     imaSymbol: 'Mag',
     typeLocality: 'Magnesia, Thessaly, Greece',
-    earthChemId: 'MIN-OXIDE-MAGNETITE',
     earthChemUrl: 'https://search.earthchem.org/?query=magnetite',
     earthchemSetting: 'Layered intrusions, Kiruna-type iron ores, BIFs, accessory in all igneous rocks',
   },
@@ -263,7 +248,6 @@ export const MINERAL_DATABASE_REFS: Record<string, DatabaseReferences> = {
     rruffCellParameters: 'a=5.038Å, c=13.772Å, α=β=90°, γ=120°',
     imaSymbol: 'Hem',
     typeLocality: 'Elba Island, Tuscany, Italy',
-    earthChemId: 'MIN-OXIDE-HEMATITE',
     earthChemUrl: 'https://search.earthchem.org/?query=hematite',
     earthchemSetting: 'Precambrian Banded Iron Formations, hydrothermal veins, red bed sediment',
   },
@@ -279,7 +263,6 @@ export const MINERAL_DATABASE_REFS: Record<string, DatabaseReferences> = {
     rruffCellParameters: 'a=4.989Å, c=17.062Å, α=β=90°, γ=120°',
     imaSymbol: 'Cal',
     typeLocality: 'Freiberg, Saxony, Germany',
-    earthChemId: 'MIN-CARBONATE-CALCITE',
     earthChemUrl: 'https://search.earthchem.org/?query=calcite',
     earthchemSetting: 'Limestone, marble, carbonatites, hydrothermal veins, karst formations',
   },
@@ -295,7 +278,6 @@ export const MINERAL_DATABASE_REFS: Record<string, DatabaseReferences> = {
     rruffCellParameters: 'a=9.375Å, c=6.887Å, α=β=90°, γ=120°',
     imaSymbol: 'Ap',
     typeLocality: 'Ehrenfriedersdorf, Saxony, Germany',
-    earthChemId: 'MIN-PHOSPHATE-APATITE',
     earthChemUrl: 'https://search.earthchem.org/?query=apatite',
     earthchemSetting: 'Phosphorites, carbonatites, accessory mineral in all igneous rocks',
   },
@@ -303,15 +285,13 @@ export const MINERAL_DATABASE_REFS: Record<string, DatabaseReferences> = {
 
 export const ROCK_DATABASE_REFS: Record<string, DatabaseReferences> = {
   'rock-n-morb': {
-    earthChemId: 'PETDB-MORB-PACIFIC-LAYER2',
     earthChemUrl: 'https://search.earthchem.org/?query=N-MORB+basalt',
     earthchemSetting: 'Divergent boundary (Mid-Ocean Ridge spreading center)',
     georocUrl: 'https://georoc.eu/',
     mindatUrl: 'https://www.mindat.org/min-48419.html',
-    typeLocality: 'East Pacific Rise (ODP/IODP Site 504B)',
+    typeLocality: 'Costa Rica Rift, Panama Basin (DSDP/ODP Hole 504B)',
   },
   'rock-e-morb': {
-    earthChemId: 'PETDB-EMORB-GALAPAGOS',
     earthChemUrl: 'https://search.earthchem.org/?query=E-MORB+ridge',
     earthchemSetting: 'Plume-ridge interaction zone (Galápagos Spreading Center, Reykjanes)',
     georocUrl: 'https://georoc.eu/',
@@ -319,7 +299,6 @@ export const ROCK_DATABASE_REFS: Record<string, DatabaseReferences> = {
     typeLocality: 'Galapagos Rift / Mid-Atlantic Ridge 43°N',
   },
   'rock-oib-tholeiite': {
-    earthChemId: 'PETDB-HAWAII-KILAUEA-SHIELD',
     earthChemUrl: 'https://search.earthchem.org/?query=Kilauea+tholeiite',
     earthchemSetting: 'Oceanic Intraplate Hotspot (Mantle plume shield stage)',
     georocUrl: 'https://georoc.eu/',
@@ -327,7 +306,6 @@ export const ROCK_DATABASE_REFS: Record<string, DatabaseReferences> = {
     typeLocality: 'Kīlauea Halemaʻumaʻu, Hawaii, USA',
   },
   'rock-oib-alkali-basalt': {
-    earthChemId: 'PETDB-TAHITI-ALKALI-BASALT',
     earthChemUrl: 'https://search.earthchem.org/?query=ocean+island+alkali+basalt',
     earthchemSetting: 'Oceanic Intraplate Post-Shield / Rejuvenated stage',
     georocUrl: 'https://georoc.eu/',
@@ -335,31 +313,20 @@ export const ROCK_DATABASE_REFS: Record<string, DatabaseReferences> = {
     typeLocality: 'Canary Islands / Society Islands (Tahiti)',
   },
   'rock-cfb-continental-flood': {
-    earthChemId: 'PETDB-DECCAN-TRAPS-CFB',
     earthChemUrl: 'https://search.earthchem.org/?query=Deccan+Traps+basalt',
     earthchemSetting: 'Continental Large Igneous Province (LIP breakup)',
     georocUrl: 'https://georoc.eu/',
     mindatUrl: 'https://www.mindat.org/min-48419.html',
     typeLocality: 'Deccan Traps, Maharashtra, India / Columbia River Basalts, USA',
   },
-  'rock-iab-calc-alkaline-basalt': {
-    earthChemId: 'PETDB-JAPAN-FUJI-ISLANDARC',
-    earthChemUrl: 'https://search.earthchem.org/?query=island+arc+basalt',
-    earthchemSetting: 'Convergent margin (Subduction oceanic island arc)',
-    georocUrl: 'https://georoc.eu/',
-    mindatUrl: 'https://www.mindat.org/min-48419.html',
-    typeLocality: 'Izu-Bonin-Mariana Arc / Mount Fuji, Japan',
-  },
   'rock-komatiite': {
-    earthChemId: 'PETDB-KOMATIITE-BARBERTON-SPINIFEX',
     earthChemUrl: 'https://search.earthchem.org/?query=Barberton+komatiite',
     earthchemSetting: 'Archean mantle plume / Greenstone belt (T > 1600°C ultra-high degree melting)',
     georocUrl: 'https://georoc.eu/',
     mindatUrl: 'https://www.mindat.org/min-51475.html',
     typeLocality: 'Komati River valley, Barberton Greenstone Belt, South Africa',
   },
-  'rock-andesite-calc-alkaline': {
-    earthChemId: 'PETDB-ANDES-CHILE-VOLCANIC',
+  'rock-calc-alk-andesite': {
     earthChemUrl: 'https://search.earthchem.org/?query=Andes+calc-alkaline+andesite',
     earthchemSetting: 'Continental active margin subduction arc (Andes, Cascades)',
     georocUrl: 'https://georoc.eu/',
@@ -367,7 +334,6 @@ export const ROCK_DATABASE_REFS: Record<string, DatabaseReferences> = {
     typeLocality: 'Andes Mountains, South America',
   },
   'rock-dacite': {
-    earthChemId: 'PETDB-PINATUBO-1991-DACITE',
     earthChemUrl: 'https://search.earthchem.org/?query=Pinatubo+dacite',
     earthchemSetting: 'Explosive continental/island arc subduction volcano',
     georocUrl: 'https://georoc.eu/',
@@ -375,7 +341,6 @@ export const ROCK_DATABASE_REFS: Record<string, DatabaseReferences> = {
     typeLocality: 'Mount Pinatubo, Philippines / Dacia (historic Roman province)',
   },
   'rock-rhyolite': {
-    earthChemId: 'PETDB-YELLOWSTONE-CALDERA-RHYOLITE',
     earthChemUrl: 'https://search.earthchem.org/?query=Yellowstone+rhyolite',
     earthchemSetting: 'Supervolcano caldera collapse / Continental bimodal hotspot',
     georocUrl: 'https://georoc.eu/',
@@ -383,7 +348,6 @@ export const ROCK_DATABASE_REFS: Record<string, DatabaseReferences> = {
     typeLocality: 'Yellowstone Caldera, Wyoming / Lipari, Aeolian Islands, Italy',
   },
   'rock-granite-s-type': {
-    earthChemId: 'PETDB-LACHLAN-FOLD-S-GRANITE',
     earthChemUrl: 'https://search.earthchem.org/?query=S-type+peraluminous+granite',
     earthchemSetting: 'Collisional orogen (Anatexis of pelitic metasedimentary crust)',
     georocUrl: 'https://georoc.eu/',
@@ -391,31 +355,13 @@ export const ROCK_DATABASE_REFS: Record<string, DatabaseReferences> = {
     typeLocality: 'Cooma Complex, Lachlan Fold Belt, New South Wales, Australia',
   },
   'rock-granite-i-type': {
-    earthChemId: 'PETDB-SIERRA-NEVADA-BATHOLITH',
     earthChemUrl: 'https://search.earthchem.org/?query=Sierra+Nevada+I-type+granite',
     earthchemSetting: 'Continental arc batholith (Subduction-related meta-igneous melting)',
     georocUrl: 'https://georoc.eu/',
     mindatUrl: 'https://www.mindat.org/min-48424.html',
     typeLocality: 'El Capitan, Yosemite Valley, Sierra Nevada Batholith, California, USA',
   },
-  'rock-boninite': {
-    earthChemId: 'PETDB-BONIN-ISLAND-HIGH-MG-ANDESITE',
-    earthChemUrl: 'https://search.earthchem.org/?query=Bonin+Islands+boninite',
-    earthchemSetting: 'Subduction initiation in forearc setting (Hydrous depleted mantle melting)',
-    georocUrl: 'https://georoc.eu/',
-    mindatUrl: 'https://www.mindat.org/min-48420.html',
-    typeLocality: 'Chichi-jima, Ogasawara (Bonin) Islands, Japan',
-  },
-  'rock-basanite': {
-    earthChemId: 'PETDB-CANARY-ISLANDS-BASANITE',
-    earthChemUrl: 'https://search.earthchem.org/?query=Canary+basanite',
-    earthchemSetting: 'Intraplate ocean island / Continental rift strongly alkaline province',
-    georocUrl: 'https://georoc.eu/',
-    mindatUrl: 'https://www.mindat.org/min-48430.html',
-    typeLocality: 'La Palma / Tenerife, Canary Islands',
-  },
   'rock-phonolite': {
-    earthChemId: 'PETDB-DEVILS-TOWER-PHONOLITE',
     earthChemUrl: 'https://search.earthchem.org/?query=phonolite+alkali',
     earthchemSetting: 'Highly differentiated alkaline volcanic plug / Continental rift',
     georocUrl: 'https://georoc.eu/',
@@ -423,23 +369,20 @@ export const ROCK_DATABASE_REFS: Record<string, DatabaseReferences> = {
     typeLocality: 'Devils Tower, Wyoming, USA / Mount Erebus, Antarctica',
   },
   'rock-trachyte': {
-    earthChemId: 'PETDB-CAMPI-FLEGREI-TRACHYTE',
     earthChemUrl: 'https://search.earthchem.org/?query=Campi+Flegrei+trachyte',
     earthchemSetting: 'Post-collisional alkaline caldera / Continental rift volcano',
     georocUrl: 'https://georoc.eu/',
     mindatUrl: 'https://www.mindat.org/min-48427.html',
     typeLocality: 'Campi Flegrei, Naples, Italy / Puy de Dôme, Auvergne, France',
   },
-  'rock-mantle-lherzolite': {
-    earthChemId: 'PETDB-RONDA-OROGENIC-LHERZOLITE',
+  'rock-lherzolite': {
     earthChemUrl: 'https://search.earthchem.org/?query=Ronda+peridotite+lherzolite',
     earthchemSetting: 'Subcontinental lithospheric mantle (Upper mantle asthenosphere)',
     georocUrl: 'https://georoc.eu/',
     mindatUrl: 'https://www.mindat.org/min-48438.html',
     typeLocality: 'Ronda Peridotite Massif, Andalusia, Spain / Balmuccia, Ivrea Zone, Italy',
   },
-  'rock-mantle-harzburgite': {
-    earthChemId: 'PETDB-OMAN-OPHIOLITE-MANTLE',
+  'rock-harzburgite': {
     earthChemUrl: 'https://search.earthchem.org/?query=Oman+ophiolite+harzburgite',
     earthchemSetting: 'Melt-depleted supra-subduction zone ophiolitic mantle section',
     georocUrl: 'https://georoc.eu/',
@@ -447,7 +390,6 @@ export const ROCK_DATABASE_REFS: Record<string, DatabaseReferences> = {
     typeLocality: 'Semail Ophiolite, Oman / Troodos Massif, Cyprus',
   },
   'rock-dunite': {
-    earthChemId: 'PETDB-DUN-MOUNTAIN-DUNITE',
     earthChemUrl: 'https://search.earthchem.org/?query=Dun+Mountain+peridotite',
     earthchemSetting: 'Mantle melt-conduit channel / Layered cumulate ultramafic intrusion',
     georocUrl: 'https://georoc.eu/',
@@ -455,7 +397,6 @@ export const ROCK_DATABASE_REFS: Record<string, DatabaseReferences> = {
     typeLocality: 'Dun Mountain, Nelson, New Zealand',
   },
   'rock-eclogite': {
-    earthChemId: 'PETDB-WESTERN-GNEISS-ECLOGITE',
     earthChemUrl: 'https://search.earthchem.org/?query=Western+Gneiss+eclogite',
     earthchemSetting: 'Ultra-high-pressure (UHP) subduction channel deep crustal suture (P > 1.5 GPa)',
     georocUrl: 'https://georoc.eu/',

@@ -7,15 +7,8 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Healthcheck / test connection document.
-    //
-    // Left readable without authentication so a deployment can be probed, but
-    // it must stay empty of anything meaningful: "readable by anyone" is
-    // exactly what it says. Nothing in the application writes here.
-    match /test/{docId} {
-      allow read: if true;
-      allow write: if false;
-    }
+    // (A public /test/{docId} health-check path was removed: nothing in the
+    // application reads it, and the default deny above now covers it.)
 
     // Security helper primitives
     function isSignedIn() {

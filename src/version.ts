@@ -47,3 +47,6 @@ export const CITATION_PAPER_BIBTEX = `@article{tiwari_ghosh_2026_rockminid,
   doi     = {${PAPER_DOI}},
   url     = {https://doi.org/${PAPER_DOI}}
 }`;
+
+/** Public source repository. */
+export const REPO_URL = 'https://github.com/rockminid/rockminid.github.io';

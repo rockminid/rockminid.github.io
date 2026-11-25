@@ -22,13 +22,45 @@ import {
   Plus,
 } from 'lucide-react';
 import { BatchRowResult, OxideComposition, RockReference, MineralReference } from '../types/geochem';
-import { BATCH_LIMIT, parseCSV, processBatchCSV, exportBatchToCSV, exportBatchComprehensiveCSV, SAMPLE_BENCHMARK_CSVS } from '../utils/csv';
+import {
+  BATCH_LIMIT,
+  MAPPABLE_ELEMENTS,
+  MAPPABLE_OXIDES,
+  autoColumnMap,
+  parseCSV,
+  processBatchCSV,
+  exportBatchToCSV,
+  exportBatchComprehensiveCSV,
+  SAMPLE_BENCHMARK_CSVS,
+  type ColumnMap,
+} from '../utils/csv';
+import { TRACE_INPUTS } from '../utils/traceElements';
+import { BatchSpiderPanel } from './BatchSpiderPanel';
+import { ChemFormula } from './ChemFormula';
 import { identifyGeochemicalSample } from '../utils/geochemEngine';
 import { TasDiagram, TASPoint } from './TasDiagram';
 import { SpecimenModal } from './SpecimenModal';
 import { ROCKS_DATASET } from '../data/rocksDataset';
 import { MINERALS_DATASET } from '../data/mineralsDataset';
 import { getEnrichedRock, getEnrichedMineral } from '../data/visualDatabase';
+import { getGeorocMinerals, getGeorocRocks } from '../data/georocReference';
+import { resolveIron } from '../utils/iron';
+
+/** Fields shown in the edit dialog; any other field the row carries (FeOT,
+ *  Fe2O3T, CO2, H2O...) is added, so saving never drops it. */
+const EDIT_FIELDS = ['SiO2', 'TiO2', 'Al2O3', 'Fe2O3', 'FeO', 'MnO', 'MgO', 'CaO', 'Na2O', 'K2O', 'P2O5', 'Cr2O3', 'NiO', 'LOI'];
+
+/** Saves a Blob as a download and releases its object URL afterwards. */
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
 
 interface BatchProcessorProps {
   onInspectSample: (oxides: OxideComposition, sampleName: string) => void;
@@ -67,21 +99,26 @@ export const BatchProcessor: React.FC<BatchProcessorProps> = ({
   };
 
   // Delete row action
-  const handleDeleteRow = (sampleId: string) => {
+  // Rows are identified by row number: replicate analyses often share a
+  // sample ID, and deleting by ID removed every replicate at once.
+  const handleDeleteRow = (rowNumber: number) => {
     recordHistory();
-    setBatchResults((prev) => prev.filter((r) => r.sampleId !== sampleId));
+    setBatchResults((prev) => prev.filter((r) => r.rowNumber !== rowNumber));
   };
 
   // Edit row state
   const [editingRow, setEditingRow] = useState<BatchRowResult | null>(null);
   const [editSampleId, setEditSampleId] = useState<string>('');
   const [editOxides, setEditOxides] = useState<Record<string, string>>({});
+  const [editFields, setEditFields] = useState<string[]>(EDIT_FIELDS);
 
   const handleOpenEdit = (row: BatchRowResult) => {
     setEditingRow(row);
     setEditSampleId(row.sampleId);
     const oxStrings: Record<string, string> = {};
-    const oxKeys = ['SiO2', 'TiO2', 'Al2O3', 'Fe2O3', 'FeO', 'MnO', 'MgO', 'CaO', 'Na2O', 'K2O', 'P2O5', 'Cr2O3', 'NiO', 'LOI'];
+    const extra = Object.keys(row.rawOxides).filter((k) => !EDIT_FIELDS.includes(k));
+    const oxKeys = [...EDIT_FIELDS, ...extra];
+    setEditFields(oxKeys);
     oxKeys.forEach((k) => {
       const val = row.rawOxides[k as keyof OxideComposition];
       oxStrings[k] = val !== undefined && val !== null ? String(val) : '';
@@ -149,7 +186,7 @@ export const BatchProcessor: React.FC<BatchProcessorProps> = ({
     };
 
     setBatchResults((prev) =>
-      prev.map((r) => (r.sampleId === editingRow.sampleId ? updatedRow : r))
+      prev.map((r) => (r.rowNumber === editingRow.rowNumber ? updatedRow : r))
     );
     setEditingRow(null);
   };
@@ -222,12 +259,31 @@ export const BatchProcessor: React.FC<BatchProcessorProps> = ({
     if (rock) return getEnrichedRock(rock);
     const min = MINERALS_DATASET.find((m) => m.name.toLowerCase() === clean);
     if (min) return getEnrichedMineral(min);
+    // GEOROC matches are references too; open them in the same dossier.
+    const gRock = getGeorocRocks().find((r) => r.name.toLowerCase() === clean);
+    if (gRock) return getEnrichedRock(gRock);
+    const gMin = getGeorocMinerals().find((m) => m.name.toLowerCase() === clean);
+    if (gMin) return getEnrichedMineral(gMin);
     return null;
+  };
+
+  // The last uploaded file and how its columns are read, so the mapping can
+  // be corrected and the batch re-run without uploading again.
+  const [parsedFile, setParsedFile] = useState<{ headers: string[]; rows: Record<string, string>[] } | null>(null);
+  const [columnMap, setColumnMap] = useState<ColumnMap>({});
+  const [showMapping, setShowMapping] = useState<boolean>(false);
+
+  const handleColumnChange = (header: string, key: string) => {
+    if (!parsedFile) return;
+    const next = { ...columnMap, [header]: key === '' ? null : key };
+    setColumnMap(next);
+    recordHistory();
+    setBatchResults(processBatchCSV(parsedFile.rows, BATCH_LIMIT, next));
   };
 
   // Parse and process CSV text
   const handleProcessCSVText = (csvText: string) => {
-    const { rows } = parseCSV(csvText);
+    const { headers, rows } = parseCSV(csvText);
     if (rows.length === 0) {
       alert('The CSV file does not contain valid data rows.');
       return;
@@ -238,8 +294,12 @@ export const BatchProcessor: React.FC<BatchProcessorProps> = ({
           'Split the file, or use scripts/classify-csv.ts from the repository for larger datasets.'
       );
     }
+    const map = autoColumnMap(headers);
+    setParsedFile({ headers, rows });
+    setColumnMap(map);
+    setShowMapping(headers.some((h) => map[h] === null));
     recordHistory();
-    const results = processBatchCSV(rows);
+    const results = processBatchCSV(rows, BATCH_LIMIT, map);
     setBatchResults(results);
   };
 
@@ -299,13 +359,7 @@ SAMPLE_02,72.40,0.28,14.20,0.80,1.40,0.05,0.45,1.20,3.80,4.60,0.06,0.00,0.00,0.7
 SAMPLE_03,41.50,0.02,0.05,0.00,8.80,0.15,49.20,0.20,0.01,0.00,0.00,0.12,0.35,0.00`;
 
     const blob = new Blob([templateContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'geochem_input_template.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadBlob(blob, 'geochem_input_template.csv');
   };
 
   // Export comprehensive results to CSV (including calculated stoichiometry, CIPW norms, and classifications)
@@ -313,13 +367,7 @@ SAMPLE_03,41.50,0.02,0.05,0.00,8.80,0.15,49.20,0.20,0.01,0.00,0.00,0.12,0.35,0.0
     if (batchResults.length === 0) return;
     const csvStr = exportBatchComprehensiveCSV(batchResults);
     const blob = new Blob([csvStr], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `comprehensive_geochem_stoichiometry_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadBlob(blob, `comprehensive_geochem_stoichiometry_${new Date().toISOString().slice(0, 10)}.csv`);
   };
 
   // Export summary processed results to CSV
@@ -327,13 +375,7 @@ SAMPLE_03,41.50,0.02,0.05,0.00,8.80,0.15,49.20,0.20,0.01,0.00,0.00,0.12,0.35,0.0
     if (batchResults.length === 0) return;
     const csvStr = exportBatchToCSV(batchResults);
     const blob = new Blob([csvStr], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `classified_geochem_summary_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadBlob(blob, `classified_geochem_summary_${new Date().toISOString().slice(0, 10)}.csv`);
   };
 
   // Filtered & Sorted results
@@ -376,7 +418,9 @@ SAMPLE_03,41.50,0.02,0.05,0.00,8.80,0.15,49.20,0.20,0.01,0.00,0.00,0.12,0.35,0.0
       const na2o = ox.Na2O ?? 0;
       const k2o = ox.K2O ?? 0;
       const alkalis = na2o + k2o;
-      const feot = (ox.FeO ?? 0) + (ox.Fe2O3 ?? 0) + (ox.FeOT ?? 0);
+      // Normalized rows carry FeO, Fe2O3 and FeOT together; summing them
+      // doubled total iron. The resolver counts it once.
+      const feot = resolveIron(ox).FeOT;
 
       if (minSiO2Val !== null && sio2 < minSiO2Val) return false;
       if (maxSiO2Val !== null && sio2 > maxSiO2Val) return false;
@@ -549,6 +593,76 @@ SAMPLE_03,41.50,0.02,0.05,0.00,8.80,0.15,49.20,0.20,0.01,0.00,0.00,0.12,0.35,0.0
           </div>
         </div>
       </div>
+
+      {/* Column mapping: what each CSV column was read as, editable */}
+      {parsedFile && (
+        <div className="bg-stone-900 border border-stone-800 rounded-xl p-4 text-xs">
+          <button
+            type="button"
+            onClick={() => setShowMapping((v) => !v)}
+            aria-expanded={showMapping}
+            className="w-full flex items-center justify-between gap-2 text-left"
+          >
+            <span className="font-semibold text-stone-200 flex items-center gap-2">
+              <SlidersHorizontal className="w-4 h-4 text-amber-400" />
+              Column mapping
+            </span>
+            <span className="text-stone-400">
+              {parsedFile.headers.filter((h) => columnMap[h]).length} read &middot;{' '}
+              <span className={parsedFile.headers.some((h) => !columnMap[h]) ? 'text-amber-400' : ''}>
+                {parsedFile.headers.filter((h) => !columnMap[h]).length} ignored
+              </span>
+              <ChevronRight className={`inline w-3.5 h-3.5 ml-1 transition-transform ${showMapping ? 'rotate-90' : ''}`} />
+            </span>
+          </button>
+          {showMapping && (
+            <div className="mt-3 space-y-2">
+              <p className="text-stone-400 leading-relaxed">
+                Each column of your file and what it is read as. Assign any ignored column that holds an oxide, and
+                the batch is re-run. Values such as &ldquo;&lt;0.01&rdquo;, &ldquo;bdl&rdquo;, &ldquo;n.d.&rdquo; or a
+                negative number are treated as below detection (missing), never as zero.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                {parsedFile.headers.map((h) => (
+                  <label key={h} className="flex items-center justify-between gap-2 p-2 rounded-lg bg-stone-950/70 border border-stone-800">
+                    <span className="font-mono text-stone-300 truncate" title={h}>{h}</span>
+                    <select
+                      value={columnMap[h] ?? ''}
+                      onChange={(e) => handleColumnChange(h, e.target.value)}
+                      className={`bg-stone-900 border rounded px-1.5 py-1 text-xs ${
+                        columnMap[h] ? 'border-stone-700 text-stone-100' : 'border-amber-800 text-amber-300'
+                      }`}
+                    >
+                      <option value="">Ignore</option>
+                      <option value="sample_id">Sample ID</option>
+                      <optgroup label="Oxides">
+                        {MAPPABLE_OXIDES.map((o) => (
+                          <option key={o} value={o}>{o} (wt%)</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Elements">
+                        {MAPPABLE_ELEMENTS.map((o) => (
+                          <option key={o} value={o}>{o} (wt%)</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Trace elements">
+                        {TRACE_INPUTS.map((o) => (
+                          <option key={o} value={`trace:${o}`}>{o} (ppm)</option>
+                        ))}
+                      </optgroup>
+                    </select>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Spider diagrams for the batch, when the file carries trace elements */}
+      {batchResults.some((r) => r.traceElements) && (
+        <BatchSpiderPanel results={batchResults} />
+      )}
 
       {/* Summary Metric Strip */}
       {stats && (
@@ -1086,7 +1200,7 @@ SAMPLE_03,41.50,0.02,0.05,0.00,8.80,0.15,49.20,0.20,0.01,0.00,0.00,0.12,0.35,0.0
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDeleteRow(row.sampleId);
+                              handleDeleteRow(row.rowNumber);
                             }}
                             className="p-1 text-stone-500 hover:text-rose-400 hover:bg-stone-800 rounded border border-transparent hover:border-stone-700 transition-colors"
                             title="Remove row from dataset (Undo available)"
@@ -1148,9 +1262,9 @@ SAMPLE_03,41.50,0.02,0.05,0.00,8.80,0.15,49.20,0.20,0.01,0.00,0.00,0.12,0.35,0.0
                   Oxide Composition (wt%)
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                  {['SiO2', 'TiO2', 'Al2O3', 'Fe2O3', 'FeO', 'MnO', 'MgO', 'CaO', 'Na2O', 'K2O', 'P2O5', 'Cr2O3', 'NiO', 'LOI'].map((ox) => (
+                  {editFields.map((ox) => (
                     <div key={ox} className="bg-stone-950 p-2 rounded-lg border border-stone-800">
-                      <div className="text-[10px] font-mono text-stone-400 mb-1">{ox}</div>
+                      <div className="text-[10px] font-mono text-stone-400 mb-1"><ChemFormula formula={ox} /></div>
                       <input
                         type="number"
                         step="0.01"

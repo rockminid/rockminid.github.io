@@ -1090,15 +1090,15 @@ export async function generateRockMinManualPDF(): Promise<void> {
     ['Projection', 'Computation'],
     [
       ['AFM Igneous', 'Delegates to the published Irvine & Baragar procedure, which also applies their P < 40 precondition and the Fig. 6 fallback. F = FeO + 0.8998 Fe2O3, A = Na2O + K2O, M = MgO, rescaled so F + A + M = 100.'],
-      ['AFM Metamorphic', 'A = Al2O3, F = FeO + 0.8998 Fe2O3, M = MgO, rescaled to 100. A projection for pelitic assemblages, not a classifier.'],
+      ['AFM Metamorphic', 'Thompson (1957), molar and projected from muscovite: A = Al2O3 - 3 K2O, F = total iron as FeO, M = MgO, rescaled to 100. K-rich compositions (A < 0, below the F-M join) are set to A = 0 and named. A projection for pelitic assemblages, not a classifier.'],
       ['ACF', 'Molar proportions. A = Al2O3 + Fe2O3 - Na2O - K2O removes the Al held in albite, K-feldspar and muscovite; Fe3+ joins A because it replaces Al in epidote and garnet. C = CaO - 10/3 P2O5 - CO2 removes the Ca in apatite and calcite. CO2 left over after calcite is given to MgO (dolomite, magnesite) and then FeO (siderite) before F = FeO + MgO + MnO is formed. Measured FeO and Fe2O3 are used as given; a reported total is carried as FeO, which moves the point toward F. A negative A (alkalis exceed Al) is set to zero and the point is flagged as outside the diagram.'],
       ['QAPF Plutonic', 'Q, Or, Ab and An are taken from the shared CIPW norm. The IUGS rule that plagioclase more sodic than An05 counts as alkali feldspar is applied by splitting albite on the normative anorthite content: if 100 An/(An+Ab) < 5 the albite goes to A, otherwise to P.'],
-      ['QAPF Volcanic', 'Same normative source, with a fixed split of A = Or + 0.1 Ab and P = An + 0.9 Ab.'],
-      ['APF Plutonic / Volcanic', 'F = Ne + Lc, A = Or + 0.1 Ab, P = An + 0.9 Ab, from the norm. In the volcanic variant normative olivine above 10% distinguishes basanitic from tephritic names.'],
-      ['Pyroxene Quadrilateral', 'Ca = CaO/56.08, Mg = MgO/40.30, Fe = FeO/71.84 + 2 Fe2O3/159.69 + MnO/70.94. Wo = min(50, 100 Ca/(Ca+Mg+Fe)); the remainder is split between En and Fs by Mg/(Mg+Fe).'],
+      ['QAPF Volcanic', 'Same normative source and the same IUGS An05 rule as the plutonic diagram: albite counts as alkali feldspar when normative An/(An + Ab) < 5%, otherwise as plagioclase.'],
+      ['APF Plutonic / Volcanic', 'F = Ne + Lc from the norm; A and P from Or, Ab and An with the IUGS An05 rule. In the volcanic variant normative olivine above 10% distinguishes basanitic from tephritic names.'],
+      ['Pyroxene Quadrilateral', 'Ca = CaO/56.08, Mg = MgO/40.30, Fe = total iron as FeO/71.84 + MnO/70.94, with iron from the shared resolver so FeOT and Fe2O3T analyses are read. Wo = min(50, 100 Ca/(Ca+Mg+Fe)); the remainder is split between En and Fs by Mg/(Mg+Fe).'],
       ['Feldspar Ternary', 'Or, Ab and An from CATION moles: Or = 2 K2O/94.196, Ab = 2 Na2O/61.979, An = CaO/56.077, rescaled to 100. The factor of two on the alkalis is required because one mole of K2O or Na2O yields two moles of KAlSi3O8 or NaAlSi3O8 while one mole of CaO yields one mole of CaAl2Si2O8; an equimolar Ab-An plagioclase therefore plots at An50. The plagioclase name is taken from An/(Ab+An).'],
       ['Basalt Tetrahedron', 'Di and Ol from the norm against a composite silica-saturation index built from Q, Ne, Hy and Ab. This is a visualization proxy for the Yoder & Tilley tetrahedron, not a strict projection of it.'],
-      ['Ultramafic', 'An approximate Ol-Opx-Cpx partition derived from molar CaO, MgO, FeO and SiO2. Suitable for orientation on the peridotite triangle; modal or normative pyroxene data should be preferred where available.']
+      ['Ultramafic', 'Normative Ol, Opx (= Hy) and Cpx (= Di) from the shared CIPW norm, which handles every iron form; the field is read from the diagram polygons (dunite above 90% olivine, then harzburgite, lherzolite, wehrlite and the pyroxenites). Modal data should be preferred where available.'],
     ],
     [36, 138]
   );
@@ -1116,6 +1116,19 @@ export async function generateRockMinManualPDF(): Promise<void> {
   renderBullet('Ultramafic', 'Dunite above 90% olivine, then harzburgite, lherzolite and wehrlite, passing into the pyroxenites.');
   renderBullet('ACF', 'Seven three-phase fields of a schematic medium-pressure amphibolite-facies topology with quartz in excess, joining ideal phase positions: Ky/Sil (A100), plagioclase (A50 C50), zoisite (A43 C57), calcite (C100), diopside (C50 F50), hornblende (A14 C29 F57), garnet (A25 F75) and Ath/Cum/Opx (F100). Fields: Ky/Sil + Pl + Grt; Pl + Grt + Hbl; Grt + Hbl + Ath/Cum; Hbl + Ath/Cum + Di; Pl + Hbl + Di; Pl + Zo/Ep + Di; Zo/Ep + Cal + Di. Grossular, tremolite and chlorite are drawn as markers only. Tie-lines change with grade, so the field gives the expected assemblage in the amphibolite facies and not at other grades; use it to compare rocks, not to assign facies.');
   renderParagraph('Use the ACF diagram for metabasites, mafic igneous rocks, marls and impure limestones. Basalts, gabbros and amphibolites plot close to hornblende, between the Pl + Hbl + Di and Pl + Grt + Hbl fields; shales and S-type granites plot on the aluminous side. Pelites are better shown on the AFM (Thompson) projection, which keeps Fe and Mg apart.');
+
+  renderSubheader('11.3 Trace Elements and Spider Diagrams');
+  renderParagraph(
+    'Trace elements (ppm) can be entered for a single sample or read from CSV columns named by element symbol (La, Ba (ppm), Zr_ppm). They are plotted, not used for classification. The REE diagram is normalized to CI chondrite and the multi-element diagram to primitive mantle, both after Sun & McDonough (1989, doi:10.1144/GSL.SP.1989.042.01.19). K, P and Ti on the primitive-mantle diagram are calculated from K2O, P2O5 and TiO2 (x 8301.5, 4364.2 and 5995.1 ppm per wt%) unless entered. A line is broken where an element is missing rather than drawn across the gap. Reported ratios: Eu/Eu* = EuN / sqrt(SmN x GdN), (La/Yb)N, Nb/La and Zr/Y.'
+  );
+  renderParagraph(
+    'Immobile-element classification diagrams such as Winchester & Floyd (1977) are not included: their field boundaries would have to be digitized from the published figures, and the software only implements schemes from definitions it can verify.'
+  );
+
+  renderSubheader('11.4 Texture / Field Context');
+  renderParagraph(
+    'Major-element chemistry cannot separate isochemical rocks: a basalt, a gabbro and an amphibolite or eclogite can have the same composition. When no context is given, the analyzer names every rock of another kind (volcanic, plutonic or metamorphic) scoring within 10 points of the leader as chemically equivalent. The Texture / Field Context selector (volcanic or fine-grained, plutonic or coarse-grained, metamorphic or foliated) ranks candidates of that kind first; scores themselves are unchanged. Ten points corresponds to roughly 1 wt% of weighted distance near the top of the scale, well inside the natural spread of any rock type.'
+  );
 
   // ==================== SECTION 12: MINERAL IDENTIFICATION ====================
   renderSectionHeader('12', 'Mineral Identification by Structural Formula', 'Why oxide distance is the wrong test, and what replaces it');
@@ -1146,13 +1159,18 @@ export async function generateRockMinManualPDF(): Promise<void> {
     ['Group', 'Oxygens', 'Ideal cations', 'Tolerance', 'Required occupancy'],
     [
       ['Olivine', '4', '3', '0.06', 'Mg + Fe2+ + Mn >= 1.5'],
-      ['Garnet', '12', '8', '0.15', 'Si + Al tetrahedral 2.85-3.15'],
+      ['Garnet', '12', '8', '0.15', 'Si alone tetrahedral 2.85-3.15; Fe3+ by charge balance'],
       ['Zircon', '4', '2', '0.08', '-'],
       ['Titanite', '5', '3', '0.12', '-'],
-      ['Pyroxene (cpx / opx)', '6', '4', '0.08', 'Si + Al tetrahedral 1.90-2.10'],
+      ['Pyroxene (cpx / opx)', '6', '4', '0.08', 'Si + Al tetrahedral 1.90-2.10; Fe3+ by charge balance'],
+      ['Jadeite / omphacite', '6', '4', '0.08-0.10', 'Na >= 0.6 / 0.3; Al fills T after Si (2 sites)'],
       ['Amphibole', '23', '15.5', '0.70', 'Ca + Na + K >= 1.2; tetrahedral 7.4-8.4'],
       ['Hornblende', '23', '15.5', '0.70', 'Ca >= 1.2'],
       ['Kaersutite', '23', '15.5', '0.70', 'Ca >= 1.2 and Ti >= 0.2'],
+      ['Tremolite / actinolite', '23', '15', '0.50', 'Ca >= 1.5; Si + Al tetrahedral 7.4-8.4'],
+      ['Pargasite', '23', '16', '0.30', 'Ca >= 1.5, Na + K >= 0.5; Al fills T after Si (8 sites)'],
+      ['Glaucophane', '23', '15', '0.50', 'Na >= 1.5, Mg + Fe2+ >= 2.5; Al fills T after Si (8 sites)'],
+      ['Cummingtonite / anthophyllite', '23', '15', '0.50', 'Mg + Fe2+ >= 5'],
       ['Feldspar', '8', '5', '0.07', 'Na + K + Ca + Ba >= 0.7; tetrahedral 3.9-4.1'],
       ['Plagioclase', '8', '5', '0.07', 'Na + Ca >= 0.7'],
       ['Quartz', '2', '1', '0.04', '-'],
@@ -1166,8 +1184,15 @@ export async function generateRockMinManualPDF(): Promise<void> {
       ['Rutile', '2', '1', '0.05', '-'],
       ['Hematite', '3', '2', '0.07', '-'],
       ['Perovskite', '3', '2', '0.10', '-'],
-      ['Apatite', '12', '8', '0.30', 'P >= 2.0 and Ca >= 3.5'],
-      ['Calcite / dolomite', '3 / 6', '2 / 4', '0.15 / 0.20', '-']
+      ['Apatite', '12.5', '8', '0.30', 'P >= 2.0 and Ca >= 3.5'],
+      ['Merrillite', '28', '18', '0.50', 'P >= 6 and Ca >= 7'],
+      ['Carbonates (calcite, magnesite, siderite, rhodochrosite)', '1', '1', '0.05', 'CO2 not counted: one cation per oxygen'],
+      ['Dolomite / ankerite', '2', '2', '0.10', 'Ca >= 0.7 and Mg + Fe2+ >= 0.5'],
+      ['Kaolinite / serpentine / talc / chlorite', '7 / 7 / 11 / 14', '4 / 5 / 7 / 10', '0.15-0.40', 'Anhydrous oxygen basis'],
+      ['Kyanite group / staurolite', '5 / 23', '3 / 15', '0.08 / 0.60', 'Al >= 1.7 / 8'],
+      ['Cordierite', '18', '11', '0.30', 'Mg + Fe2+ >= 1.4'],
+      ['Melilite, epidote, lawsonite, prehnite', '7 / 12.5 / 8 / 11', '5 / 8 / 5 / 7', '0.15-0.30', 'Ca required'],
+      ['Corundum / periclase', '3 / 1', '2 / 1', '0.05', '-']
     ],
     [46, 20, 24, 24, 60]
   );
@@ -1185,7 +1210,12 @@ export async function generateRockMinManualPDF(): Promise<void> {
   renderBullet('Pyroxene', 'Wo - En - Fs quadrilateral position from Ca, Mg and Fe apfu.');
   renderBullet('Spinel / chromite', 'Cr# = 100 Cr / (Cr + Al).');
 
-  renderSubheader('12.5 Rock or Mineral? How the Engine Decides');
+  renderSubheader('12.5 Volatile-Free Comparison and the Analytical Total');
+  renderParagraph(
+    'The sample is compared with each mineral on the same volatile-free basis. A microprobe does not measure water or CO2, so a carbonate, sulfate or hydrous mineral analysed by EPMA totals well below 100 wt%: calcite about 56, gypsum 33, anhydrite 100 with its SO3, kaolinite 86. Once both sides are volatile-free, that total is often the only thing separating magnesite from periclase, calcite from lime or kaolinite from an anhydrous aluminosilicate. The mineral score is therefore multiplied by the agreement between the analysis total (without H2O and CO2, but with SO3, S and halogens, which are measured) and the mineral total: 1 within 8 wt%, falling off as a Gaussian beyond. Enter carbonate and hydrous-mineral analyses as measured, not normalized to 100%. Analcime and jadeite, and lawsonite and anorthite, are identical once water is removed and differ in total by less than this tolerance, so they cannot be separated by major elements.'
+  );
+
+  renderSubheader('12.6 Rock or Mineral? How the Engine Decides');
   renderParagraph(
     'When the user declares the sample type, that decides. Otherwise the STRUCTURAL test decides, which is exactly what it is good for: a single mineral normalizes cleanly to its formula while a whole rock normalizes to no mineral formula at all. Compositional similarity cannot make this call, because a pure olivine analysis is compositionally almost identical to a dunite. The engine treats a sample as a mineral grain when the best mineral candidate has a structural fit of at least 0.75 and scores at least as high as the best rock candidate, and it reports that the type was inferred rather than declared.'
   );
@@ -1201,10 +1231,12 @@ export async function generateRockMinManualPDF(): Promise<void> {
     [
       ['Source files', '90', '19'],
       ['Rows read', '463,716', '1,930,973'],
-      ['Accepted analyses', '266,675', '953,932'],
-      ['Reference groups produced', '69', '74'],
-      ['Rejected: sparse analysis', '57,314', '816,108'],
-      ['Rejected: total outside 97-103 wt%', '82,348', '124,942'],
+      ['Accepted analyses', '318,865', '1,012,991'],
+      ['Reference groups produced', '70', '77'],
+      ['Rejected: sparse analysis', '57,314', '801,499'],
+      ['Rejected: total outside its window', '30,158', '67,987'],
+      ['Rejected: inconsistent with its mineral name', '-', '12,383'],
+      ['Rejected: not a mineral (e.g. palagonite)', '-', '122'],
       ['Rejected: material type', '2,576', '0']
     ],
     [62, 56, 56]
@@ -1214,7 +1246,11 @@ export async function generateRockMinManualPDF(): Promise<void> {
   renderParagraph(
     'Each group is a DISTRIBUTION, not a single composition: n analyses plus the 10th, 25th, 50th, 75th and 90th percentile of every oxide. Matching uses the median as the reference composition and the p10-p90 band as the observed range, which is why a match can report "within the observed range of N analyses" rather than "close to one hand-picked number". Groups with fewer than 30 accepted analyses are discarded.'
   );
-  renderBullet('Acceptance filter', 'Whole-rock or glass material for rocks; a 97-103 wt% major-oxide total with iron counted once; at least 6 reported oxides for rocks or 4 for minerals.');
+  renderBullet('Acceptance filter', 'Whole-rock or glass material for rocks; a 97-103 wt% total with iron counted once and reported LOI, H2O and CO2 included, so a kimberlite with 15 wt% LOI is kept; at least 6 reported oxides for rocks (a single oxide suffices for a mineral such as quartz); values up to 102 wt% accepted for pure phases.');
+  renderBullet('Minerals without measured volatiles', 'A microprobe does not measure water or CO2, so these minerals use their own total windows: calcite 52-60 wt%, dolomite 48-58, other carbonates 44-66, serpentine, chlorite and kaolinite 82-92, talc 92-98, micas 91-100, amphiboles 94-101, epidote-group and other hydrous silicates 84-101, zeolites 78-95. Without this, every real calcite was rejected and the GEOROC calcite group (n = 90) had a median of 93 wt% CaO.');
+  renderBullet('Label check', 'A mineral row must be chemically consistent with its name: cation sums on 4, 6, 12 and 8 oxygens for olivine, pyroxene, garnet and feldspar; orthopyroxene with Ca at or below 0.15 apfu; no K2O above 0.5 or P2O5 above 0.3 wt% in olivine, pyroxene or garnet; each plagioclase name within 5 units of its An range; hedenbergite with no more than 3 wt% Al2O3 and 1 wt% TiO2. LOI, when reported, already contains the water and CO2, so H2O and CO2 are added to the total only when LOI is absent. This removed, for example, a FERROSILITE group whose median carried 18.6 wt% CaO.');
+  renderBullet('Iron', 'FeO + Fe2O3 is used only when both are reported; otherwise FeOT, then Fe2O3T, so a row giving FeO alone beside FeOT does not lose its ferric iron.');
+  renderBullet('Names', 'Discredited names are folded into their groups (hypersthene and bronzite into orthopyroxene, salite, ferrosalite and fassaite into clinopyroxene, perthite, an intergrowth texture, into alkali feldspar); palagonite, glass and groundmass are not minerals and are excluded.');
   renderBullet('Rock grouping', "By GEOROC's own precompiled FILE NAME, which is an authoritative curation. The free-text ROCK NAME column fragments the library so badly that dacite's own median composition failed to identify as dacite.");
   renderBullet('Mineral grouping', 'By the MINERAL column.');
   renderBullet('Iron handling', 'FeO and Fe2O3 are deliberately omitted from the stored medians so that a partial median of each cannot be double-counted against FeOT.');
@@ -1256,6 +1292,10 @@ export async function generateRockMinManualPDF(): Promise<void> {
       ['Elements', 'Si, Ti, Al, Fe, Mn, Mg, Ca, Na, K, P, Cr, Ni, or their full element names']
     ],
     [30, 144]
+  );
+
+  renderParagraph(
+    'After upload, the Column mapping panel lists every column and what it was read as. Any ignored column can be assigned to an oxide, an element or a trace element, and the batch is re-run. Below-detection entries (<0.01, bdl, b.d.l., n.d., <LOD, or a negative number, the usual not-detected code) are treated as missing, never as zero, and are listed in the row notes.'
   );
 
   renderSubheader('14.2 Global Range Filters & Quick Presets');
@@ -1538,6 +1578,7 @@ export async function generateRockMinManualPDF(): Promise<void> {
     'Noble, D. C. (1968). Systematic variation of major elements in comendite and pantellerite glasses. Earth and Planetary Science Letters, 4(2), 167-172.',
     'Shand, S. J. (1943). Eruptive Rocks: Their Genesis, Composition and Classification (2nd ed.). John Wiley & Sons. [The alumina saturation index]',
     'Eskola, P. (1915). Om sambandet mellan kemisk och mineralogisk sammansattning hos Orijarvitraktens metamorfa bergarter. Bulletin de la Commission Geologique de Finlande, 44, 1-145. [ACF diagram]',
+    'Sun, S.-s., & McDonough, W. F. (1989). Chemical and isotopic systematics of oceanic basalts: implications for mantle composition and processes. Geological Society, London, Special Publications, 42, 313-345. https://doi.org/10.1144/GSL.SP.1989.042.01.19 [Spider diagram normalization]',
     'Spear, F. S. (1993). Metamorphic Phase Equilibria and Pressure-Temperature-Time Paths. Mineralogical Society of America.',
     'Streckeisen, A. (1974). Classification and nomenclature of plutonic rocks. Geologische Rundschau, 63(2), 773-786.',
     'Streckeisen, A. (1976). To each plutonic rock its proper name. Earth-Science Reviews, 12(1), 1-33. [QAPF field limits, p.10]',

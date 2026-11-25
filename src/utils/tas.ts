@@ -266,7 +266,8 @@ export function classifyTAS(
   let label = 'Outside TAS range';
   if (sio2 < 35) label = 'Outside TAS range (SiO2 < 35 wt%)';
   else if (sio2 > 85) label = 'Outside TAS range (SiO2 > 85 wt%)';
-  else if (totalAlkalis > 20) label = 'Outside TAS range (alkalis > 20 wt%)';
+  // The field polygons stop at 16 wt% total alkalis.
+  else if (totalAlkalis > 16) label = 'Outside TAS range (alkalis > 16 wt%)';
 
   return { field: label, code: '', isAlkaline, outOfRange: true };
 }

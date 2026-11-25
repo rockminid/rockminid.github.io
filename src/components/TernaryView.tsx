@@ -78,7 +78,7 @@ export const TernaryView: React.FC<TernaryViewProps> = ({
 
     if (selectedSystemId === 'pyroxene-quad') {
       const pyxMinerals = MINERALS_DATASET.filter((m) =>
-        ['diopside', 'augite', 'enstatite', 'hedenbergite'].includes(m.id) ||
+        ['min-diopside', 'min-augite', 'min-enstatite', 'min-hedenbergite'].includes(m.id) ||
         m.name.toLowerCase().includes('pyroxene') ||
         m.description?.toLowerCase().includes('pyroxene')
       );
@@ -101,7 +101,7 @@ export const TernaryView: React.FC<TernaryViewProps> = ({
 
     if (selectedSystemId === 'afm-metamorphic') {
       const metaMinerals = MINERALS_DATASET.filter((m) =>
-        ['garnet-almandine', 'staurolite', 'kyanite', 'sillimanite', 'cordierite', 'biotite'].some((k) =>
+        ['almandine', 'staurolite', 'kyanite', 'cordierite', 'biotite', 'chloritoid'].some((k) =>
           m.id.includes(k)
         )
       );
@@ -452,6 +452,7 @@ export const TernaryView: React.FC<TernaryViewProps> = ({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   // Selected sample metadata
@@ -463,43 +464,50 @@ export const TernaryView: React.FC<TernaryViewProps> = ({
   // Preset typical geochemical suites for quick comparison
   const presetSuites = [
     {
-      name: 'Mid-Ocean Ridge Basalt (MORB)',
+      name: 'Mid-Ocean Ridge Basalt (MORB)',
+      shortLabel: 'MORB basalt',
       system: 'afm-igneous' as TernarySystemId,
       oxides: { SiO2: 50.1, TiO2: 1.45, Al2O3: 15.2, FeO: 9.8, MgO: 7.9, CaO: 11.3, Na2O: 2.7, K2O: 0.15 },
       desc: 'Typical depleted tholeiitic magma with Fe-enrichment trend.',
     },
     {
-      name: 'Cascades Arc Andesite (Calc-Alkaline)',
+      name: 'Cascades Arc Andesite (Calc-Alkaline)',
+      shortLabel: 'Arc andesite',
       system: 'afm-igneous' as TernarySystemId,
       oxides: { SiO2: 58.6, TiO2: 0.85, Al2O3: 17.1, FeO: 6.2, MgO: 3.4, CaO: 6.8, Na2O: 3.8, K2O: 1.6 },
       desc: 'Subduction-zone calc-alkaline series with silica enrichment.',
     },
     {
-      name: 'Continental Crust Granite',
+      name: 'Continental Crust Granite',
+      shortLabel: 'Granite',
       system: 'qapf-plutonic' as TernarySystemId,
       oxides: { SiO2: 72.8, TiO2: 0.28, Al2O3: 14.2, FeO: 1.9, MgO: 0.55, CaO: 1.4, Na2O: 3.5, K2O: 4.8 },
       desc: 'Monzogranite with subequal quartz, K-feldspar, and plagioclase.',
     },
     {
-      name: 'Khibina Nepheline Syenite',
+      name: 'Khibina Nepheline Syenite',
+      shortLabel: 'Nepheline syenite',
       system: 'apf-plutonic' as TernarySystemId,
       oxides: { SiO2: 54.8, TiO2: 0.65, Al2O3: 20.8, FeO: 3.8, MgO: 0.6, CaO: 1.8, Na2O: 8.9, K2O: 6.4 },
       desc: 'Alkaline feldspathoid-bearing plutonic rock (APF lower triangle).',
     },
     {
-      name: 'Tahiti Phonolitic Tephrite',
+      name: 'Tahiti Phonolitic Tephrite',
+      shortLabel: 'Phonolitic tephrite',
       system: 'apf-volcanic' as TernarySystemId,
       oxides: { SiO2: 46.2, TiO2: 2.8, Al2O3: 16.5, FeO: 10.2, MgO: 5.6, CaO: 8.9, Na2O: 4.8, K2O: 3.2 },
       desc: 'Silica-undersaturated foid-bearing volcanic rock with normative nepheline.',
     },
     {
-      name: 'Hawaiian Alkali Basalt',
+      name: 'Hawaiian Alkali Basalt',
+      shortLabel: 'Alkali basalt',
       system: 'basalt-tetrahedron' as TernarySystemId,
       oxides: { SiO2: 47.1, TiO2: 3.1, Al2O3: 14.8, FeO: 11.8, MgO: 9.2, CaO: 9.8, Na2O: 3.2, K2O: 1.1 },
       desc: 'Silica-undersaturated alkali basalt in the Yoder-Tilley Basalt Tetrahedron.',
     },
     {
-      name: 'Skaergaard Layered Gabbro (Cpx)',
+      name: 'Skaergaard Layered Gabbro (Cpx)',
+      shortLabel: 'Gabbro (cpx)',
       system: 'pyroxene-quad' as TernarySystemId,
       oxides: { SiO2: 51.5, TiO2: 0.6, Al2O3: 2.8, FeO: 8.5, MgO: 15.2, CaO: 20.8, Na2O: 0.35, K2O: 0.05 },
       desc: 'Cumulate augite/diopside in a layered mafic intrusion.',
@@ -546,7 +554,7 @@ export const TernaryView: React.FC<TernaryViewProps> = ({
                   className="px-2.5 py-1 text-[11px] rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-300 border border-stone-700 transition-colors flex items-center gap-1"
                 >
                   <Sparkles className="w-3 h-3 text-amber-400" />
-                  <span>{ps.name.split(' ')[0]}</span>
+                  <span>{ps.shortLabel}</span>
                 </button>
               ))}
             </div>

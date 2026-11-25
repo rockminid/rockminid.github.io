@@ -40,7 +40,7 @@ export default defineConfig(({ mode }) => {
       // response headers. connect-src is widened to the interpretation API
       // when one is configured, so enabling a backend does not silently
       // break every request to it.
-      cspPlugin({ apiBaseUrl: env.VITE_API_BASE_URL }),
+      cspPlugin({ apiBaseUrl: env.VITE_API_BASE_URL, firebaseAuthDomain: env.VITE_FIREBASE_AUTH_DOMAIN }),
       // The version lives in package.json and nowhere else. This stamps it
       // into the JSON-LD block in index.html; `define` below stamps it into
       // the bundle. Previously it was typed out in eight files and drifted.

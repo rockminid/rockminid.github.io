@@ -89,7 +89,6 @@ export interface DatabaseReferences {
   rruffUrl?: string;
   rruffSpaceGroup?: string;
   rruffCellParameters?: string;
-  earthChemId?: string;
   earthChemUrl?: string;
   earthchemSetting?: string;
   georocUrl?: string;
@@ -296,6 +295,11 @@ export interface ClassificationReport {
   /** Which iron fields the calculation used. */
   ironBasis?: string;
   topRocks: MatchScore[];
+  /** Field or thin-section context the user supplied, if any. */
+  rockContext?: 'volcanic' | 'plutonic' | 'metamorphic';
+  /** Rocks of another kind (volcanic, plutonic, metamorphic) scoring within
+   *  10 points of the leader: chemistry alone cannot separate them. */
+  isochemicalAlternatives?: string[];
   topMinerals: MatchScore[];
   bestOverall: MatchScore;
   /** Similarity gap between the best and second-best candidate. */
@@ -347,6 +351,8 @@ export interface BatchRowResult {
   cipwNorm?: CIPWNorm;
   stoichiometry?: SampleStoichiometry;
   alkaliAffinity?: string;
+  /** Trace elements read from the file, ppm. */
+  traceElements?: Record<string, number>;
 }
 
 export interface SavedSample {

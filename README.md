@@ -24,9 +24,11 @@ it also works offline.
 | **CIPW and cation norms** | 23 normative phases, mass-conserving, with the unrescaled normative total and differentiation index |
 | **Mineral identification** | Structural formula on the correct oxygen basis, end-member proportions (Fo, An-Ab-Or, Wo-En-Fs, Cr#) |
 | **Diagrams** | TAS; AFM (igneous and metamorphic), ACF, QAPF and APF (plutonic and volcanic), pyroxene quadrilateral, feldspar, ultramafic and basalt tetrahedron. Plot your own data alone and export figures (PNG, JPEG, SVG) |
-| **Batch processing** | Upload a CSV of up to 1,000 analyses and download the classified results |
+| **Batch processing** | Upload a CSV of up to 1,000 analyses, check or correct how each column is read, and download the classified results; below-detection values are treated as missing |
+| **Trace elements** | Optional ppm input; chondrite-normalized REE and primitive-mantle spider diagrams (Sun & McDonough 1989) with Eu/Eu*, (La/Yb)N, Nb/La, Zr/Y |
+| **Field context** | Tell the analyzer whether a rock is volcanic, plutonic or metamorphic; without it, chemically equivalent rocks (basalt, gabbro, amphibolite) are flagged |
 | **Data-quality checks** | Flags for low or high totals, iron reporting, sparse analyses, loss on ignition and ambiguous matches |
-| **Reference library** | 91 curated rock and mineral compositions and 143 GEOROC distributions built from 1,220,607 analyses |
+| **Reference library** | 128 curated rock and mineral compositions (39 rocks, 89 minerals) and 147 GEOROC distributions built from 1,331,856 analyses |
 | **Saved samples** | Kept in your browser; synced across devices if you sign in with Google (optional) |
 | **User manual** | Full documentation of every formula and reference, downloadable as PDF from the app |
 
@@ -70,7 +72,7 @@ never receives sample data. See the Privacy Policy in the app for details.
 | Fe³⁺ in oxides by charge balance | Droop (1987), *Mineral. Mag.* 51, 431–435 |
 | Reference distributions | GEOROC (DIGIS, University of Göttingen) |
 
-The engine is covered by 345 automated tests anchored on exact stoichiometry
+The engine is covered by 472 automated tests anchored on exact stoichiometry
 and the published classification boundaries. Its mineral identification and
 whole-rock results have been checked against withheld natural GEOROC analyses
 and against the independent package pyrolite.
@@ -123,7 +125,7 @@ If you use RockMin ID, please cite the paper:
 To record the exact software version as well, cite the archived release:
 
 > Tiwari, K. (2026). *RockMin ID: Automated Geochemical Classifier and
-> Petrological Analysis Platform* (Version 2.5.2) [Computer software]. Zenodo.
+> Petrological Analysis Platform* (Version 2.6.0) [Computer software]. Zenodo.
 > <https://doi.org/10.5281/zenodo.22875578>
 
 This concept DOI always points to the latest release; each version's own DOI is

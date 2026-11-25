@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from 'react';
+import { TraceElementsPanel } from './TraceElementsPanel';
+import { ChemFormula } from './ChemFormula';
 import {
   Sparkles,
   RotateCcw,
@@ -33,7 +35,14 @@ import {
   SampleType,
   SAMPLE_TYPE_LABELS,
 } from '../types/geochem';
-import { MAJOR_OXIDES, identifyGeochemicalSample } from '../utils/geochemEngine';
+import {
+  MAJOR_OXIDES,
+  analyticalTotal,
+  anhydrousTotal,
+  identifyGeochemicalSample,
+  type RockContext,
+} from '../utils/geochemEngine';
+import { resolveIron } from '../utils/iron';
 import { STOICHIOMETRY_TABLE, oxidesToElements, elementsToOxides } from '../data/stoichiometry';
 import { TasDiagram, TASPoint } from './TasDiagram';
 import { TernaryDiagram } from './TernaryDiagram';
@@ -181,8 +190,32 @@ const PRESET_GROUPS: PresetGroup[] = [
 const ALL_PRESETS = PRESET_GROUPS.flatMap((g) => g.items);
 
 // Major rock-forming oxides vs Minor/Volatiles
-const CORE_MAJOR_OXIDES = ['SiO2', 'Al2O3', 'FeO', 'Fe2O3', 'MgO', 'CaO', 'Na2O', 'K2O'];
+const IRON_FIELDS = ['FeO', 'Fe2O3', 'FeOT', 'Fe2O3T'] as const;
+type IronMode = 'split' | 'FeOT' | 'Fe2O3T';
+const IRON_MODE_FIELDS: Record<IronMode, string[]> = { split: ['FeO', 'Fe2O3'], FeOT: ['FeOT'], Fe2O3T: ['Fe2O3T'] };
+const VOLATILE_FIELDS = ['LOI', 'H2O', 'H2O+', 'H2O-', 'CO2'];
+
+/** Core oxides with the iron fields this sample needs, in place of FeO/Fe2O3. */
+function coreOxides(oxides: OxideComposition, mode: IronMode): string[] {
+  const present = IRON_FIELDS.filter((f) => oxides[f] !== undefined);
+  const iron = present.length ? [...present] : IRON_MODE_FIELDS[mode];
+  return ['SiO2', 'Al2O3', ...iron, 'MgO', 'CaO', 'Na2O', 'K2O'];
+}
 const MINOR_OXIDES = ['TiO2', 'MnO', 'P2O5', 'Cr2O3', 'NiO', 'LOI'];
+
+/**
+ * TAS is defined for volcanic rocks only (Le Bas et al. 1986). Plutonic rocks
+ * get Middlemost's (1994) equivalent, metamorphic rocks a protolith label, and
+ * sedimentary or mantle rocks no TAS label at all.
+ */
+function tasBadge(category: string | undefined, field: string | undefined) {
+  if (!field) return null;
+  const c = category || '';
+  if (c.includes('Volcanic')) return <> &bull; TAS: {field}</>;
+  if (c.includes('Plutonic')) return <> &bull; TAS (plutonic equivalent): {field}</>;
+  if (c.includes('Metamorphic')) return <> &bull; Protolith TAS: {field}</>;
+  return null;
+}
 
 export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, sampleName: propSampleName }) => {
   const [sampleName, setSampleName] = useState<string>(propSampleName || 'Sample-X1');
@@ -192,6 +225,7 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
   // which matters most for glasses and melt inclusions: they are whole-rock-
   // like in composition but are not rocks, and a user knows which they have.
   const [sampleType, setSampleType] = useState<SampleType>('unknown');
+  const [rockContext, setRockContext] = useState<RockContext | ''>('');
   const [oxides, setOxides] = useState<OxideComposition>(
     initialOxides || {
       SiO2: 50.45,
@@ -232,17 +266,58 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
       .length;
   }, [oxides]);
 
-  // Analytical Total Calculation
-  const rawTotal = useMemo(() => {
-    return Number(
-      Object.values(oxides).reduce((acc: number, val) => (val !== undefined && !isNaN(val) ? acc + val : acc), 0).toFixed(2)
-    );
-  }, [oxides]);
+  // Analytical total from the engine, counting iron once (a sample carrying
+  // FeO, Fe2O3 and FeOT is not 110 wt%).
+  const rawTotal = useMemo(() => Number(analyticalTotal(oxides).toFixed(2)), [oxides]);
+
+  // How iron is entered. Any iron field the sample already has is shown;
+  // this only decides what an empty sample offers.
+  const [ironMode, setIronMode] = useState<IronMode>('split');
+  const ironInUse: IronMode =
+    oxides.FeOT !== undefined
+      ? 'FeOT'
+      : oxides.Fe2O3T !== undefined
+        ? 'Fe2O3T'
+        : oxides.FeO !== undefined || oxides.Fe2O3 !== undefined
+          ? 'split'
+          : ironMode;
+
+  /** Switches the iron fields, converting what is there rather than losing it. */
+  const handleIronModeChange = (mode: IronMode) => {
+    setIronMode(mode);
+    setOxides((prev) => {
+      const iron = resolveIron(prev);
+      const next = { ...prev };
+      for (const f of IRON_FIELDS) delete next[f];
+      if (iron.FeOT > 0) {
+        if (mode === 'FeOT') next.FeOT = Number(iron.FeOT.toFixed(2));
+        else if (mode === 'Fe2O3T') next.Fe2O3T = Number(iron.Fe2O3T.toFixed(2));
+        else {
+          next.FeO = Number(iron.FeO.toFixed(2));
+          if (iron.Fe2O3 > 0) next.Fe2O3 = Number(iron.Fe2O3.toFixed(2));
+        }
+      }
+      return next;
+    });
+  };
+
+  // Element boxes keep what is being typed until the field loses focus, so
+  // the formatted value does not overwrite "1." mid-entry.
+  const [elementDrafts, setElementDrafts] = useState<Record<string, string>>({});
+  const clearDraft = (el: string) =>
+    setElementDrafts((d) => {
+      const rest = { ...d };
+      delete rest[el];
+      return rest;
+    });
 
   // Evaluation by Geochemical Identification Engine
   const classificationReport = useMemo(() => {
-    return identifyGeochemicalSample(oxides, sampleName, inputMode, { sampleType });
-  }, [oxides, sampleName, inputMode, sampleType]);
+    return identifyGeochemicalSample(oxides, sampleName, inputMode, {
+      sampleType,
+      rockContext: rockContext || undefined,
+    });
+  }, [oxides, sampleName, inputMode, sampleType, rockContext]);
 
   // Standard geochemical ratios and petrological indices.
   //
@@ -286,25 +361,33 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
       updatedElements[elKey] = Math.max(0, val);
     }
     const convertedOxides = elementsToOxides(updatedElements);
-    setOxides(convertedOxides);
+    // Element input has no volatile fields; carry LOI, H2O and CO2 over.
+    setOxides((prev) => {
+      const next: OxideComposition = { ...convertedOxides };
+      for (const v of VOLATILE_FIELDS) if (prev[v] !== undefined) next[v] = prev[v];
+      return next;
+    });
   };
 
   // Clear all values
   const handleReset = () => {
     setOxides({});
     setAiInterpretation(null);
+    setShowMineralsForRock(false);
   };
 
-  // Normalize current inputs to exactly 100%
+  // Normalize to 100 wt% on a volatile-free basis, as TAS and the norm do:
+  // LOI, H2O and CO2 are removed, not scaled, and iron is counted once.
   const handleNormalize = () => {
-    if (rawTotal <= 0) return;
-    const factor = 100 / rawTotal;
-    const normalized: OxideComposition = {};
+    const solids: OxideComposition = {};
     for (const [k, v] of Object.entries(oxides)) {
-      if (v !== undefined) {
-        normalized[k] = Number((v * factor).toFixed(2));
-      }
+      if (v !== undefined && !VOLATILE_FIELDS.includes(k)) solids[k] = v;
     }
+    const total = anhydrousTotal(solids);
+    if (total <= 0) return;
+    const factor = 100 / total;
+    const normalized: OxideComposition = {};
+    for (const [k, v] of Object.entries(solids)) normalized[k] = Number(((v as number) * factor).toFixed(2));
     setOxides(normalized);
   };
 
@@ -313,6 +396,7 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
     setSampleName(preset.name);
     setOxides({ ...preset.oxides });
     setAiInterpretation(null);
+    setShowMineralsForRock(false);
     const hasMinors = MINOR_OXIDES.some(
       (ox) => preset.oxides[ox as keyof OxideComposition] !== undefined
     );
@@ -406,6 +490,8 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
 
   const bestMatch = classificationReport.bestOverall;
   const isRock = bestMatch.type === 'rock';
+  // Mineral scores for a whole rock are noise; hide them unless asked.
+  const [showMineralsForRock, setShowMineralsForRock] = useState(false);
   // The runner-up from the SAME pool the winner came from, so the reported
   // gap compares like with like rather than a rock against a mineral.
   const runnerUp = (isRock ? classificationReport.topRocks : classificationReport.topMinerals)[1];
@@ -445,7 +531,7 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
               Geological Benchmark Suites
             </span>
             <span className="text-[11px] text-stone-500 hidden sm:inline">
-              Autofill reference standards
+              Pick a sample to try it, or type your own analysis below: results update as you type
             </span>
           </div>
 
@@ -603,6 +689,34 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
                     : 'Ranked against rocks only.'}
                 </p>
               </div>
+
+              {/* Field context: the one thing bulk chemistry cannot tell. */}
+              {sampleType !== 'mineral' && (
+                <div>
+                  <label
+                    htmlFor="rock-context"
+                    className="block text-[11px] font-medium text-stone-400 mb-1"
+                  >
+                    Texture / Field Context
+                  </label>
+                  <select
+                    id="rock-context"
+                    value={rockContext}
+                    onChange={(e) => setRockContext(e.target.value as RockContext | '')}
+                    className="w-full bg-stone-950 border border-stone-700 rounded-md px-2.5 py-1.5 text-sm text-stone-100 focus:outline-none focus:border-amber-500"
+                  >
+                    <option value="">Unknown</option>
+                    <option value="volcanic">Volcanic / fine-grained</option>
+                    <option value="plutonic">Plutonic / coarse-grained</option>
+                    <option value="metamorphic">Metamorphic / foliated</option>
+                  </select>
+                  <p className="mt-1 text-[10px] text-stone-500 leading-snug">
+                    {rockContext
+                      ? 'Rocks of this kind are ranked first; others follow.'
+                      : 'Chemistry alone cannot separate, for example, a basalt from a gabbro or an amphibolite.'}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Inputs: Major Oxides vs Collapsible Minor Oxides */}
@@ -612,10 +726,22 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
                 <div>
                   <div className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider mb-2 flex items-center justify-between">
                     <span>Essential Major Oxides</span>
-                    <span className="text-[10px] text-stone-500 font-normal">wt% oxides</span>
+                    <label className="text-[10px] text-stone-500 font-normal normal-case tracking-normal flex items-center gap-1">
+                      Iron as
+                      <select
+                        value={ironInUse}
+                        onChange={(e) => handleIronModeChange(e.target.value as IronMode)}
+                        className="bg-stone-900 border border-stone-700 rounded px-1 py-0.5 text-[10px] text-stone-200"
+                        title="How iron is reported. Switching converts the iron already entered."
+                      >
+                        <option value="split">FeO + Fe₂O₃ (separate)</option>
+                        <option value="FeOT">Total iron as FeO</option>
+                        <option value="Fe2O3T">Total iron as Fe₂O₃</option>
+                      </select>
+                    </label>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {CORE_MAJOR_OXIDES.map((ox) => {
+                    {coreOxides(oxides, ironInUse).map((ox) => {
                       const val = oxides[ox];
                       const factor = STOICHIOMETRY_TABLE[ox]?.oxideToElement;
                       const elName = STOICHIOMETRY_TABLE[ox]?.element;
@@ -626,7 +752,7 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
                           className="bg-stone-950/70 border border-stone-800/90 rounded-lg p-2 hover:border-amber-600/40 transition-colors"
                         >
                           <div className="flex justify-between items-center mb-1">
-                            <label className="text-xs font-semibold text-stone-200">{ox}</label>
+                            <label className="text-xs font-semibold text-stone-200"><ChemFormula formula={ox} /></label>
                             {elName && (
                               <span className="text-[10px] text-stone-500 font-mono">
                                 {elName} {(val ? val * factor : 0).toFixed(1)}%
@@ -690,7 +816,7 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
                             className="bg-stone-900/80 border border-stone-800/90 rounded-lg p-2 hover:border-amber-600/40 transition-colors"
                           >
                             <div className="flex justify-between items-center mb-1">
-                              <label className="text-xs font-semibold text-stone-300">{ox}</label>
+                              <label className="text-xs font-semibold text-stone-300"><ChemFormula formula={ox} /></label>
                               {elName && (
                                 <span className="text-[10px] text-stone-500 font-mono">
                                   {elName} {(val ? val * factor : 0).toFixed(1)}%
@@ -745,8 +871,12 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
                               step="0.01"
                               min="0"
                               max="100"
-                              value={val !== undefined ? val.toFixed(2) : ''}
-                              onChange={(e) => handleElementChange(el, e.target.value)}
+                              value={elementDrafts[el] ?? (val !== undefined ? val.toFixed(2) : '')}
+                              onChange={(e) => {
+                                setElementDrafts((d) => ({ ...d, [el]: e.target.value }));
+                                handleElementChange(el, e.target.value);
+                              }}
+                              onBlur={() => clearDraft(el)}
                               placeholder="0.00"
                               className="w-full bg-stone-900/90 border border-stone-800 rounded px-2 py-1 text-xs font-mono text-stone-100 text-right pr-5 focus:outline-none focus:border-amber-500"
                             />
@@ -796,8 +926,12 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
                                 step="0.01"
                                 min="0"
                                 max="100"
-                                value={val !== undefined ? val.toFixed(2) : ''}
-                                onChange={(e) => handleElementChange(el, e.target.value)}
+                                value={elementDrafts[el] ?? (val !== undefined ? val.toFixed(2) : '')}
+                                onChange={(e) => {
+                                  setElementDrafts((d) => ({ ...d, [el]: e.target.value }));
+                                  handleElementChange(el, e.target.value);
+                                }}
+                                onBlur={() => clearDraft(el)}
                                 placeholder="0.00"
                                 className="w-full bg-stone-950 border border-stone-800 rounded px-2 py-1 text-xs font-mono text-stone-100 text-right pr-5 focus:outline-none focus:border-amber-500"
                               />
@@ -879,20 +1013,20 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
             </div>
             <div className="grid grid-cols-3 gap-2 text-center">
               <div className="bg-stone-950/80 border border-stone-800/80 rounded-lg p-2">
-                <div className="text-[10px] text-stone-400 font-medium">ASI (Shand)</div>
+                <div className="text-[10px] text-stone-400 font-medium" title="Shand's alumina saturation index, molar Al2O3 / (CaO − 1.67 P2O5 + Na2O + K2O), read with A/NK = molar Al2O3 / (Na2O + K2O)">ASI (A/CNK)</div>
                 <div className="text-xs font-bold font-mono text-stone-100 mt-0.5">
                   {geochemicalIndices.asi}
                 </div>
                 <div className="text-[9px] text-amber-400 truncate mt-0.5">
-                  {geochemicalIndices.asiClassification}
+                  {geochemicalIndices.asiClassification} &middot; A/NK {geochemicalIndices.ank}
                 </div>
               </div>
               <div className="bg-stone-950/80 border border-stone-800/80 rounded-lg p-2">
-                <div className="text-[10px] text-stone-400 font-medium">Mg# Number</div>
+                <div className="text-[10px] text-stone-400 font-medium">Mg#</div>
                 <div className="text-xs font-bold font-mono text-stone-100 mt-0.5">
                   {geochemicalIndices.mgNumber}
                 </div>
-                <div className="text-[9px] text-stone-500 truncate mt-0.5">Mg / (Mg + Fe)</div>
+                <div className="text-[9px] text-stone-500 truncate mt-0.5" title="100 × molar MgO / (MgO + FeO), with all iron as FeO (FeOT)">100·Mg/(Mg+Fe<sub>T</sub>), molar</div>
               </div>
               <div className="bg-stone-950/80 border border-stone-800/80 rounded-lg p-2">
                 <div className="text-[10px] text-stone-400 font-medium">Total Alkalis</div>
@@ -1040,6 +1174,16 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
                   {bestMatch.structuralFormula.cationSum.toFixed(3)} cations on{' '}
                   {bestMatch.structuralFormula.oxygenBasis} oxygens
                 </div>
+              </div>
+            )}
+
+            {isRock && (classificationReport.isochemicalAlternatives?.length ?? 0) > 0 && (
+              <div className="p-3 bg-amber-950/30 border border-amber-900/50 rounded-xl text-xs text-amber-100/90 leading-relaxed">
+                <span className="font-semibold text-amber-300">Chemically equivalent: </span>
+                {classificationReport.isochemicalAlternatives!.join(' and ')}{' '}
+                {classificationReport.isochemicalAlternatives!.length > 1 ? 'score' : 'scores'} within 10 points. Major
+                elements cannot tell these apart; grain size, texture and metamorphic grade can. Set the Texture / Field
+                Context to choose between them.
               </div>
             )}
 
@@ -1295,7 +1439,7 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
                                       </span>
                                     </>
                                   ) : (
-                                    <> &bull; TAS: {(match.reference as any).tasField || 'N/A'}</>
+                                    tasBadge((match.reference as any).category, (match.reference as any).tasField)
                                   )}
                                 </div>
                               </div>
@@ -1328,6 +1472,21 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
                           : ''}
                       </span>
                     </div>
+                    {isRock && !showMineralsForRock ? (
+                      <div className="text-[11px] text-stone-400 leading-relaxed space-y-2">
+                        <p>
+                          This analysis was identified as a whole rock, and no single mineral can match a whole-rock
+                          composition, so mineral scores here are not meaningful.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setShowMineralsForRock(true)}
+                          className="text-cyan-400 hover:text-cyan-300 underline"
+                        >
+                          Show the closest minerals anyway
+                        </button>
+                      </div>
+                    ) : (
                     <div className="space-y-2">
                       {classificationReport.topMinerals.slice(0, 3).map((match, idx) => {
                         const enriched = getEnrichedSpecimen(match.reference);
@@ -1369,16 +1528,22 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
                         );
                       })}
                     </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Verified External Database Cross-References */}
+                {/* External database links */}
                 <DatabaseReferencesCard
                   name={enrichedBest.name}
                   databaseRefs={enrichedBest.databaseRefs}
                   isRock={isRock}
                 />
               </div>
+            )}
+
+            {/* Optional trace elements and spider diagrams */}
+            {(viewMode === 'all' || activeSection === 'diagrams') && classificationReport.sampleType !== 'mineral' && (
+              <TraceElementsPanel oxides={oxides} sampleName={sampleName} />
             )}
 
             {/* Section: Geochemical Classification Diagrams */}

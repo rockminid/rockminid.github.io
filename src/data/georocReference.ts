@@ -71,13 +71,25 @@ export interface GeorocProvenance {
   hostRocks?: Array<{ value: string; n: number }>;
 }
 
-const ROCK_CLASS_BY_TAG: Record<string, RockClass> = {
-  vol: 'Igneous Volcanic',
-  plu: 'Igneous Plutonic',
-  per: 'Ultramafic / Mantle',
-  met: 'Metamorphic',
-  sed: 'Sedimentary',
-};
+/**
+ * Rock class from the GEOROC group name. The library tags each group with
+ * its own name ("GABBRO"), not with a class, so the class is read from the
+ * name. Previously a lookup on legacy short tags ("plu", "per") never
+ * matched and every GEOROC rock, gabbro and dunite included, was filed as
+ * volcanic, which defeated the plutonic and metamorphic field contexts.
+ */
+const ULTRAMAFIC_NAMES = /PERIDOTITE|LHERZOLITE|HARZBURGITE|DUNITE|WEHRLITE|PYROXENITE|WEBSTERITE|HORNBLENDITE|KIMBERLITE/;
+const PLUTONIC_NAMES =
+  /GRANITE|GRANODIORITE|TONALITE|TRONDHJEMITE|DIORITE|GABBRO|NORITE|TROCTOLITE|ANORTHOSITE|SYENITE|MONZONITE|MONZOGABBRO|MONZODIORITE|DOLERITE|IJOLITE|PHOSCORITE|CARBONATITE/;
+const METAMORPHIC_NAMES = /ECLOGITE|AMPHIBOLITE|GRANULITE|GNEISS|SCHIST|MARBLE|QUARTZITE|HORNFELS|BLUESCHIST|GREENSCHIST/;
+
+export function rockClassFromName(name: string): RockClass {
+  const n = name.toUpperCase();
+  if (ULTRAMAFIC_NAMES.test(n)) return 'Ultramafic / Mantle';
+  if (METAMORPHIC_NAMES.test(n)) return 'Metamorphic';
+  if (PLUTONIC_NAMES.test(n)) return 'Igneous Plutonic';
+  return 'Igneous Volcanic';
+}
 
 /** Title-cases a GEOROC upper-case name: "ALKALI BASALT" -> "Alkali Basalt". */
 function titleCase(name: string): string {
@@ -100,8 +112,7 @@ function medians(oxides: Record<string, OxideStats>, key: 'p10' | 'p50' | 'p90')
 }
 
 export function toRockReference(e: GeorocEntry): RockReference {
-  const tag = e.groupTags[0]?.value ?? '';
-  const category = ROCK_CLASS_BY_TAG[tag] ?? 'Igneous Volcanic';
+  const category = rockClassFromName(e.name);
   const setting = e.tectonicSettings[0]?.value;
 
   return {

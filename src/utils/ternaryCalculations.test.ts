@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ROCKS_DATASET } from '../data/rocksDataset';
 import { OxideComposition } from '../types/geochem';
 import {
   AFM_IGNEOUS_CONFIG,
@@ -371,5 +372,35 @@ describe('ACF projection', () => {
         expect(inside.length, `A${a} C${b} F${c}`).toBeGreaterThanOrEqual(1);
       }
     }
+  });
+});
+
+describe('projections use shared iron, norm and IUGS rules', () => {
+  const um = TERNARY_SYSTEMS_MAP.ultramafic;
+  const byName = (re: RegExp) => ROCKS_DATASET.find((r) => re.test(r.name))!.meanOxides;
+
+  it('places reference ultramafic rocks in their own fields', () => {
+    expect(um.projectOxides(byName(/^Dunite/)).fieldName).toMatch(/Dunite/);
+    expect(um.projectOxides(byName(/^Harzburgite/)).fieldName).toMatch(/Harzburgite/);
+    expect(um.projectOxides(byName(/^Lherzolite/)).fieldName).toMatch(/Lherzolite/);
+  });
+
+  it('reads total iron on the pyroxene quadrilateral', () => {
+    const p = TERNARY_SYSTEMS_MAP['pyroxene-quad'].projectOxides({ SiO2: 52, MgO: 15, FeOT: 9, CaO: 21 });
+    expect(p.c).toBeGreaterThan(10); // Fs, previously 0 for FeOT analyses
+  });
+
+  it('applies the An05 rule on volcanic QAPF: sodic plagioclase counts as alkali feldspar', () => {
+    const albiteOnly = TERNARY_SYSTEMS_MAP['qapf-volcanic'].projectOxides(ALBITE);
+    expect(albiteOnly.c).toBeCloseTo(0, 6); // P apex empty, albite in A
+  });
+
+  it('projects the metamorphic AFM from muscovite: A = Al2O3 - 3 K2O, molar', () => {
+    const r = TERNARY_SYSTEMS_MAP['afm-metamorphic'].projectOxides({
+      Al2O3: 101.961, K2O: 94.196 / 6, FeOT: 71.844, MgO: 40.304,
+    });
+    // A = 1 - 0.5 = 0.5, F = 1, M = 1
+    expect(r.a).toBeCloseTo(20, 6);
+    expect(r.b).toBeCloseTo(40, 6);
   });
 });

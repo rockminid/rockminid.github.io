@@ -23,7 +23,10 @@ import pandas as pd
 from pyrolite.mineral.normative import CIPW_norm
 from pyrolite.util.classification import TAS
 
-warnings.filterwarnings("ignore")
+# pyrolite and pandas emit FutureWarnings about their own APIs; only those
+# are silenced, so numerical warnings (overflow, invalid values) still show.
+warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 df = pd.read_csv(sys.argv[1])
 OX = ["SiO2", "TiO2", "Al2O3", "Cr2O3", "FeO", "Fe2O3", "MnO", "NiO", "MgO", "CaO", "Na2O", "K2O", "P2O5"]
@@ -36,26 +39,48 @@ inside = (ours != "") & (py_field != "none") & (py_field != "nan")
 agree = (ours == py_field) & inside
 print(f"TAS: {agree.sum()} of {inside.sum()} analyses inside the diagram assigned to the same field "
       f"({100 * agree.sum() / inside.sum():.1f}%); {len(df) - inside.sum()} outside it in one or both programs")
-for _, r in df[inside & ~agree].iterrows():
+for idx, r in df[inside & ~agree].iterrows():
     print(f"   differs: SiO2 {r.SiO2:.2f}  alk {r.Na2O + r.K2O:.2f}  RockMin ID {r.tasCode}  "
-          f"pyrolite {py_field[_]}")
+          f"pyrolite {py_field.loc[idx]}")
 
 # --- CIPW ------------------------------------------------------------------
 t0 = time.perf_counter()
 norm = CIPW_norm(df[OX], Fe_correction=None)
 secs = time.perf_counter() - t0
+# The 13 common phases first (the published comparison), then the rarer ones
+# that only peralkaline, strongly undersaturated or oxidized rocks reach.
 PHASES = {"Q": "quartz", "C": "corundum", "Or": "orthoclase", "Ab": "albite", "An": "anorthite",
           "Ne": "nepheline", "Lc": "leucite", "Di": "diopside", "Hy": "hypersthene", "Ol": "olivine",
           "Mt": "magnetite", "Il": "ilmenite", "Ap": "apatite"}
+RARE_PHASES = {"Ac": "acmite", "Ns": "sodium metasilicate", "Ks": "potassium metasilicate",
+               "Wo": "wollastonite", "Cs": "dicalcium silicate", "Kp": "kaliophilite",
+               "Hm": "hematite", "Cm": "chromite", "Ru": "rutile"}
 print(f"\nCIPW: pyrolite normed {len(df)} analyses in {secs:.2f} s")
 print(f"{'phase':6}{'mean |diff|':>13}{'95th pct':>10}{'max':>8}   (wt%)")
-rows = []
-for ours_key, py_key in PHASES.items():
-    d = (df[f"n_{ours_key}"] - norm[py_key].astype(float)).abs()
-    rows.append(d)
-    print(f"{ours_key:6}{d.mean():13.3f}{np.percentile(d, 95):10.3f}{d.max():8.2f}")
-total_diff = sum(rows)
-print(f"sum of |diff| over these phases: median {total_diff.median():.2f}, 95th pct {np.percentile(total_diff, 95):.2f} wt%")
+
+def phase_diff(ours_key, py_key):
+    ours = df[f"n_{ours_key}"].fillna(0) if f"n_{ours_key}" in df else pd.Series(0.0, index=df.index)
+    theirs = norm[py_key].astype(float).fillna(0) if py_key in norm else pd.Series(0.0, index=df.index)
+    return (ours - theirs).abs()
+
+
+def report(phases, label):
+    rows = []
+    for ours_key, py_key in phases.items():
+        d = phase_diff(ours_key, py_key)
+        rows.append(d)
+        print(f"{ours_key:6}{d.mean():13.3f}{np.nanpercentile(d, 95):10.3f}{d.max():8.2f}   "
+              f"(non-zero in {(d > 0.005).sum()} analyses)")
+    total = sum(rows)
+    print(f"sum of |diff| over {label}: median {np.nanmedian(total):.2f}, "
+          f"95th pct {np.nanpercentile(total, 95):.2f} wt%")
+    print()
+    return total
+
+
+report(PHASES, "the 13 common phases")
+print("Rarer phases (peralkaline, undersaturated and oxidized compositions):")
+report({**PHASES, **RARE_PHASES}, "all 22 phases")
 
 
 def saturation(q, ol, ne):

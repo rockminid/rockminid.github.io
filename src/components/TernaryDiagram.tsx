@@ -202,6 +202,7 @@ export const TernaryDiagram: React.FC<TernaryDiagramProps> = ({
     document.body.appendChild(downloadLink);
     downloadLink.click();
     document.body.removeChild(downloadLink);
+    URL.revokeObjectURL(svgUrl);
   };
 
   // Generate grid lines

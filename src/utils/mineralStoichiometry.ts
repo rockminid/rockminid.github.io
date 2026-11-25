@@ -54,6 +54,12 @@ export interface StructureSpec {
    */
   tetrahedralSiOnly?: boolean;
   /**
+   * Tetrahedral sites available. Al fills them after Si and the rest goes
+   * octahedral, so an aluminous amphibole such as pargasite (Si6 Al3) has
+   * T = 8, not 9.
+   */
+  tetrahedralSites?: number;
+  /**
    * Estimate Fe3+ from charge balance (Droop 1987) when only total iron is
    * reported. Without it a magnetite analysed as FeOT gives 4 cations on
    * 4 O instead of 3 and fails its own structure.
@@ -81,24 +87,47 @@ export const STRUCTURE_SPECS: Record<string, StructureSpec> = {
   olivine: { oxygenBasis: 4, idealCations: 3, cationTolerance: 0.06, tetrahedral: { min: 0.94, max: 1.12 }, requires: [{ el: ['Mg', 'Fe2', 'Mn'], min: 1.5 }], formula: '(Mg,Fe)2SiO4' },
   forsterite: { oxygenBasis: 4, idealCations: 3, cationTolerance: 0.06, formula: 'Mg2SiO4' },
   fayalite: { oxygenBasis: 4, idealCations: 3, cationTolerance: 0.06, formula: 'Fe2SiO4' },
-  garnet: { oxygenBasis: 12, idealCations: 8, cationTolerance: 0.15, tetrahedral: { min: 2.85, max: 3.15 }, tetrahedralSiOnly: true, formula: 'X3Y2(SiO4)3' },
+  garnet: { oxygenBasis: 12, idealCations: 8, cationTolerance: 0.15, tetrahedral: { min: 2.85, max: 3.15 }, tetrahedralSiOnly: true, ferricByCharge: true, formula: 'X3Y2(SiO4)3' },
+  // Al2SiO5 polymorphs and staurolite would otherwise fall back to olivine.
+  kyanite: { oxygenBasis: 5, idealCations: 3, cationTolerance: 0.08, requires: [{ el: 'Al', min: 1.7 }], formula: 'Al2SiO5' },
+  staurolite: { oxygenBasis: 23, idealCations: 15, cationTolerance: 0.6, requires: [{ el: 'Al', min: 8 }], formula: 'Fe2Al9Si4O23(OH)' },
   zircon: { oxygenBasis: 4, idealCations: 2, cationTolerance: 0.08, formula: 'ZrSiO4' },
   titanite: { oxygenBasis: 5, idealCations: 3, cationTolerance: 0.12, formula: 'CaTiSiO5' },
   'titanite (sphene)': { oxygenBasis: 5, idealCations: 3, cationTolerance: 0.12, formula: 'CaTiSiO5' },
   sphene: { oxygenBasis: 5, idealCations: 3, cationTolerance: 0.12, formula: 'CaTiSiO5' },
 
   // --- Inosilicates ------------------------------------------------------
-  pyroxene: { oxygenBasis: 6, idealCations: 4, cationTolerance: 0.08, tetrahedral: { min: 1.9, max: 2.1 }, formula: 'XYZ2O6' },
-  clinopyroxene: { oxygenBasis: 6, idealCations: 4, cationTolerance: 0.08, tetrahedral: { min: 1.9, max: 2.1 }, formula: '(Ca,Mg,Fe)2Si2O6' },
-  orthopyroxene: { oxygenBasis: 6, idealCations: 4, cationTolerance: 0.08, tetrahedral: { min: 1.9, max: 2.1 }, formula: '(Mg,Fe)2Si2O6' },
-  augite: { oxygenBasis: 6, idealCations: 4, cationTolerance: 0.08, tetrahedral: { min: 1.9, max: 2.1 }, formula: '(Ca,Mg,Fe)2Si2O6' },
-  diopside: { oxygenBasis: 6, idealCations: 4, cationTolerance: 0.08, tetrahedral: { min: 1.9, max: 2.1 }, formula: 'CaMgSi2O6' },
-  enstatite: { oxygenBasis: 6, idealCations: 4, cationTolerance: 0.08, tetrahedral: { min: 1.9, max: 2.1 }, formula: 'Mg2Si2O6' },
-  omphacite: { oxygenBasis: 6, idealCations: 4, cationTolerance: 0.1, formula: '(Ca,Na)(Mg,Fe,Al)Si2O6' },
-  pigeonite: { oxygenBasis: 6, idealCations: 4, cationTolerance: 0.08, tetrahedral: { min: 1.9, max: 2.1 }, formula: '(Mg,Fe,Ca)2Si2O6' },
+  pyroxene: { oxygenBasis: 6, idealCations: 4, cationTolerance: 0.08, tetrahedral: { min: 1.9, max: 2.1 }, ferricByCharge: true, formula: 'XYZ2O6' },
+  clinopyroxene: { oxygenBasis: 6, idealCations: 4, cationTolerance: 0.08, tetrahedral: { min: 1.9, max: 2.1 }, ferricByCharge: true, formula: '(Ca,Mg,Fe)2Si2O6' },
+  orthopyroxene: { oxygenBasis: 6, idealCations: 4, cationTolerance: 0.08, tetrahedral: { min: 1.9, max: 2.1 }, ferricByCharge: true, formula: '(Mg,Fe)2Si2O6' },
+  augite: { oxygenBasis: 6, idealCations: 4, cationTolerance: 0.08, tetrahedral: { min: 1.9, max: 2.1 }, ferricByCharge: true, formula: '(Ca,Mg,Fe)2Si2O6' },
+  diopside: { oxygenBasis: 6, idealCations: 4, cationTolerance: 0.08, tetrahedral: { min: 1.9, max: 2.1 }, ferricByCharge: true, formula: 'CaMgSi2O6' },
+  enstatite: { oxygenBasis: 6, idealCations: 4, cationTolerance: 0.08, tetrahedral: { min: 1.9, max: 2.1 }, ferricByCharge: true, formula: 'Mg2Si2O6' },
+  // Sodic pyroxenes carry Al on M1, so Al fills T only after Si. Their Na
+  // requirement keeps a whole-rock basalt (about 4 cations on 6 O, too)
+  // from fitting once that split is allowed; ordinary pyroxenes keep the
+  // strict Si + Al test for the same reason. Exact names win over the
+  // generic "clinopyroxene" key.
+  omphacite: { oxygenBasis: 6, idealCations: 4, cationTolerance: 0.1, tetrahedral: { min: 1.9, max: 2.1 }, tetrahedralSites: 2, ferricByCharge: true, requires: [{ el: 'Na', min: 0.3 }], formula: '(Ca,Na)(Mg,Fe,Al)Si2O6' },
+  'omphacite (hp clinopyroxene)': { oxygenBasis: 6, idealCations: 4, cationTolerance: 0.1, tetrahedral: { min: 1.9, max: 2.1 }, tetrahedralSites: 2, ferricByCharge: true, requires: [{ el: 'Na', min: 0.3 }], formula: '(Ca,Na)(Mg,Fe,Al)Si2O6' },
+  jadeite: { oxygenBasis: 6, idealCations: 4, cationTolerance: 0.08, tetrahedral: { min: 1.9, max: 2.1 }, tetrahedralSites: 2, requires: [{ el: 'Na', min: 0.6 }], formula: 'NaAlSi2O6' },
+  'jadeite (na-clinopyroxene)': { oxygenBasis: 6, idealCations: 4, cationTolerance: 0.08, tetrahedral: { min: 1.9, max: 2.1 }, tetrahedralSites: 2, requires: [{ el: 'Na', min: 0.6 }], formula: 'NaAlSi2O6' },
+  pigeonite: { oxygenBasis: 6, idealCations: 4, cationTolerance: 0.08, tetrahedral: { min: 1.9, max: 2.1 }, ferricByCharge: true, formula: '(Mg,Fe,Ca)2Si2O6' },
   // Amphiboles are hydrous; the anhydrous analysis is normalized to 23 O.
   amphibole: { oxygenBasis: 23, idealCations: 15.5, cationTolerance: 0.7, tetrahedral: { min: 7.4, max: 8.4 }, requires: [{ el: ['Ca', 'Na', 'K'], min: 1.2 }], formula: 'A0-1B2C5T8O22(OH)2' },
   hornblende: { oxygenBasis: 23, idealCations: 15.5, cationTolerance: 0.7, tetrahedral: { min: 7.4, max: 8.4 }, requires: [{ el: 'Ca', min: 1.2 }], formula: 'Ca2(Mg,Fe,Al)5(Al,Si)8O22(OH)2' },
+  // Pargasite has Si6 Al3, so Al must be split between T and C sites. Its
+  // cation total (16, with a full A site) and A-site Na + K are what keep a
+  // whole-rock basalt from fitting it once that split is allowed.
+  pargasite: { oxygenBasis: 23, idealCations: 16, cationTolerance: 0.3, tetrahedral: { min: 7.4, max: 8.4 }, tetrahedralSites: 8, requires: [{ el: 'Ca', min: 1.5 }, { el: ['Na', 'K'], min: 0.5 }], formula: 'NaCa2(Mg4Al)(Si6Al2)O22(OH)2' },
+  // Named amphiboles that would otherwise fall back to the pyroxene spec.
+  // GEOROC amphibole group names.
+  tschermakite: { oxygenBasis: 23, idealCations: 15.5, cationTolerance: 0.7, tetrahedral: { min: 7.4, max: 8.4 }, requires: [{ el: 'Ca', min: 1.2 }], formula: 'Ca2(Mg3Al2)(Si6Al2)O22(OH)2' },
+  hastingsite: { oxygenBasis: 23, idealCations: 15.5, cationTolerance: 0.7, tetrahedral: { min: 7.4, max: 8.4 }, requires: [{ el: 'Ca', min: 1.2 }], formula: 'NaCa2(Fe4Fe3+)(Si6Al2)O22(OH)2' },
+  edenite: { oxygenBasis: 23, idealCations: 15.5, cationTolerance: 0.7, tetrahedral: { min: 7.4, max: 8.4 }, requires: [{ el: 'Ca', min: 1.2 }], formula: 'NaCa2Mg5(Si7Al)O22(OH)2' },
+  tremolite: { oxygenBasis: 23, idealCations: 15, cationTolerance: 0.5, tetrahedral: { min: 7.4, max: 8.4 }, requires: [{ el: 'Ca', min: 1.5 }], formula: 'Ca2Mg5Si8O22(OH)2' },
+  actinolite: { oxygenBasis: 23, idealCations: 15, cationTolerance: 0.5, tetrahedral: { min: 7.4, max: 8.4 }, requires: [{ el: 'Ca', min: 1.5 }], formula: 'Ca2(Mg,Fe)5Si8O22(OH)2' },
+  glaucophane: { oxygenBasis: 23, idealCations: 15, cationTolerance: 0.5, tetrahedral: { min: 7.4, max: 8.4 }, tetrahedralSites: 8, requires: [{ el: 'Na', min: 1.5 }, { el: ['Mg', 'Fe2'], min: 2.5 }], formula: 'Na2(Mg3Al2)Si8O22(OH)2' },
   kaersutite: { oxygenBasis: 23, idealCations: 15.5, cationTolerance: 0.7, tetrahedral: { min: 7.4, max: 8.4 }, requires: [{ el: 'Ca', min: 1.2 }, { el: 'Ti', min: 0.2 }], formula: 'NaCa2(Mg,Fe,Ti)5Si6Al2O23' },
 
   // --- Tectosilicates ----------------------------------------------------
@@ -135,12 +164,48 @@ export const STRUCTURE_SPECS: Record<string, StructureSpec> = {
   hematite: { oxygenBasis: 3, idealCations: 2, cationTolerance: 0.07, ferricByCharge: true, formula: 'Fe2O3' },
   perovskite: { oxygenBasis: 3, idealCations: 2, cationTolerance: 0.1, formula: 'CaTiO3' },
 
+  // --- Extended set: species the group fallbacks would misjudge ----------
+  // Ca and Mn olivines: the generic olivine spec requires Mg + Fe >= 1.5.
+  monticellite: { oxygenBasis: 4, idealCations: 3, cationTolerance: 0.08, tetrahedral: { min: 0.94, max: 1.12 }, formula: 'CaMgSiO4' },
+  tephroite: { oxygenBasis: 4, idealCations: 3, cationTolerance: 0.08, tetrahedral: { min: 0.94, max: 1.12 }, formula: 'Mn2SiO4' },
+  // Anhydrous bases for hydrous phases (OH and H2O are not carried as oxides).
+  chloritoid: { oxygenBasis: 6, idealCations: 4, cationTolerance: 0.15, formula: 'FeAl2SiO5(OH)2' },
+  epidote: { oxygenBasis: 12.5, idealCations: 8, cationTolerance: 0.3, requires: [{ el: 'Ca', min: 1.6 }], formula: 'Ca2(Al,Fe)3Si3O12(OH)' },
+  zoisite: { oxygenBasis: 12.5, idealCations: 8, cationTolerance: 0.3, requires: [{ el: 'Ca', min: 1.6 }], formula: 'Ca2Al3Si3O12(OH)' },
+  lawsonite: { oxygenBasis: 8, idealCations: 5, cationTolerance: 0.2, requires: [{ el: 'Ca', min: 0.8 }], formula: 'CaAl2Si2O7(OH)2·H2O' },
+  melilite: { oxygenBasis: 7, idealCations: 5, cationTolerance: 0.15, requires: [{ el: 'Ca', min: 1.6 }], formula: 'Ca2(Mg,Al)(Al,Si)2O7' },
+  // Requires Mg + Fe: on 18 O a plagioclase also gives 11 cations.
+  cordierite: { oxygenBasis: 18, idealCations: 11, cationTolerance: 0.3, requires: [{ el: ['Mg', 'Fe2'], min: 1.4 }], formula: 'Mg2Al4Si5O18' },
+  // Ca-poor amphiboles: the generic spec requires Ca + Na + K >= 1.2.
+  cummingtonite: { oxygenBasis: 23, idealCations: 15, cationTolerance: 0.5, tetrahedral: { min: 7.4, max: 8.4 }, tetrahedralSites: 8, requires: [{ el: ['Mg', 'Fe2'], min: 5 }], formula: '(Mg,Fe)7Si8O22(OH)2' },
+  anthophyllite: { oxygenBasis: 23, idealCations: 15, cationTolerance: 0.5, tetrahedral: { min: 7.4, max: 8.4 }, tetrahedralSites: 8, requires: [{ el: ['Mg', 'Fe2'], min: 5 }], formula: '(Mg,Fe)7Si8O22(OH)2' },
+  analcime: { oxygenBasis: 6, idealCations: 4, cationTolerance: 0.15, requires: [{ el: 'Na', min: 0.7 }], formula: 'NaAlSi2O6·H2O' },
+  pyrophyllite: { oxygenBasis: 22, idealCations: 12, cationTolerance: 0.4, formula: 'Al2Si4O10(OH)2' },
+  prehnite: { oxygenBasis: 11, idealCations: 7, cationTolerance: 0.2, requires: [{ el: 'Ca', min: 1.6 }], formula: 'Ca2Al2Si3O10(OH)2' },
+  corundum: { oxygenBasis: 3, idealCations: 2, cationTolerance: 0.05, formula: 'Al2O3' },
+  periclase: { oxygenBasis: 1, idealCations: 1, cationTolerance: 0.05, formula: 'MgO' },
+  merrillite: { oxygenBasis: 28, idealCations: 18, cationTolerance: 0.5, requires: [{ el: 'P', min: 6 }, { el: 'Ca', min: 7 }], formula: 'Ca9NaMg(PO4)7' },
+
   // --- Others ------------------------------------------------------------
   // 12.5 O: the oxide-only basis of Ca5(PO4)3X, since F and Cl are not
   // carried as oxides. On 12 O a stoichiometric apatite gives 7.68 cations.
   apatite: { oxygenBasis: 12.5, idealCations: 8, cationTolerance: 0.3, requires: [{ el: 'P', min: 2.0 }, { el: 'Ca', min: 3.5 }], formula: 'Ca5(PO4)3(F,Cl,OH)' },
-  calcite: { oxygenBasis: 3, idealCations: 2, cationTolerance: 0.15, formula: 'CaCO3' },
-  dolomite: { oxygenBasis: 6, idealCations: 4, cationTolerance: 0.2, formula: 'CaMg(CO3)2' },
+  // Carbonates on an oxide-only basis: CO2 is rarely measured, and without
+  // it CaCO3 is CaO, one cation per oxygen. On 3 O a calcite analysis gave
+  // 3 cations against an ideal of 2 and never fitted its own structure. The
+  // low analytical total then separates a carbonate from an oxide.
+  calcite: { oxygenBasis: 1, idealCations: 1, cationTolerance: 0.05, requires: [{ el: 'Ca', min: 0.8 }], formula: 'CaCO3' },
+  dolomite: { oxygenBasis: 2, idealCations: 2, cationTolerance: 0.1, requires: [{ el: 'Ca', min: 0.7 }, { el: ['Mg', 'Fe2'], min: 0.5 }], formula: 'CaMg(CO3)2' },
+  ankerite: { oxygenBasis: 2, idealCations: 2, cationTolerance: 0.1, requires: [{ el: 'Ca', min: 0.7 }, { el: ['Mg', 'Fe2'], min: 0.5 }], formula: 'CaFe(CO3)2' },
+  carbonate: { oxygenBasis: 1, idealCations: 1, cationTolerance: 0.05, formula: 'MCO3' },
+  magnesite: { oxygenBasis: 1, idealCations: 1, cationTolerance: 0.05, requires: [{ el: 'Mg', min: 0.7 }], formula: 'MgCO3' },
+  siderite: { oxygenBasis: 1, idealCations: 1, cationTolerance: 0.05, requires: [{ el: 'Fe2', min: 0.7 }], formula: 'FeCO3' },
+  rhodochrosite: { oxygenBasis: 1, idealCations: 1, cationTolerance: 0.05, requires: [{ el: 'Mn', min: 0.7 }], formula: 'MnCO3' },
+  // Hydrous sheet silicates on their anhydrous oxygen basis.
+  kaolinite: { oxygenBasis: 7, idealCations: 4, cationTolerance: 0.15, formula: 'Al2Si2O5(OH)4' },
+  serpentine: { oxygenBasis: 7, idealCations: 5, cationTolerance: 0.2, requires: [{ el: ['Mg', 'Fe2'], min: 2.4 }], formula: 'Mg3Si2O5(OH)4' },
+  talc: { oxygenBasis: 11, idealCations: 7, cationTolerance: 0.2, requires: [{ el: ['Mg', 'Fe2'], min: 2.4 }], formula: 'Mg3Si4O10(OH)2' },
+  chlorite: { oxygenBasis: 14, idealCations: 10, cationTolerance: 0.4, requires: [{ el: ['Mg', 'Fe2'], min: 3 }], formula: '(Mg,Fe)5Al(AlSi3)O10(OH)8' },
 };
 
 /** Group-level fallbacks when the species is not listed. */
@@ -151,7 +216,7 @@ const GROUP_SPECS: Record<string, string> = {
   Phyllosilicate: 'mica',
   Oxide: 'spinel',
   Phosphate: 'apatite',
-  Carbonate: 'calcite',
+  Carbonate: 'carbonate',
 };
 
 export interface StructuralFormula {
@@ -235,11 +300,13 @@ export function structuralFormula(
 
   // Droop (1987): with all iron as Fe2+, a cation excess S > T on X oxygens
   // means some iron is ferric, Fe3+ = 2X(1 - T/S) on a T-cation formula.
-  // Applied only when the iron present can absorb the whole excess.
+  // Applied only when the iron present can absorb the whole excess, with a
+  // 2% margin: in an all-ferric phase (aegirine, andradite, hematite) the
+  // estimate lands a hair above the iron available through rounding alone.
   if (spec.ferricByCharge && !hasBoth && cationSum > spec.idealCations && raw.Fe2) {
     const t = spec.idealCations / cationSum;
-    const fe3 = 2 * spec.oxygenBasis * (1 - t);
-    if (fe3 <= raw.Fe2 * t + 1e-9) {
+    const fe3 = Math.min(2 * spec.oxygenBasis * (1 - t), raw.Fe2 * t);
+    if (2 * spec.oxygenBasis * (1 - t) <= raw.Fe2 * t * 1.02) {
       for (const el of Object.keys(raw)) raw[el] *= t;
       raw.Fe2 -= fe3;
       raw.Fe3 = (raw.Fe3 || 0) + fe3;
@@ -250,7 +317,8 @@ export function structuralFormula(
   const apfu: Record<string, number> = {};
   for (const [el, v] of Object.entries(raw)) apfu[el] = Number(v.toFixed(4));
 
-  const tetrahedral = (apfu.Si || 0) + (spec.tetrahedralSiOnly ? 0 : apfu.Al || 0);
+  const siAl = (apfu.Si || 0) + (spec.tetrahedralSiOnly ? 0 : apfu.Al || 0);
+  const tetrahedral = spec.tetrahedralSites ? Math.min(siAl, spec.tetrahedralSites) : siAl;
   const deviation = Math.abs(cationSum - spec.idealCations);
 
   // Fit falls off smoothly once the misfit exceeds the tolerance.

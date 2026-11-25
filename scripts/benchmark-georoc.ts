@@ -55,7 +55,17 @@ const num = (v: unknown) => {
   return Number.isFinite(n) && n >= 0 && n < 100 ? n : undefined;
 };
 
-/** Same total as the ingest script: majors plus iron counted once. */
+/**
+ * Test-set selection: majors plus iron counted once, 97-103 wt%.
+ *
+ * Deliberately NOT the ingester's filter (scripts/lib/georoc-filters.mjs).
+ * This picks the withheld analyses the benchmark scores, and it is frozen at
+ * the selection used for the published v2.5.2 results (Tiwari & Ghosh 2026,
+ * SoftwareX 36, 103264), so later versions are scored on exactly the same
+ * 1,239 minerals and 1,000 rocks. The library side does use the new filters,
+ * through the ingester. Changing this would change the test set and make
+ * before/after comparisons meaningless.
+ */
 function total(rec: Record<string, number>) {
   let t = MAJORS.reduce((a, o) => a + (rec[o] ?? 0), 0);
   if (rec.FeO !== undefined || rec.Fe2O3 !== undefined) t += (rec.FeO ?? 0) + (rec.Fe2O3 ?? 0);

@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { mapHeaderToGeochem, parseCSV, processBatchCSV } from './csv';
+import {
+  autoColumnMap,
+  exportBatchComprehensiveCSV,
+  mapHeaderToGeochem,
+  parseCellValue,
+  parseCSV,
+  processBatchCSV,
+  SAMPLE_BENCHMARK_CSVS,
+} from './csv';
 
 /**
  * Header mapping for batch CSV import.
@@ -77,5 +85,81 @@ describe('batch rows', () => {
     expect('Al2O3' in row.rawOxides).toBe(false);
     expect('MgO' in row.rawOxides).toBe(false);
     expect('K2O' in row.rawOxides).toBe(false);
+  });
+});
+
+describe('below-detection values and column mapping', () => {
+  it('reads below-detection codes as bdl, not zero and not negative', () => {
+    for (const v of ['<0.01', '< 0.05', 'bdl', 'b.d.l.', 'n.d.', 'ND', '-1', '-0.01', '<LOD', '-'])
+      expect(parseCellValue(v), v).toBe('bdl');
+    expect(parseCellValue('0,52')).toBe(0.52);
+    expect(parseCellValue('49.8')).toBe(49.8);
+    expect(parseCellValue('')).toBeUndefined();
+    expect(parseCellValue('abc')).toBeUndefined();
+  });
+
+  it('leaves bdl oxides out of the analysis and says so in the notes', () => {
+    const [r] = processBatchCSV([{ Sample: 'A', SiO2: '50', Al2O3: '15', FeOT: '10', MgO: '8', CaO: '11', Na2O: '2.5', K2O: '<0.01' }]);
+    expect(r.rawOxides.K2O).toBeUndefined();
+    expect(r.notes).toMatch(/below detection.*K2O/);
+  });
+
+  it('applies a user column map, including assigning an unrecognised header', () => {
+    const rows = [{ Spec: 'X', Silica: '50', Al2O3: '15', FeOT: '10', MgO: '8', CaO: '11', Na2O: '2.5', K2O: '0.3' }];
+    const auto = autoColumnMap(Object.keys(rows[0]));
+    expect(auto.Silica).toBeNull();
+    const [r] = processBatchCSV(rows, 10, { ...auto, Silica: 'SiO2', Spec: 'sample_id' });
+    expect(r.rawOxides.SiO2).toBe(50);
+    expect(r.sampleId).toBe('X');
+  });
+});
+
+describe('trace element columns', () => {
+  it('reads trace columns in ppm and keeps them out of the oxides', () => {
+    const [r] = processBatchCSV([
+      { Sample: 'T', SiO2: '50', Al2O3: '15', FeOT: '10', MgO: '8', CaO: '11', Na2O: '2.5', K2O: '0.3', La: '3.5', 'Yb (ppm)': '3.0', Nb: '<0.1' },
+    ]);
+    expect(r.traceElements).toEqual({ La: 3.5, Yb: 3.0 });
+    expect(r.rawOxides.La).toBeUndefined();
+    expect(autoColumnMap(['La', 'Zr_ppm', 'Silica'])).toEqual({ La: 'trace:La', Zr_ppm: 'trace:Zr', Silica: null });
+  });
+});
+
+describe('RFC 4180 parsing', () => {
+  it('keeps apostrophes, quoted commas, escaped quotes and quoted newlines', () => {
+    const { headers, rows } = parseCSV(
+      'Sample,Locality,SiO2\n' +
+        "A,Devil's Tower,50.1\n" +
+        'B,"Etna, Sicily",48.2\n' +
+        'C,"the ""Big"" one",47\n' +
+        'D,"line one\nline two",46\n'
+    );
+    expect(headers).toEqual(['Sample', 'Locality', 'SiO2']);
+    expect(rows.map((r) => r.Locality)).toEqual([
+      "Devil's Tower",
+      'Etna, Sicily',
+      'the "Big" one',
+      'line one\nline two',
+    ]);
+    expect(rows.map((r) => r.SiO2)).toEqual(['50.1', '48.2', '47', '46']);
+  });
+
+  it('detects semicolon and tab delimiters and strips a byte-order mark', () => {
+    expect(parseCSV('\uFEFFSample;SiO2\nX;50\n').rows).toEqual([{ Sample: 'X', SiO2: '50' }]);
+    expect(parseCSV('Sample\tSiO2\r\nX\t50\r\n').rows).toEqual([{ Sample: 'X', SiO2: '50' }]);
+  });
+});
+
+describe('comprehensive export', () => {
+  it('writes every CIPW phase, one value per header, and no APFU for whole rocks', () => {
+    const results = processBatchCSV(parseCSV(SAMPLE_BENCHMARK_CSVS.georocVolcanicSuite).rows);
+    const csv = exportBatchComprehensiveCSV(results);
+    const lines = parseCSV(csv);
+    expect(lines.headers).toEqual(expect.arrayContaining(['CIPW_Ac', 'CIPW_Hm', 'CIPW_Cs', 'CIPW_Cc', 'Fe2O3T_raw', 'CIPW_Total']));
+    const raw = csv.split('\n');
+    const n = raw[0].split(',').length;
+    for (const r of lines.rows) expect(Object.keys(r)).toHaveLength(n);
+    // whole rocks: no structural formula columns
+    expect(lines.rows[0].Si_apfu).toBe('');
   });
 });

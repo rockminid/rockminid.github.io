@@ -40,6 +40,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       root.classList.add('light');
       root.style.colorScheme = 'light';
     }
+    // Keep the mobile browser chrome in step with the page.
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', theme === 'dark' ? '#1c1917' : '#fafaf9');
 
     try {
       localStorage.setItem(THEME_STORAGE_KEY, theme);

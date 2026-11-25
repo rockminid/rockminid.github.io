@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { calculateCationNorm } from './cipw';
 import {
   identifyGeochemicalSample,
   calculateCIPWNorm,
@@ -546,5 +547,61 @@ describe('alteration and silica-deficit flags', () => {
 
   it('does not raise silica-deficit for an ordinary basalt', () => {
     expect(codes(BASALT)).not.toContain('silica-deficit');
+  });
+});
+
+describe('field context (rockContext)', () => {
+  const morb = ROCKS_DATASET.find((r) => /N-MORB/.test(r.name))!.meanOxides;
+
+  it('names chemically equivalent rocks of another kind when no context is given', () => {
+    const r = identifyGeochemicalSample(morb, 'MORB');
+    expect(r.isochemicalAlternatives).toEqual(expect.arrayContaining(['Gabbro (Tholeiitic)']));
+    expect(r.isochemicalAlternatives).not.toContain(r.topRocks[0].reference.name);
+  });
+
+  it('ranks rocks of the stated kind first, in score order', () => {
+    const r = identifyGeochemicalSample(morb, 'MORB', 'oxide', { rockContext: 'plutonic' });
+    expect((r.topRocks[0].reference as any).category).toBe('Igneous Plutonic');
+    expect(r.bestOverall.reference.name).toBe('Gabbro (Tholeiitic)');
+    expect(r.isochemicalAlternatives).toEqual([]);
+  });
+
+  it('leaves scores unchanged; only the order moves', () => {
+    const plain = identifyGeochemicalSample(morb, 'MORB');
+    const meta = identifyGeochemicalSample(morb, 'MORB', 'oxide', { rockContext: 'metamorphic' });
+    const score = (r: typeof plain, name: string) =>
+      [...r.topRocks].find((m) => m.reference.name === name)?.similarity;
+    expect(score(meta, 'Eclogite (HP/UHP Metabasite)')).toBe(score(plain, 'Eclogite (HP/UHP Metabasite)'));
+  });
+});
+
+describe('cation norm phase units', () => {
+  it('counts olivine as three cations per (Mg,Fe)2SiO4, not per MgO', () => {
+    // 3 MgO + 2 SiO2 = one Mg2SiO4 (3 cations) + one MgSiO3 (2 cations).
+    const r = calculateCationNorm({ MgO: 3 * 40.304, SiO2: 2 * 60.084 });
+    expect(r.percent.Ol).toBeCloseTo(60, 6);
+    expect(r.percent.Hy).toBeCloseTo(40, 6);
+  });
+
+  it('counts larnite as three cations per Ca2SiO4', () => {
+    // Ca-rich, silica-poor: CaO beyond wollastonite forms larnite.
+    const r = calculateCationNorm({ CaO: 2 * 56.077, SiO2: 60.084 });
+    expect(r.percent.Cs).toBeCloseTo(100, 6);
+    const w = calculateCIPWNorm({ CaO: 2 * 56.077, SiO2: 60.084 });
+    expect(w.Cs as number).toBeGreaterThan(99);
+  });
+});
+
+describe('iron in totals and rock matching', () => {
+  it('counts Fe2O3 reported alone in the analytical total', () => {
+    expect(analyticalTotal({ SiO2: 50, Al2O3: 15, Fe2O3: 11, MgO: 8, CaO: 11, Na2O: 2.5, K2O: 0.5 })).toBeCloseTo(98, 6);
+  });
+
+  it('compares iron for a reference that gives FeO and Fe2O3 but no FeOT', () => {
+    const ref = ROCKS_DATASET.find((r) => r.meanOxides.FeOT === undefined && r.meanOxides.FeO !== undefined)!;
+    const iron = (r: ReturnType<typeof identifyGeochemicalSample>) =>
+      r.topRocks.find((m) => m.reference.id === ref.id)?.contributions?.some((c) => c.oxide === 'FeOT');
+    const r = identifyGeochemicalSample(ref.meanOxides, 'x', 'oxide', { sampleType: 'whole_rock' });
+    expect(iron(r)).toBe(true);
   });
 });

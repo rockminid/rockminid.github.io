@@ -1,4 +1,5 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
+import { PAPER_DOI, REPO_URL } from './version';
 import { Navbar, ActiveTab } from './components/Navbar';
 import { SingleAnalyzer } from './components/SingleAnalyzer';
 
@@ -209,6 +210,38 @@ export default function App() {
             onOpenMobileApp={() => setIsMobileModalOpen(true)}
           />
 
+          {/* Publication and source, one quiet line under the navigation */}
+          <div className="w-full bg-stone-900/60 border-b border-stone-800 text-xs text-stone-400">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1.5 flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span>
+                Published in{' '}
+                <a
+                  href={`https://doi.org/${PAPER_DOI}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-amber-400 hover:text-amber-300 font-medium underline"
+                >
+                  SoftwareX 36 (2026) 103264
+                </a>{' '}
+                <span className="hidden sm:inline">(Tiwari &amp; Ghosh, open access)</span>
+              </span>
+              <a
+                href={REPO_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-amber-400 hover:text-amber-300 font-medium underline"
+              >
+                Source code on GitHub
+              </a>
+              <button
+                onClick={() => openDocumentation('cite')}
+                className="hover:text-amber-300 font-medium underline cursor-pointer"
+              >
+                How to cite
+              </button>
+            </div>
+          </div>
+
           {/* Main Content Area */}
           <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
             {activeTab === 'single' && (
@@ -373,6 +406,24 @@ export default function App() {
                 >
                   How to Cite
                 </button>
+                <span>&bull;</span>
+                <a
+                  href={`https://doi.org/${PAPER_DOI}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-amber-300 transition-colors font-medium"
+                >
+                  Paper
+                </a>
+                <span>&bull;</span>
+                <a
+                  href={REPO_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-amber-300 transition-colors font-medium"
+                >
+                  GitHub
+                </a>
               </div>
             </div>
           </footer>

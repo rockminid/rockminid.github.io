@@ -114,6 +114,14 @@ export function calculateCIPWNorm(
   oxides: OxideComposition,
   options: CIPWOptions = {}
 ): CIPWNorm {
+  return computeNorms(oxides, options).norm;
+}
+
+/** The weight norm and the cation norm from one pass, with no shared state. */
+function computeNorms(
+  oxides: OxideComposition,
+  options: CIPWOptions
+): { norm: CIPWNorm; cation: CationNorm } {
   const sio2Wt = val(oxides.SiO2);
   const ratio =
     options.fe2o3FeoRatio !== undefined
@@ -377,7 +385,8 @@ export function calculateCIPWNorm(
   if (ol > 0) {
     const drawn = mafic.take(ol);
     add('Ol', drawn.mass + ol * 0.5 * FW.SiO2);
-    addMol('Ol', ol);
+    // `ol` counts (Mg,Fe)O; one (Mg,Fe)2SiO4 formula unit holds two.
+    addMol('Ol', ol / 2);
   }
   if (quartz > 0) { add('Q', quartz * FW.SiO2); addMol('Q', quartz); }
 
@@ -395,9 +404,7 @@ export function calculateCIPWNorm(
   norm.ironBasis = iron.basis;
   norm.ironSplitEstimated = iron.isSplitEstimated;
 
-  lastCationNorm = cationNormFrom(molesOf);
-
-  return norm;
+  return { norm, cation: cationNormFrom(molesOf) };
 }
 
 /** Cations per formula unit of each normative phase. */
@@ -415,6 +422,7 @@ const CATIONS_PER_FORMULA: Record<string, number> = {
   Ks: 3,     // K2SiO3
   Di: 4,     // Ca(Mg,Fe)Si2O6
   Wo: 2,     // CaSiO3
+  Cs: 3,     // Ca2SiO4 (larnite)
   Hy: 2,     // (Mg,Fe)SiO3
   Ol: 3,     // (Mg,Fe)2SiO4
   Mt: 3,     // Fe3O4
@@ -471,8 +479,6 @@ export interface CationNorm {
   abPrime: number;
 }
 
-let lastCationNorm: CationNorm = { percent: {}, colorIndex: 0, abPrime: 0 };
-
 /**
  * Computes the cation norm for a composition.
  * Runs the weight norm internally and converts the phase amounts.
@@ -481,8 +487,7 @@ export function calculateCationNorm(
   oxides: OxideComposition,
   options: CIPWOptions = {}
 ): CationNorm {
-  calculateCIPWNorm(oxides, options);
-  return lastCationNorm;
+  return computeNorms(oxides, options).cation;
 }
 
 /**

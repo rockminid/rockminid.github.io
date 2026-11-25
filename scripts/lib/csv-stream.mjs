@@ -30,7 +30,7 @@ export async function* readCsvRows(filePath, { encoding = 'utf8' } = {}) {
 
       if (first) {
         first = false;
-        if (c === '﻿') continue; // strip BOM
+        if (c.charCodeAt(0) === 0xfeff) continue; // strip byte-order mark (U+FEFF)
       }
 
       if (skipLf) {
@@ -81,6 +81,11 @@ export async function* readCsvRows(filePath, { encoding = 'utf8' } = {}) {
     }
   }
 
+  // A quote still open at end of file means the file was truncated or is
+  // malformed; yielding the partial row would pass corrupt data on silently.
+  if (inQuotes) {
+    throw new Error(`${filePath}: unterminated quoted field at end of file (truncated or malformed CSV)`);
+  }
   if (field.length > 0 || row.length > 0) {
     row.push(field);
     yield row;

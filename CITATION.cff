@@ -13,7 +13,7 @@ abstract: >-
   Rocks and minerals are identified from major-element compositions using a
   full CIPW weight and cation norm, the IUGS total alkali-silica classification
   with its sub-root naming rules, the published Irvine & Baragar (1971)
-  discriminant equations, ten ternary projections, and structural-formula
+  discriminant equations, eleven ternary projections, and structural-formula
   (APFU) mineral identification. Reference distributions are derived from the
   full GEOROC archives. No AI is involved in classification: every
   identification, field assignment and index is a reproducible, unit-tested
@@ -25,8 +25,8 @@ authors:
     family-names: Tiwari
     affiliation: Indian Institute of Technology Kharagpur, India
     website: 'https://kishangeo.github.io'
-version: 2.5.2
-date-released: '2026-11-03'
+version: 2.6.0
+date-released: '2026-11-25'
 doi: 10.5281/zenodo.22875578
 identifiers:
   - type: doi

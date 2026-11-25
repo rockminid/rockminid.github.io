@@ -1,4 +1,5 @@
 import { afterAll, describe, expect, it } from 'vitest';
+import { MINERALS_DATASET } from '../data/mineralsDataset';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
@@ -239,5 +240,26 @@ describe('sample-type inference from the structural fit', () => {
     );
     expect(r.bestOverall.type).toBe('rock');
     expect(r.sampleTypeWasInferred).toBe(false);
+  });
+});
+
+describe('every curated mineral identifies itself', () => {
+  // Pairs that are chemically identical once water is removed, so no
+  // major-element method can separate them; the higher total of the
+  // anhydrous phase does not exceed the 8 wt% total tolerance.
+  const IDENTICAL_ANHYDROUS: Record<string, string> = { 'min-analcime': 'min-jadeite' };
+
+  it.each(MINERALS_DATASET.map((m) => [m.name, m] as const))('%s', (_name, m) => {
+    const r = identifyGeochemicalSample(m.idealOxides, m.name, 'oxide', { sampleType: 'mineral' });
+    const top = r.topMinerals[0].reference.id;
+    expect([m.id, IDENTICAL_ANHYDROUS[m.id]]).toContain(top);
+  });
+
+  it('separates a carbonate from the oxide of the same cation by its low total', () => {
+    // Microprobe calcite: CaO only, CO2 not measured, total ~56 wt%.
+    const r = identifyGeochemicalSample({ CaO: 55.8, MgO: 0.4 }, 'Cc', 'oxide', { sampleType: 'mineral' });
+    expect(r.topMinerals[0].reference.name).toBe('Calcite');
+    const p = identifyGeochemicalSample({ MgO: 99.6, FeO: 0.3 }, 'Per', 'oxide', { sampleType: 'mineral' });
+    expect(p.topMinerals[0].reference.name).toBe('Periclase');
   });
 });

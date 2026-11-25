@@ -81,10 +81,57 @@ export function analyticalTotal(oxides: OxideComposition): number {
   } else if (iron.basis === 'FeOT') {
     total += oxides.FeOT || 0;
   } else if (iron.basis === 'Fe2O3T') {
-    total += oxides.Fe2O3T || 0;
+    // Fe2O3 reported alone is read as total iron (basis Fe2O3T) and lives in
+    // the Fe2O3 field, so fall back to it; reading Fe2O3T alone dropped all
+    // of its iron and flagged every such XRF analysis as a low total.
+    total += oxides.Fe2O3T ?? oxides.Fe2O3 ?? 0;
   }
 
   return Number(total.toFixed(3));
+}
+
+/**
+ * Analytical total without the components a microprobe does not measure:
+ * water and CO2. SO3, S and the halogens are measured and stay in, so an
+ * anhydrite (CaO + SO3, 100 wt%) is not confused with gypsum (79 wt%).
+ */
+const UNMEASURED = ['LOI', 'H2O', 'H2O+', 'H2O-', 'CO2'];
+export function anhydrousTotal(oxides: OxideComposition): number {
+  const solids: OxideComposition = {};
+  for (const [k, v] of Object.entries(oxides)) if (!UNMEASURED.includes(k)) solids[k] = v;
+  return analyticalTotal(solids);
+}
+
+/**
+ * Half-width of the band within which an analysis's anhydrous total is taken
+ * to agree with a mineral's. Microprobe totals of good analyses scatter by a
+ * few wt%, and a partial analysis can miss more; 8 wt% tolerates both while
+ * still separating calcite (56 wt% anhydrous) from periclase or lime (100).
+ */
+const TOTAL_BAND = 8;
+
+/**
+ * 0-1 agreement between the analysis's anhydrous total and the mineral's.
+ * A carbonate, sulfate or hydrous mineral analysed without its CO2, SO3 or
+ * H2O totals well below 100 wt%; once both sides are compared volatile-free
+ * that low total is the only thing that separates magnesite from periclase,
+ * calcite from lime and kaolinite from an anhydrous aluminosilicate.
+ */
+function totalAgreement(sampleTotal: number, mineralTotal: number): number {
+  const excess = Math.abs(sampleTotal - mineralTotal) - TOTAL_BAND;
+  return excess <= 0 ? 1 : Math.exp(-((excess / TOTAL_BAND) ** 2));
+}
+
+const anhydrousIdeal = new WeakMap<MineralReference, { oxides: OxideComposition; total: number }>();
+
+/** The reference on the same volatile-free basis as the sample, cached. */
+function idealVolatileFree(mineral: MineralReference) {
+  let v = anhydrousIdeal.get(mineral);
+  if (!v) {
+    v = { oxides: normalizeOxides(mineral.idealOxides, true).normalized, total: anhydrousTotal(mineral.idealOxides) };
+    anhydrousIdeal.set(mineral, v);
+  }
+  return v;
 }
 
 /**
@@ -211,8 +258,13 @@ export function assessDataQuality(
     });
   }
 
+  const has = (o: string) => typeof oxides[o] === 'number' && Number.isFinite(oxides[o] as number);
+  // A total-iron value (FeOT or Fe2O3T) describes the iron as fully as FeO
+  // and Fe2O3 do for matching, so it fills both iron slots. Counting only the
+  // FeO and Fe2O3 fields flagged every FeOT analysis as sparse.
+  const totalIron = has('FeOT') || has('Fe2O3T');
   const measured = MAJOR_OXIDES.filter(
-    (o) => typeof oxides[o] === 'number' && Number.isFinite(oxides[o] as number)
+    (o) => has(o) || (totalIron && (o === 'FeO' || o === 'Fe2O3'))
   ).length;
   if (measured < 8) {
     flags.push({
@@ -312,13 +364,20 @@ function scoreRock(
   let totalWeight = 0;
   let analytesUsed = 0;
 
-  for (const [oxide, refValRaw] of Object.entries(ref.meanOxides)) {
-    if (VOLATILES.includes(oxide)) continue;
-    // Iron is compared once, as total iron.
-    if (oxide === 'FeO' || oxide === 'Fe2O3') continue;
+  // Iron is compared once, as total iron, whatever fields the reference
+  // uses: keying it to an "FeOT" entry skipped iron entirely for curated
+  // references that give FeO and Fe2O3 instead.
+  const ironKeys = ['FeO', 'Fe2O3', 'FeOT', 'Fe2O3T'];
+  const refEntries: Array<[string, number | undefined]> = Object.entries(ref.meanOxides).filter(
+    ([oxide]) => !ironKeys.includes(oxide)
+  );
+  if (refFeOT > 0) refEntries.push(['FeOT', refFeOT]);
 
-    const refVal = oxide === 'FeOT' ? refFeOT : refValRaw || 0;
-    const sampVal = oxide === 'FeOT' ? sampleFeOT : sample[oxide];
+  for (const [oxide, refValRaw] of refEntries) {
+    if (VOLATILES.includes(oxide)) continue;
+
+    const refVal = refValRaw || 0;
+    const sampVal = oxide === 'FeOT' ? (sampleFeOT > 0 ? sampleFeOT : undefined) : sample[oxide];
 
     // Missing analytes are skipped, not treated as zero.
     if (sampVal === undefined || !Number.isFinite(sampVal)) continue;
@@ -388,7 +447,8 @@ function scoreRock(
  */
 function scoreMineral(
   sample: OxideComposition,
-  mineral: MineralReference
+  mineral: MineralReference,
+  sampleAnhydrousTotal: number
 ): {
   distance: number;
   similarity: number;
@@ -407,7 +467,12 @@ function scoreMineral(
   let totalWeight = 0;
   let analytesUsed = 0;
 
-  for (const [oxide, idealVal] of Object.entries(mineral.idealOxides)) {
+  // Compare like with like: the sample has been made volatile-free, so the
+  // reference is too. A calcite reference of CaO 56 + CO2 44 against a
+  // measured calcite (CaO 100 once volatile-free) otherwise never matched.
+  const ideal = idealVolatileFree(mineral);
+  const totalFactor = totalAgreement(sampleAnhydrousTotal, ideal.total);
+  for (const [oxide, idealVal] of Object.entries(ideal.oxides)) {
     const sampVal = sample[oxide];
     if (sampVal === undefined || !Number.isFinite(sampVal)) continue;
     analytesUsed++;
@@ -431,7 +496,7 @@ function scoreMineral(
   // Penalize oxides present in the sample but absent from the ideal formula.
   for (const [oxide, val] of Object.entries(sample)) {
     if (!val || val <= 3.0) continue;
-    if (oxide in mineral.idealOxides) continue;
+    if (oxide in ideal.oxides) continue;
     if (VOLATILES.includes(oxide) || IRON_TOTALS.includes(oxide)) continue;
     const w = 2.0;
     const contribution = w * val * val;
@@ -480,6 +545,14 @@ function scoreMineral(
     similarity = 100 * compositional * 0.8;
   }
 
+  similarity *= totalFactor;
+  if (totalFactor < 0.5) {
+    criteria.push(
+      `Analytical total without volatiles (${sampleAnhydrousTotal.toFixed(1)} wt%) is far from this mineral's ` +
+        `(${ideal.total.toFixed(1)} wt%).`
+    );
+  }
+
   contributions.sort((a, b) => b.contribution - a.contribution);
 
   return {
@@ -500,7 +573,37 @@ export interface IdentifyOptions {
   regime?: 'volcanic' | 'plutonic';
   /** Override the Fe2O3/FeO ratio used for the norm. */
   fe2o3FeoRatio?: number;
+  /**
+   * What the user knows from the field or thin section. Bulk chemistry cannot
+   * separate a basalt from a gabbro or an amphibolite; this can. Candidates
+   * of the stated kind are ranked first, the rest follow in score order.
+   */
+  rockContext?: RockContext;
 }
+
+export type RockContext = 'volcanic' | 'plutonic' | 'metamorphic';
+
+const CONTEXT_CLASSES: Record<RockContext, string[]> = {
+  volcanic: ['Igneous Volcanic'],
+  plutonic: ['Igneous Plutonic', 'Ultramafic / Mantle'],
+  metamorphic: ['Metamorphic'],
+};
+
+/** Broad kind of a rock reference, for spotting isochemical equivalents. */
+function rockKind(category: string | undefined): RockContext | undefined {
+  for (const [kind, classes] of Object.entries(CONTEXT_CLASSES)) {
+    if (classes.includes(category ?? '')) return kind as RockContext;
+  }
+  return undefined;
+}
+
+/**
+ * Score window within which a rock of another kind counts as chemically
+ * indistinguishable from the leader. Ten points is roughly a 1 wt% change in
+ * the weighted RMS distance near the top of the scale (d0 = 3 wt%), well
+ * inside the natural spread of any one rock type.
+ */
+const ISOCHEMICAL_WINDOW = 10;
 
 /**
  * Main identification entry point. Ranks rock and mineral candidates and
@@ -514,6 +617,7 @@ export function identifyGeochemicalSample(
 ): ClassificationReport {
   const sampleType = options.sampleType ?? 'unknown';
   const { normalized, rawTotal } = normalizeOxides(input, true);
+  const inputAnhydrousTotal = anhydrousTotal(input);
   const elements = oxidesToElements(normalized);
 
   const sio2 = normalized.SiO2 || 0;
@@ -568,8 +672,34 @@ export function identifyGeochemicalSample(
     };
   }).sort((a, b) => b.similarity - a.similarity);
 
+  if (options.rockContext) {
+    // Stable partition: candidates of the stated kind first, each group
+    // still in score order.
+    const wanted = CONTEXT_CLASSES[options.rockContext];
+    const inContext = (m: MatchScore) => wanted.includes((m.reference as any).category);
+    const head = rockScores.filter(inContext);
+    const tail = rockScores.filter((m) => !inContext(m));
+    rockScores.splice(0, rockScores.length, ...head, ...tail);
+  }
+
+  // Without a context, name the best candidate of each OTHER kind that the
+  // chemistry cannot tell apart from the leader (e.g. gabbro for a basalt).
+  const isochemicalAlternatives: string[] = [];
+  if (!options.rockContext && rockScores[0]) {
+    const leadKind = rockKind((rockScores[0].reference as any).category);
+    const seen = new Set<string>(leadKind ? [leadKind] : []);
+    for (const m of rockScores.slice(1, 15)) {
+      if (m.similarity < rockScores[0].similarity - ISOCHEMICAL_WINDOW) break;
+      const kind = rockKind((m.reference as any).category);
+      if (kind && !seen.has(kind)) {
+        seen.add(kind);
+        isochemicalAlternatives.push(m.reference.name);
+      }
+    }
+  }
+
   const mineralScores: MatchScore[] = mineralLibrary.map((ref) => {
-    const s = scoreMineral(normalized, ref);
+    const s = scoreMineral(normalized, ref, inputAnhydrousTotal);
     return {
       reference: ref,
       type: 'mineral' as const,
@@ -640,7 +770,7 @@ export function identifyGeochemicalSample(
     analyticalTotal: rawTotal,
   });
 
-  const stoichiometry = calculateStoichiometry(normalized, isUltramafic ? 4 : 6, inferredType);
+  const stoichiometry = calculateStoichiometry(normalized, isUltramafic ? 4 : 6, inferredType, cipwNorm);
 
   const legacyWarning = qualityFlags.find(
     (f) => f.code === 'low-total' || f.code === 'high-total'
@@ -666,6 +796,8 @@ export function identifyGeochemicalSample(
     isUltramafic,
     ironBasis: iron.basis,
     topRocks: rockScores.slice(0, 5),
+    rockContext: options.rockContext,
+    isochemicalAlternatives,
     topMinerals: mineralScores.slice(0, 5),
     bestOverall,
     scoreSeparation: separation,
@@ -689,7 +821,10 @@ export function identifyGeochemicalSample(
 export function calculateStoichiometry(
   oxides: OxideComposition,
   targetOxygenBasis: number = 6,
-  sampleType: SampleType = 'unknown'
+  sampleType: SampleType = 'unknown',
+  /** The norm already computed for this sample, so silica saturation uses
+   *  the same Fe2O3/FeO choice instead of a second, default-ratio norm. */
+  precomputedNorm?: ReturnType<typeof calculateCIPWNorm>
 ): SampleStoichiometry {
   const factors: Record<string, { mw: number; cat: number; oxy: number; el: string }> = {
     SiO2: { mw: 60.084, cat: 1, oxy: 2, el: 'Si' },
@@ -768,7 +903,7 @@ export function calculateStoichiometry(
   const totalAlkalis = (oxides.Na2O || 0) + (oxides.K2O || 0);
 
   // Silica saturation from the norm (computed once).
-  const norm = calculateCIPWNorm(oxides);
+  const norm = precomputedNorm ?? calculateCIPWNorm(oxides);
   let silicaSaturation: 'Oversaturated' | 'Saturated' | 'Undersaturated' = 'Saturated';
   if ((norm.Q || 0) > 0.2) silicaSaturation = 'Oversaturated';
   else if ((norm.Ne || 0) + (norm.Lc || 0) > 0.2) silicaSaturation = 'Undersaturated';

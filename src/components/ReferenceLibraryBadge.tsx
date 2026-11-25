@@ -43,7 +43,7 @@ export const ReferenceLibraryBadge: React.FC<{ curatedRocks: number; curatedMine
         title={`The GEOROC reference library could not be loaded (${lib.error}). Matching is using the curated dataset only; everything else works normally.`}
       >
         <AlertTriangle className="w-3 h-3" />
-        <span className="font-mono">curated only</span>
+        <span className="font-mono">GEOROC library not loaded</span>
       </span>
     );
   }

@@ -2,7 +2,7 @@ import { RockReference } from '../types/geochem';
 
 /**
  * Comprehensive Dataset of Rocks (Volcanic, Plutonic, Sedimentary, Metamorphic, Ultramafic)
- * Calibrated with global geochemical databases: GEOROC (Max Planck Institute / Göttingen),
+ * Calibrated with global geochemical databases: GEOROC (DIGIS, University of Göttingen),
  * USGS Geochemical Database, EarthChem, and Le Maitre (2002) IUGS standard averages.
  */
 export const ROCKS_DATASET: RockReference[] = [
@@ -865,7 +865,8 @@ export const ROCKS_DATASET: RockReference[] = [
     name: 'Limestone (Biogenic / Chemical)',
     category: 'Sedimentary',
     subCategory: 'Carbonate',
-    tasField: 'Foidite',
+    // TAS does not apply to sedimentary rocks, so no tasField: it would also
+    // earn a TAS-agreement bonus in scoreRock that a limestone cannot have.
     silicaSaturation: 'Undersaturated',
     magmaticSeries: 'N/A',
     meanOxides: {
@@ -886,7 +887,8 @@ export const ROCKS_DATASET: RockReference[] = [
     name: 'Dolostone (Dolomite Rock)',
     category: 'Sedimentary',
     subCategory: 'Carbonate',
-    tasField: 'Foidite',
+    // TAS does not apply to sedimentary rocks, so no tasField: it would also
+    // earn a TAS-agreement bonus in scoreRock that a limestone cannot have.
     silicaSaturation: 'Undersaturated',
     magmaticSeries: 'N/A',
     meanOxides: {
@@ -907,7 +909,8 @@ export const ROCKS_DATASET: RockReference[] = [
     name: 'Banded Iron Formation (BIF)',
     category: 'Sedimentary',
     subCategory: 'Chemical Sedimentary',
-    tasField: 'Basalt',
+    // TAS does not apply to sedimentary rocks, so no tasField: it would also
+    // earn a TAS-agreement bonus in scoreRock that a limestone cannot have.
     silicaSaturation: 'Saturated',
     magmaticSeries: 'N/A',
     meanOxides: {

@@ -32,6 +32,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readCsvRows } from './lib/csv-stream.mjs';
+import { analyticalTotal, num, stoichiometryProblem, totalIronAsFeO, totalWindow } from './lib/georoc-filters.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -75,46 +76,8 @@ const OXIDE_HEADERS = {
   'CO2(WT%)': 'CO2',
 };
 
-/** Oxides that count toward the major-element total. */
-const MAJORS = [
-  'SiO2', 'TiO2', 'Al2O3', 'Cr2O3', 'MnO', 'MgO', 'CaO',
-  'Na2O', 'K2O', 'P2O5', 'NiO', 'BaO', 'SrO',
-];
-
-const FE2O3_TO_FEO = 0.8998;
-
-function num(v) {
-  if (v == null) return undefined;
-  const s = String(v).trim();
-  if (!s) return undefined;
-  const n = Number(s);
-  return Number.isFinite(n) && n >= 0 && n < 100 ? n : undefined;
-}
-
-function totalIronAsFeO(rec) {
-  const feo = num(rec.FeO);
-  const fe2o3 = num(rec.Fe2O3);
-  if (feo !== undefined || fe2o3 !== undefined) return (feo ?? 0) + FE2O3_TO_FEO * (fe2o3 ?? 0);
-  const feot = num(rec.FeOT);
-  if (feot !== undefined) return feot;
-  const fe2o3t = num(rec.Fe2O3T);
-  if (fe2o3t !== undefined) return FE2O3_TO_FEO * fe2o3t;
-  return undefined;
-}
-
-function analyticalTotal(rec) {
-  let t = 0;
-  for (const ox of MAJORS) t += num(rec[ox]) ?? 0;
-  const feo = num(rec.FeO);
-  const fe2o3 = num(rec.Fe2O3);
-  if (feo !== undefined || fe2o3 !== undefined) t += (feo ?? 0) + (fe2o3 ?? 0);
-  else {
-    const feot = num(rec.FeOT);
-    if (feot !== undefined) t += feot;
-    else t += num(rec.Fe2O3T) ?? 0;
-  }
-  return t;
-}
+// num, totalIronAsFeO, analyticalTotal and the row checks live in
+// lib/georoc-filters.mjs, where they are tested.
 
 /** "2026-09-2JETOA_THOLEIITIC_BASALT_part2.csv" -> "THOLEIITIC BASALT" */
 function groupFromFilename(file) {
@@ -126,11 +89,22 @@ function groupFromFilename(file) {
 
 const NOT_A_NAME = new Set(['', 'NOT GIVEN', 'UNKNOWN', 'N/A', 'NA', 'UNSPECIFIED', 'OTHER']);
 
+/** GEOROC mineral-archive labels that are not minerals (palagonite is altered glass). */
+const NOT_A_MINERAL = new Set(['PALAGONITE', 'GLASS', 'MATRIX', 'GROUNDMASS', 'MELT INCLUSION']);
+
 /** GEOROC spellings that are awkward to read as-is. */
 const NAME_FIXES = new Map([
   ['(AL)KALIFELDSPAR', 'ALKALI FELDSPAR'],
   ['KALIFELDSPAR', 'ALKALI FELDSPAR'],
   ['TITANITE (SPHENE)', 'TITANITE'],
+  // Discredited or informal names, folded into the accepted group.
+  ['HYPERSTHENE', 'ORTHOPYROXENE'],
+  ['BRONZITE', 'ORTHOPYROXENE'],
+  ['SALITE', 'CLINOPYROXENE'],
+  ['FERROSALITE', 'CLINOPYROXENE'],
+  ['FASSAITE', 'CLINOPYROXENE'],
+  // Perthite is an intergrowth texture of alkali feldspar, not a species.
+  ['PERTHITE', 'ALKALI FELDSPAR'],
 ]);
 
 /** Strips "[12345]" citations and takes the first real alternative. */
@@ -175,7 +149,7 @@ async function ingest(kind) {
   const groups = new Map();
   const stats = {
     files: files.length, rows: 0, nonTabular: 0, rejectedMaterial: 0,
-    rejectedSparse: 0, rejectedTotal: 0, rejectedName: 0, accepted: 0,
+    rejectedSparse: 0, rejectedTotal: 0, rejectedName: 0, rejectedStoichiometry: 0, accepted: 0,
   };
 
   for (const file of files) {
@@ -220,11 +194,10 @@ async function ingest(kind) {
         }
       }
 
+      // Minerals may be a single oxide (quartz, corundum, CaO-only calcite);
+      // rocks need enough major elements to classify.
       const present = ALL_OXIDES.filter((o) => num(rec[o]) !== undefined).length;
-      if (present < (kind === 'minerals' ? 4 : 6)) { stats.rejectedSparse++; continue; }
-
-      const total = analyticalTotal(rec);
-      if (total < 97 || total > 103) { stats.rejectedTotal++; continue; }
+      if (present < (kind === 'minerals' ? 1 : 6)) { stats.rejectedSparse++; continue; }
 
       // Rocks group by GEOROC's own file name; minerals by the MINERAL
       // column, falling back to the file's group.
@@ -234,7 +207,15 @@ async function ingest(kind) {
         const root = m.split(',')[0].trim();
         if (root && !NOT_A_NAME.has(root) && root.length <= 40) name = NAME_FIXES.get(root) ?? root;
       }
-      if (!name) { stats.rejectedName++; continue; }
+      if (!name || (kind === 'minerals' && NOT_A_MINERAL.has(name))) { stats.rejectedName++; continue; }
+
+      // The total window depends on the mineral: an EPMA calcite without
+      // CO2 totals ~56 wt%, a mica without H2O ~95.
+      const total = analyticalTotal(rec);
+      const [tLo, tHi] = totalWindow(kind, name, rec);
+      if (total < tLo || total > tHi) { stats.rejectedTotal++; continue; }
+
+      if (kind === 'minerals' && stoichiometryProblem(name, rec)) { stats.rejectedStoichiometry++; continue; }
 
       let g = groups.get(name);
       if (!g) {
@@ -311,8 +292,8 @@ async function main() {
     method:
       'Per-group distributions (n, p10/p25/p50/p75/p90) of major oxides. Rocks are grouped by ' +
       "GEOROC's own precompiled file name; minerals by the MINERAL column. Rows filtered to " +
-      'whole-rock or glass material (rocks), a 97-103 wt% major-oxide total counting iron once, ' +
-      'and at least 6 (rocks) or 4 (minerals) reported oxides.',
+      'whole-rock or glass material (rocks), a 97-103 wt% total counting iron once and including reported LOI, H2O and CO2 (minerals that lack measured water or CO2 use a mineral-specific window, e.g. 52-60 wt% for calcite), a stoichiometric check of mineral rows against their label, ' +
+      'and at least 6 reported oxides for rocks (one is enough for a mineral such as quartz).',
     minimumGroupSize: MIN_N,
     parser:
       'Streaming RFC 4180 reader; GEOROC files contain quoted fields with embedded newlines and ' +
