@@ -203,8 +203,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <Cloud className="w-3 h-3 text-emerald-400" />
                 </button>
 
+                {/* Fixed to the window, not the header row: that row clips its
+                    overflow (so phones never scroll sideways) and cut the menu off.
+                    The transparent layer behind it closes the menu on an outside click. */}
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-56 bg-stone-900 border border-stone-800 rounded-xl shadow-xl py-2 z-50 animate-fadeIn">
+                  <button type="button" aria-label="Close account menu" className="fixed inset-0 z-40 cursor-default" onClick={() => setShowUserMenu(false)} />
+                )}
+                {showUserMenu && (
+                  <div className="fixed right-3 sm:right-6 top-14 sm:top-16 mt-1 w-56 bg-stone-900 border border-stone-800 rounded-xl shadow-xl py-2 z-50 animate-fadeIn">
                     <div className="px-3 py-2 border-b border-stone-800">
                       <p className="text-xs font-semibold text-stone-200 truncate">
                         {user.displayName || 'Geochemist'}
