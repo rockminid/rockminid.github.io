@@ -36,6 +36,11 @@ export function saveLocalFeedbackRecord(feedback: FeedbackSubmission): void {
   }
 }
 
+/** A copy without undefined fields, which Firestore refuses to store. */
+export function withoutUndefined<T extends object>(obj: T): Partial<T> {
+  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined)) as Partial<T>;
+}
+
 export async function submitUserFeedback(
   input: Omit<FeedbackSubmission, 'id' | 'createdAt'> & { id?: string },
   user: User | null
@@ -64,7 +69,10 @@ export async function submitUserFeedback(
     if (!fb) throw new Error('Cloud feedback is not configured for this deployment.');
     const { doc, setDoc } = await import('firebase/firestore');
     const feedbackDocRef = doc(fb.db, 'feedback', id);
-    await setDoc(feedbackDocRef, feedbackRecord);
+    // Firestore rejects a document with any undefined field, and an
+    // anonymous submission has no userEmail (and often no sampleContext).
+    // Every such submission failed and silently stayed in local storage.
+    await setDoc(feedbackDocRef, withoutUndefined(feedbackRecord));
     cloudSynced = true;
   } catch (err) {
     console.warn('Firestore feedback submission offline/failed, kept in local device storage:', err);
