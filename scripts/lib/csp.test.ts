@@ -18,6 +18,11 @@ describe('Content-Security-Policy', () => {
     expect(directive(csp, 'frame-src')).toBe("frame-src 'self' https://rockmin.firebaseapp.com https://accounts.google.com");
   });
 
+  it('allows the Google API loader that popup sign-in needs, only when sign-in is configured', () => {
+    expect(directive(buildCsp({ firebaseAuthDomain: 'rockmin.firebaseapp.com' }), 'script-src')).toContain('https://apis.google.com');
+    expect(directive(buildCsp(), 'script-src')).not.toContain('apis.google.com');
+  });
+
   it('blocks inline <style> blocks but allows style attributes', () => {
     const csp = buildCsp();
     expect(directive(csp, 'style-src')).toBe("style-src 'self'");

@@ -20,6 +20,14 @@ const GOATCOUNTER_SCRIPT = 'https://gc.zgo.at';
 const GOATCOUNTER_ENDPOINT = 'https://rockminid.goatcounter.com';
 
 /**
+ * Google API loader. Firebase's signInWithPopup injects
+ * https://apis.google.com/js/api.js to talk to the sign-in iframe; without
+ * it the popup fails with auth/internal-error. Only allowed when Firebase
+ * sign-in is configured for the build.
+ */
+const GOOGLE_API_SCRIPT = 'https://apis.google.com';
+
+/**
  * The Google endpoints Firebase Auth and Firestore actually call. Listed by
  * host rather than as *.googleapis.com, so a script cannot send data to an
  * arbitrary Google API. The app uses no Realtime Database and no Cloud
@@ -66,7 +74,7 @@ export function buildCsp({ apiBaseUrl, firebaseAuthDomain } = {}) {
     "default-src 'self'",
     // No inline scripts are emitted: index.html references the entry module
     // and the GoatCounter script by src, and the JSON-LD block is not executable.
-    `script-src 'self' ${GOATCOUNTER_SCRIPT}`,
+    `script-src 'self' ${GOATCOUNTER_SCRIPT}${authOrigin ? ` ${GOOGLE_API_SCRIPT}` : ''}`,
     // Stylesheets come only from the app. React writes inline style
     // ATTRIBUTES for diagram geometry, which style-src-attr governs; no
     // inline <style> block is ever emitted, so none is allowed.
