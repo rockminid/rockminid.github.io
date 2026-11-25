@@ -25,3 +25,25 @@ export const CITATION_APA =
   `Tiwari, K. (2026). RockMin ID: Automated Geochemical Classifier and Petrological ` +
   `Analysis Platform (Version ${APP_VERSION}) [Computer software]. Zenodo. ` +
   `https://doi.org/${CONCEPT_DOI}`;
+
+/** The SoftwareX article describing RockMin ID: the primary citation. */
+export const PAPER_DOI = '10.1016/j.softx.2026.103264';
+
+export const PAPER_TITLE =
+  'RockMin ID: A browser-based, deterministic platform for igneous rock classification, ' +
+  'CIPW normative mineralogy and mineral identification from major-element data';
+
+export const CITATION_PAPER_APA =
+  `Tiwari, K., & Ghosh, S. (2026). ${PAPER_TITLE}. SoftwareX, 36, 103264. ` +
+  `https://doi.org/${PAPER_DOI}`;
+
+export const CITATION_PAPER_BIBTEX = `@article{tiwari_ghosh_2026_rockminid,
+  author  = {Tiwari, Kishan and Ghosh, Sujoy},
+  title   = {${PAPER_TITLE}},
+  journal = {SoftwareX},
+  volume  = {36},
+  pages   = {103264},
+  year    = {2026},
+  doi     = {${PAPER_DOI}},
+  url     = {https://doi.org/${PAPER_DOI}}
+}`;

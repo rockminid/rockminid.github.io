@@ -56,6 +56,25 @@ keywords:
   - IUGS
   - electron microprobe
   - XRF
+preferred-citation:
+  type: article
+  title: >-
+    RockMin ID: A browser-based, deterministic platform for igneous rock
+    classification, CIPW normative mineralogy and mineral identification from
+    major-element data
+  authors:
+    - given-names: Kishan
+      family-names: Tiwari
+      affiliation: Indian Institute of Technology Kharagpur, India
+    - given-names: Sujoy
+      family-names: Ghosh
+      affiliation: Indian Institute of Technology Kharagpur, India
+  journal: SoftwareX
+  volume: 36
+  start: 103264
+  year: 2026
+  doi: 10.1016/j.softx.2026.103264
+  url: 'https://doi.org/10.1016/j.softx.2026.103264'
 references:
   - type: article
     title: >-

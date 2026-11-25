@@ -2,6 +2,7 @@
 
 **Classify igneous rocks and identify minerals from major-element data, in your browser.**
 
+[![Paper](https://img.shields.io/badge/SoftwareX-10.1016%2Fj.softx.2026.103264-orange)](https://doi.org/10.1016/j.softx.2026.103264)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22875578.svg)](https://doi.org/10.5281/zenodo.22875578)
 
 **Open the app: <https://rockminid.github.io>**
@@ -100,14 +101,35 @@ withheld GEOROC analyses) and `compare-pyrolite.py` (comparison with pyrolite).
 
 ## Citing
 
+If you use RockMin ID, please cite the paper:
+
+> Tiwari, K., & Ghosh, S. (2026). RockMin ID: A browser-based, deterministic
+> platform for igneous rock classification, CIPW normative mineralogy and
+> mineral identification from major-element data. *SoftwareX*, 36, 103264.
+> <https://doi.org/10.1016/j.softx.2026.103264>
+
+```bibtex
+@article{tiwari_ghosh_2026_rockminid,
+  author  = {Tiwari, Kishan and Ghosh, Sujoy},
+  title   = {RockMin ID: A browser-based, deterministic platform for igneous rock classification, CIPW normative mineralogy and mineral identification from major-element data},
+  journal = {SoftwareX},
+  volume  = {36},
+  pages   = {103264},
+  year    = {2026},
+  doi     = {10.1016/j.softx.2026.103264}
+}
+```
+
+To record the exact software version as well, cite the archived release:
+
 > Tiwari, K. (2026). *RockMin ID: Automated Geochemical Classifier and
 > Petrological Analysis Platform* (Version 2.5.2) [Computer software]. Zenodo.
 > <https://doi.org/10.5281/zenodo.22875578>
 
-This concept DOI always points to the latest release. To cite the exact version
-you used, take its version DOI from the
-[Zenodo record](https://zenodo.org/doi/10.5281/zenodo.22875578). GitHub's
-"Cite this repository" button reads [`CITATION.cff`](CITATION.cff).
+This concept DOI always points to the latest release; each version's own DOI is
+on the [Zenodo record](https://zenodo.org/doi/10.5281/zenodo.22875578). GitHub's
+"Cite this repository" button reads [`CITATION.cff`](CITATION.cff) and offers the
+paper.
 
 Please also cite GEOROC and the original publications of any analyses you use.
 

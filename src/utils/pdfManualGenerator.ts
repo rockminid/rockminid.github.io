@@ -404,7 +404,8 @@ export async function generateRockMinManualPDF(): Promise<void> {
     [
       ['Application', 'RockMin ID — Mineral & Rock Geochemical Identification Engine'],
       ['Creator & Author', 'Kishan Tiwari, Indian Institute of Technology Kharagpur (https://kishangeo.github.io)'],
-      ['DOI', `https://doi.org/${CONCEPT_DOI} — concept DOI, always resolving to the latest release. Each release also carries its own version DOI, shown on its Zenodo record.`],
+      ['Citation', 'Tiwari, K., & Ghosh, S. (2026). RockMin ID: A browser-based, deterministic platform for igneous rock classification, CIPW normative mineralogy and mineral identification from major-element data. SoftwareX, 36, 103264. https://doi.org/10.1016/j.softx.2026.103264'],
+      ['Software DOI', `https://doi.org/${CONCEPT_DOI} — concept DOI, always resolving to the latest release. Each release also carries its own version DOI, shown on its Zenodo record.`],
       ['Live application', 'https://rockminid.github.io/ — source at https://github.com/rockminid/rockminid.github.io'],
       ['Licence', 'MIT'],
       ['Purpose', 'Major-element geochemical screening, rock/mineral matching, classification diagrams, normative calculations, batch processing and specimen archiving.'],
