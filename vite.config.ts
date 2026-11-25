@@ -62,6 +62,9 @@ export default defineConfig(({ mode }) => {
           'pwa-maskable-512x512.png',
           'og-image.png',
           'logo-wordmark.png',
+          // Bundled QR code: an external QR service is blocked by the CSP and
+          // would leak the visit to a third party.
+          'qr-rockminid.svg',
         ],
         manifest: {
           id: resolvedBase,

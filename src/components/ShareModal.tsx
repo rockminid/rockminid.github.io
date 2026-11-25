@@ -32,7 +32,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
 
   if (!isOpen) return null;
 
-  const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://rockmin-id.app';
+  const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://rockminid.github.io';
   const appTitle = 'RockMin ID - Geochemical & Mineral Classifier';
   const appDescription =
     'Interactive Geochemical Classifier & Petrological Analysis Platform with TAS volcanic classification, CIPW Norm calculation, and D3 Ternary Projections.';
@@ -235,8 +235,8 @@ export const ShareModal: React.FC<ShareModalProps> = ({
               <div className="mt-3 p-4 bg-stone-950 border border-stone-800 rounded-xl flex flex-col items-center justify-center space-y-2 text-center animate-in fade-in duration-200">
                 <div className="p-3 bg-white rounded-xl shadow-lg">
                   <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(appUrl)}`}
-                    alt="RockMin ID QR Code"
+                    src={`${import.meta.env.BASE_URL}qr-rockminid.svg`}
+                    alt="QR code linking to https://rockminid.github.io"
                     className="w-36 h-36"
                     loading="lazy"
                   />
