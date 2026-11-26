@@ -125,7 +125,7 @@ If you use RockMin ID, please cite the paper:
 To record the exact software version as well, cite the archived release:
 
 > Tiwari, K. (2026). *RockMin ID: Automated Geochemical Classifier and
-> Petrological Analysis Platform* (Version 2.6.0) [Computer software]. Zenodo.
+> Petrological Analysis Platform* (Version 2.6.1) [Computer software]. Zenodo.
 > <https://doi.org/10.5281/zenodo.22875578>
 
 This concept DOI always points to the latest release; each version's own DOI is
