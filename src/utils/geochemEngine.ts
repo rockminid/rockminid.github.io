@@ -149,6 +149,7 @@ export function normalizeOxides(
 ): { normalized: OxideComposition; rawTotal: number } {
   const rawTotal = analyticalTotal(oxides);
   const iron = resolveIron(oxides);
+  const hasLoi = typeof oxides.LOI === 'number' && Number.isFinite(oxides.LOI);
 
   const cleaned: OxideComposition = {};
   let total = 0;
@@ -156,6 +157,8 @@ export function normalizeOxides(
   for (const [key, val] of Object.entries(oxides)) {
     if (typeof val !== 'number' || !Number.isFinite(val) || val < 0) continue;
     if (volatileFree && VOLATILES.includes(key)) continue;
+    // LOI already contains the H2O and CO2 driven off; count it once.
+    if (hasLoi && (key === 'H2O' || key === 'H2O+' || key === 'H2O-' || key === 'CO2')) continue;
     // Every iron field is skipped here and iron is added back exactly once
     // below. Skipping them outright would drop the iron entirely for
     // FeOT-only analyses (the GEOROC norm) and inflate every other oxide:

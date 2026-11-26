@@ -133,7 +133,7 @@ export const BatchProcessor: React.FC<BatchProcessorProps> = ({
     const parsedOxides: OxideComposition = {};
     Object.entries(editOxides).forEach(([k, v]) => {
       const num = parseFloat(v);
-      if (!isNaN(num) && num > 0) {
+      if (!isNaN(num) && num >= 0) {
         (parsedOxides as any)[k] = num;
       }
     });

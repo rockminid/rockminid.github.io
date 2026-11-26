@@ -67,8 +67,8 @@ export const BatchSpiderPanel: React.FC<{ results: BatchRowResult[] }> = ({ resu
       </div>
       {rows.length <= 12 && (
         <ul className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-stone-300">
-          {series.map((s) => (
-            <li key={s.name} className="flex items-center gap-1.5">
+          {series.map((s, si) => (
+            <li key={si} className="flex items-center gap-1.5">
               <span className="w-3 h-0.5 inline-block" style={{ background: s.color }} />
               {s.name}
             </li>

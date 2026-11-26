@@ -611,3 +611,11 @@ describe('analyticalTotal volatiles', () => {
     expect(analyticalTotal({ CaO: 55, LOI: 43, CO2: 43, H2O: 1 })).toBe(98);
   });
 });
+
+describe('normalizeOxides with volatiles kept', () => {
+  it('counts LOI once when CO2 is also reported', () => {
+    const { normalized } = normalizeOxides({ CaO: 56, LOI: 44, CO2: 44 }, false);
+    expect(normalized.CaO).toBeCloseTo(56, 1);
+    expect(normalized.CO2).toBeUndefined();
+  });
+});
