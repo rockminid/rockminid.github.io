@@ -763,7 +763,6 @@ export const ROCKS_DATASET: RockReference[] = [
     name: 'Quartz Arenite (Pure Sandstone)',
     category: 'Sedimentary',
     subCategory: 'Siliciclastic Sandstone',
-    tasField: 'Rhyolite',
     silicaSaturation: 'Oversaturated',
     magmaticSeries: 'N/A',
     meanOxides: {
@@ -789,7 +788,6 @@ export const ROCKS_DATASET: RockReference[] = [
     name: 'Arkose (Feldspathic Sandstone)',
     category: 'Sedimentary',
     subCategory: 'Siliciclastic Sandstone',
-    tasField: 'Rhyolite',
     silicaSaturation: 'Oversaturated',
     magmaticSeries: 'N/A',
     meanOxides: {
@@ -814,7 +812,6 @@ export const ROCKS_DATASET: RockReference[] = [
     name: 'Graywacke / Turbidite Wacke',
     category: 'Sedimentary',
     subCategory: 'Wacke Sandstone',
-    tasField: 'Dacite',
     silicaSaturation: 'Oversaturated',
     magmaticSeries: 'N/A',
     meanOxides: {
@@ -839,7 +836,6 @@ export const ROCKS_DATASET: RockReference[] = [
     name: 'Marine Shale (Post-Archean Australian Shale PAAS)',
     category: 'Sedimentary',
     subCategory: 'Mudrock / Pelite',
-    tasField: 'Dacite',
     silicaSaturation: 'Oversaturated',
     magmaticSeries: 'N/A',
     meanOxides: {

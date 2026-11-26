@@ -63,7 +63,7 @@ export const SpiderDiagram: React.FC<SpiderDiagramProps> = ({ order, series, yLa
         >
           {yLabel}
         </text>
-        {series.map((s) => {
+        {series.map((s, si) => {
           const idx = new Map(s.points.map((p) => [p.element, p.value]));
           // Split into runs of consecutive elements that are present.
           const runs: Array<Array<[number, number]>> = [];
@@ -77,7 +77,7 @@ export const SpiderDiagram: React.FC<SpiderDiagramProps> = ({ order, series, yLa
           });
           if (run.length) runs.push(run);
           return (
-            <g key={s.name} stroke={s.color} fill={s.color}>
+            <g key={si} stroke={s.color} fill={s.color}>
               <title>{s.name}</title>
               {runs.map((r, k) =>
                 r.length > 1 ? (

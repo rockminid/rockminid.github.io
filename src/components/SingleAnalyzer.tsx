@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { TraceElementsPanel } from './TraceElementsPanel';
 import { ChemFormula } from './ChemFormula';
 import {
@@ -64,6 +64,10 @@ import { generateInterpretation } from '../services/interpretationService';
 interface SingleAnalyzerProps {
   initialOxides?: OxideComposition;
   sampleName?: string;
+  /** Bumped when the GEOROC library loads, so matches are recomputed. */
+  libraryVersion?: number;
+  /** Reports edits so the diagram tabs plot the sample being typed. */
+  onSampleChange?: (oxides: OxideComposition, sampleName: string) => void;
 }
 
 export interface PresetItem {
@@ -198,7 +202,9 @@ const VOLATILE_FIELDS = ['LOI', 'H2O', 'H2O+', 'H2O-', 'CO2'];
 /** Core oxides with the iron fields this sample needs, in place of FeO/Fe2O3. */
 function coreOxides(oxides: OxideComposition, mode: IronMode): string[] {
   const present = IRON_FIELDS.filter((f) => oxides[f] !== undefined);
-  const iron = present.length ? [...present] : IRON_MODE_FIELDS[mode];
+  // FeO or Fe2O3 alone still means the split basis: show both boxes.
+  const totals = present.filter((f) => f === 'FeOT' || f === 'Fe2O3T');
+  const iron = totals.length ? totals : present.length ? IRON_MODE_FIELDS.split : IRON_MODE_FIELDS[mode];
   return ['SiO2', 'Al2O3', ...iron, 'MgO', 'CaO', 'Na2O', 'K2O'];
 }
 const MINOR_OXIDES = ['TiO2', 'MnO', 'P2O5', 'Cr2O3', 'NiO', 'LOI'];
@@ -217,7 +223,7 @@ function tasBadge(category: string | undefined, field: string | undefined) {
   return null;
 }
 
-export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, sampleName: propSampleName }) => {
+export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, sampleName: propSampleName, libraryVersion, onSampleChange }) => {
   const [sampleName, setSampleName] = useState<string>(propSampleName || 'Sample-X1');
   const [inputMode, setInputMode] = useState<InputMode>('oxide');
   // 'unknown' lets the engine infer rock-versus-mineral from the structural
@@ -317,7 +323,13 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
       sampleType,
       rockContext: rockContext || undefined,
     });
-  }, [oxides, sampleName, inputMode, sampleType, rockContext]);
+    // libraryVersion: the GEOROC references are read inside the engine.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [oxides, sampleName, inputMode, sampleType, rockContext, libraryVersion]);
+
+  useEffect(() => {
+    onSampleChange?.(oxides, sampleName);
+  }, [oxides, sampleName, onSampleChange]);
 
   // Standard geochemical ratios and petrological indices.
   //
@@ -372,6 +384,7 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
   // Clear all values
   const handleReset = () => {
     setOxides({});
+    setElementDrafts({});
     setAiInterpretation(null);
     setShowMineralsForRock(false);
   };
@@ -395,6 +408,7 @@ export const SingleAnalyzer: React.FC<SingleAnalyzerProps> = ({ initialOxides, s
   const handleLoadPreset = (preset: PresetItem) => {
     setSampleName(preset.name);
     setOxides({ ...preset.oxides });
+    setElementDrafts({});
     setAiInterpretation(null);
     setShowMineralsForRock(false);
     const hasMinors = MINOR_OXIDES.some(

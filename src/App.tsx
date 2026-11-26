@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { PAPER_DOI, REPO_URL } from './version';
 import { Navbar, ActiveTab } from './components/Navbar';
 import { SingleAnalyzer } from './components/SingleAnalyzer';
@@ -48,7 +48,7 @@ import { BatchRowResult, OxideComposition } from './types/geochem';
 import { SAMPLE_BENCHMARK_CSVS, parseCSV, processBatchCSV } from './utils/csv';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
-import { getSavedCollection } from './services/collectionService';
+import { getSavedCollection, COLLECTION_CHANGED_EVENT } from './services/collectionService';
 import { loadGeorocLibrary, subscribeToLibrary } from './data/georocReference';
 
 export default function App() {
@@ -125,6 +125,7 @@ export default function App() {
     // Listen for storage events across tabs or local updates
     const handleStorage = () => refreshCollectionCount();
     window.addEventListener('storage', handleStorage);
+    window.addEventListener(COLLECTION_CHANGED_EVENT, handleStorage);
 
     // Global listener to open documentation or glossary from any subcomponent
     const handleOpenDoc = (e: Event) => {
@@ -159,6 +160,7 @@ export default function App() {
 
     return () => {
       window.removeEventListener('storage', handleStorage);
+      window.removeEventListener(COLLECTION_CHANGED_EVENT, handleStorage);
       window.removeEventListener('open-rockmin-doc', handleOpenDoc);
       window.removeEventListener('open-rockmin-share', handleOpenShare);
       window.removeEventListener('open-rockmin-feedback', handleOpenFeedback);
@@ -190,8 +192,16 @@ export default function App() {
   const handleInspectSample = (oxides: OxideComposition, sampleName: string) => {
     setActiveOxides(oxides);
     setActiveSampleName(sampleName);
+    setAnalyzerKey((k) => k + 1);
     setActiveTab('single');
   };
+
+  // Analyzer edits feed the TAS and ternary tabs without remounting it.
+  const [analyzerKey, setAnalyzerKey] = useState(0);
+  const handleAnalyzerChange = useCallback((oxides: OxideComposition, sampleName: string) => {
+    setActiveOxides(oxides);
+    setActiveSampleName(sampleName);
+  }, []);
 
   return (
     <ThemeProvider>
@@ -246,9 +256,11 @@ export default function App() {
           <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
             {activeTab === 'single' && (
               <SingleAnalyzer
-                key={`${activeSampleName}:${libraryVersion}`}
+                key={analyzerKey}
                 initialOxides={activeOxides}
                 sampleName={activeSampleName}
+                libraryVersion={libraryVersion}
+                onSampleChange={handleAnalyzerChange}
               />
             )}
 

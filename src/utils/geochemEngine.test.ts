@@ -605,3 +605,9 @@ describe('iron in totals and rock matching', () => {
     expect(iron(r)).toBe(true);
   });
 });
+
+describe('analyticalTotal volatiles', () => {
+  it('counts LOI once when CO2 and H2O are also reported', () => {
+    expect(analyticalTotal({ CaO: 55, LOI: 43, CO2: 43, H2O: 1 })).toBe(98);
+  });
+});

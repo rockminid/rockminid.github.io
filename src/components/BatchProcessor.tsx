@@ -404,10 +404,10 @@ SAMPLE_03,41.50,0.02,0.05,0.00,8.80,0.15,49.20,0.20,0.01,0.00,0.00,0.12,0.35,0.0
 
       if (!matchesSearch) return false;
 
-      if (filterType === 'rocks') return row.identifiedCategory === 'Rock';
-      if (filterType === 'minerals') return row.identifiedCategory === 'Mineral';
-      if (filterType === 'good_quality') return row.qualityStatus.includes('Good');
-      if (filterType === 'high_confidence') return row.primaryConfidence >= 80;
+      if (filterType === 'rocks' && row.identifiedCategory !== 'Rock') return false;
+      if (filterType === 'minerals' && row.identifiedCategory !== 'Mineral') return false;
+      if (filterType === 'good_quality' && !row.qualityStatus.includes('Good')) return false;
+      if (filterType === 'high_confidence' && row.primaryConfidence < 80) return false;
 
       // Global Oxide Range Filters (applied to normalized oxides for geochemical consistency)
       const ox = row.normalizedOxides;
@@ -489,12 +489,12 @@ SAMPLE_03,41.50,0.02,0.05,0.00,8.80,0.15,49.20,0.20,0.01,0.00,0.00,0.12,0.35,0.0
       const sio2 = r.normalizedOxides.SiO2 || 0;
       const alk = (r.normalizedOxides.Na2O || 0) + (r.normalizedOxides.K2O || 0);
       return {
-        id: r.sampleId,
+        id: String(r.rowNumber),
         name: `${r.sampleId} (${r.primaryName})`,
         sio2,
         totalAlkalis: alk,
         category: r.tasField,
-        isPrimary: selectedRowId === r.sampleId,
+        isPrimary: selectedRowId === String(r.rowNumber),
       };
     });
   }, [batchResults, selectedRowId]);
@@ -1089,12 +1089,12 @@ SAMPLE_03,41.50,0.02,0.05,0.00,8.80,0.15,49.20,0.20,0.01,0.00,0.00,0.12,0.35,0.0
               <tbody className="divide-y divide-stone-800/60 font-sans">
                 {filteredResults.map((row) => {
                   const isRock = row.identifiedCategory === 'Rock';
-                  const isSelected = selectedRowId === row.sampleId;
+                  const isSelected = selectedRowId === String(row.rowNumber);
 
                   return (
                     <tr
                       key={`batch-row-${row.rowNumber}`}
-                      onClick={() => setSelectedRowId(row.sampleId)}
+                      onClick={() => setSelectedRowId(String(row.rowNumber))}
                       className={`hover:bg-stone-800/40 transition-colors ${
                         isSelected ? 'bg-amber-950/20' : ''
                       }`}

@@ -67,11 +67,14 @@ const IRON_TOTALS = ['FeOT', 'Fe2O3T', 'FeO_equiv'];
  */
 export function analyticalTotal(oxides: OxideComposition): number {
   const iron = resolveIron(oxides);
+  const hasLoi = typeof oxides.LOI === 'number' && Number.isFinite(oxides.LOI);
   let total = 0;
 
   for (const [key, v] of Object.entries(oxides)) {
     if (typeof v !== 'number' || !Number.isFinite(v) || v < 0) continue;
     if (key === 'FeO' || key === 'Fe2O3' || IRON_TOTALS.includes(key)) continue;
+    // LOI already contains the water and CO2 driven off; count it once.
+    if (hasLoi && (key === 'H2O' || key === 'H2O+' || key === 'H2O-' || key === 'CO2')) continue;
     total += v;
   }
 
@@ -357,7 +360,9 @@ function scoreRock(
     Cr2O3: 1.0,
   };
 
-  const sampleFeOT = resolveIron(sample).FeOT;
+  // An explicit 0 for iron is a measurement; only an absent field is missing.
+  const sampleIron = resolveIron(sample);
+  const sampleFeOT = sampleIron.basis !== 'none' ? sampleIron.FeOT : undefined;
   const refFeOT = resolveIron(ref.meanOxides).FeOT;
 
   let sumWeightedSq = 0;
@@ -377,7 +382,7 @@ function scoreRock(
     if (VOLATILES.includes(oxide)) continue;
 
     const refVal = refValRaw || 0;
-    const sampVal = oxide === 'FeOT' ? (sampleFeOT > 0 ? sampleFeOT : undefined) : sample[oxide];
+    const sampVal = oxide === 'FeOT' ? sampleFeOT : sample[oxide];
 
     // Missing analytes are skipped, not treated as zero.
     if (sampVal === undefined || !Number.isFinite(sampVal)) continue;

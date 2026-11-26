@@ -34,9 +34,13 @@ export function getLocalCollection(): SavedSample[] {
 export const getSavedCollection = getLocalCollection;
 
 // Save local collection to localStorage
+/** Fired on window after the local collection changes; 'storage' only reaches other tabs. */
+export const COLLECTION_CHANGED_EVENT = 'rockmin-collection-changed';
+
 export function saveLocalCollection(items: SavedSample[]): void {
   try {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items));
+    window.dispatchEvent(new Event(COLLECTION_CHANGED_EVENT));
   } catch (err) {
     console.error('Error saving local sample collection:', err);
   }
@@ -179,9 +183,14 @@ export function subscribeToUserCollection(
       // Sort by creation date descending
       cloudSamples.sort((a, b) => new Date(b.createdAt || b.savedAt || 0).getTime() - new Date(a.createdAt || a.savedAt || 0).getTime());
 
-      // Update local storage with cloud mirror
-      saveLocalCollection(cloudSamples);
-      onUpdate(cloudSamples);
+      // Mirror the cloud locally, keeping samples saved offline that have
+      // not been uploaded yet, so a snapshot that arrives before the sync
+      // finishes cannot wipe them.
+      const cloudIds = new Set(cloudSamples.map((s) => s.id));
+      const pending = getLocalCollection().filter((s) => !s.isSynced && !cloudIds.has(s.id));
+      const merged = [...pending, ...cloudSamples];
+      saveLocalCollection(merged);
+      onUpdate(merged);
     },
     (error) => {
       handleFirestoreError(error, OperationType.LIST, path);
